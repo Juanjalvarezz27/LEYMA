@@ -1,22 +1,25 @@
 import type { Metadata } from "next";
 import { Inter, Montserrat } from "next/font/google";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css"; 
 import "./globals.css";
 
-// Fuente para el cuerpo del texto (clara y excelente para lectura de datos)
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
 });
 
-// Fuente para los títulos (moderna y profesional)
 const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Laboratorio LEYMA",
-  description: "Plataforma integral para el registro de pacientes, control de exámenes y resultados clínicos.",
+  title: "LEYMA S.A. | Laboratorio Clínico Bacteriológico",
+  description: "Sistema de gestión integral para el control de pacientes, exámenes y resultados clínicos.",
+  icons: {
+    icon: "/Logo.png",
+  },
 };
 
 export default function RootLayout({
@@ -29,7 +32,19 @@ export default function RootLayout({
       lang="es"
       className={`${inter.variable} ${montserrat.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans text-slate-800 bg-slate-50">
+      <body className="min-h-full flex flex-col font-sans text-texto-principal bg-fondo">
+        <ToastContainer 
+          position="top-right"
+          autoClose={4000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
         {children}
       </body>
     </html>

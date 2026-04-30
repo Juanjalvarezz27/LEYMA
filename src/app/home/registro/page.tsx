@@ -1,17 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { FileSignature } from "lucide-react";
-import useTasaBCV from "../../hooks/useTasaBcv";
+import { FileSignature, ArrowLeft } from "lucide-react";
 
+// Hooks y Componentes
+import useTasaBCV from "../../hooks/useTasaBcv";
 import BuscadorPaciente from "../../components/registro/BuscadorPaciente";
 import TarjetaPaciente from "../../components/registro/TarjetaPaciente";
 import FormularioPaciente from "../../components/registro/FormularioPaciente";
 import SeleccionPruebas from "../../components/registro/SeleccionPruebas";
 import ResumenPago from "../../components/registro/ResumenPago";
 
-export default function RegistroPage() {
+function RegistroContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("edit");
+
+  // Estados del Paciente
   const [cedulaBusqueda, setCedulaBusqueda] = useState("");
   const [buscando, setBuscando] = useState(false);
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState<any>(null);
@@ -22,11 +29,13 @@ export default function RegistroPage() {
     sexo: "M", telefono: "", correo: "", direccion: "", observaciones: ""
   });
 
+  // Estados de Pruebas y Tasa
   const [pruebasCatalogo, setPruebasCatalogo] = useState<any[]>([]);
   const [pruebasSeleccionadas, setPruebasSeleccionadas] = useState<any[]>([]);
   const { tasa } = useTasaBCV();
-  const tasaBCV = tasa ?? 36.5; 
+  const tasaBCV = tasa ?? 36.5;
 
+  // 1. Cargar Catálogo de Pruebas
   useEffect(() => {
     const fetchCatalogo = async () => {
       try {
@@ -39,6 +48,40 @@ export default function RegistroPage() {
     };
     fetchCatalogo();
   }, []);
+
+  // 2. Lógica de Edición: Cargar orden si existe editId
+useEffect(() => {
+    if (editId) {
+      const cargarOrdenParaEdicion = async () => {
+        try {
+          const res = await fetch(`/api/ordenes/${editId}`); 
+          const orden = await res.json();
+          
+          if (res.ok && orden) {
+            setPacienteSeleccionado(orden.paciente);
+            setPruebasSeleccionadas(orden.detalles.map((d: any) => ({
+              ...d.prueba,
+              cantidad: d.cantidad,
+              precioUSD: d.precioCongeladoUSD,
+              descInd: d.descuento,
+              tipoDescInd: d.tipoDescuento?.nombre || "PORCENTAJE"
+            })));
+            
+            // CORRECCIÓN: Le agregamos un toastId único para evitar el doble render en desarrollo
+            toast.info(`Editando Orden #${editId}`, { 
+              toastId: `edit-toast-${editId}` 
+            });
+            
+          } else {
+             toast.error(orden.error || "Error al obtener la orden");
+          }
+        } catch (error) {
+          toast.error("No se pudo cargar la orden para editar");
+        }
+      };
+      cargarOrdenParaEdicion();
+    }
+  }, [editId]);
 
   const buscarPaciente = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -107,19 +150,16 @@ export default function RegistroPage() {
       esBebe: false, cedula: "", nombreCompleto: "", fechaNacimiento: "",
       sexo: "M", telefono: "", correo: "", direccion: "", observaciones: ""
     });
+    if (editId) router.push("/home/registro"); // Limpiar la URL de edición
   };
 
-  // --- FUNCIÓN REAL DE GUARDADO EN BD ---
   const finalizarOrden = async (resumenData: any) => {
-    
-    if (resumenData.estado === "CERRADA") {
-      if (resumenData.restanteUSD > 0.05) {
-         toast.error(`La orden no puede ser CERRADA porque aún hay un saldo pendiente de $${resumenData.restanteUSD.toFixed(2)}.`);
-         return;
-      }
+    if (resumenData.estado === "CERRADA" && resumenData.restanteUSD > 0.05) {
+      toast.error(`La orden no puede ser CERRADA con saldo pendiente.`);
+      return;
     }
 
-    toast.info(resumenData.estado === "BORRADOR" ? "Guardando borrador..." : "Procesando y cerrando orden...");
+    toast.info(editId ? "Actualizando orden..." : "Guardando orden...");
 
     const ordenParaGuardar = {
       pacienteId: pacienteSeleccionado.id,
@@ -146,9 +186,12 @@ export default function RegistroPage() {
     };
 
     try {
-      // LLAMADA AL ENDPOINT POST
-      const res = await fetch("/api/ordenes", {
-        method: "POST",
+      // Si editId existe usamos PUT, si no POST
+      const url = editId ? `/api/ordenes/${editId}` : "/api/ordenes";
+      const method = editId ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(ordenParaGuardar)
       });
@@ -156,26 +199,38 @@ export default function RegistroPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       
-      if (resumenData.estado === "BORRADOR") {
-         toast.success("Borrador guardado. La orden quedó pendiente.");
-      } else {
-         toast.success("¡Orden Cerrada y Procesada con éxito!");
-      }
+      toast.success(editId ? "Orden actualizada correctamente" : "Orden guardada correctamente");
       
-      limpiarSeleccion(); 
+      if (editId) {
+        router.push("/home/diaria"); // Volver a la lista diaria después de editar
+      } else {
+        limpiarSeleccion();
+      }
     } catch (error: any) {
-      toast.error(error.message || "Error al guardar la orden en la BD");
+      toast.error(error.message || "Error al procesar la orden");
     }
   };
 
   return (
     <div className="h-full flex flex-col pb-10 overflow-y-auto pr-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
-      <div className="mb-8">
-        <h1 className="font-title text-4xl font-bold text-[#1D1D1F] tracking-tight flex items-center gap-3">
-          <FileSignature className="text-[#0071E3]" size={36} strokeWidth={2.5} />
-          Nueva Orden de Laboratorio
-        </h1>
-        <p className="text-[#86868B] mt-2 font-medium text-[15px]">Gestión integral de pacientes, pruebas y facturación.</p>
+      <div className="mb-8 flex justify-between items-start">
+        <div>
+          <h1 className="font-title text-4xl font-bold text-[#1D1D1F] tracking-tight flex items-center gap-3">
+            <FileSignature className="text-[#0071E3]" size={36} strokeWidth={2.5} />
+            {editId ? `Editando Orden #${editId}` : "Nueva Orden de Laboratorio"}
+          </h1>
+          <p className="text-[#86868B] mt-2 font-medium text-[15px]">
+            {editId ? "Modifique los exámenes o datos de la orden seleccionada." : "Gestión integral de pacientes, pruebas y facturación."}
+          </p>
+        </div>
+        {editId && (
+          <button 
+            onClick={() => router.push("/home/diaria")}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-all"
+          >
+            <ArrowLeft size={18} /> Volver a Lista Diaria
+          </button>
+        )}
       </div>
 
       <section className="bg-white rounded-[24px] border border-slate-200/80 shadow-sm p-8 mb-6">
@@ -190,7 +245,13 @@ export default function RegistroPage() {
             iniciarRegistroSinCedula={iniciarRegistroSinCedula}
           />
         )}
-        {pacienteSeleccionado && <TarjetaPaciente paciente={pacienteSeleccionado} limpiarSeleccion={limpiarSeleccion} />}
+       {pacienteSeleccionado && (
+          <TarjetaPaciente 
+            paciente={pacienteSeleccionado} 
+            limpiarSeleccion={limpiarSeleccion} 
+            onActualizarPaciente={setPacienteSeleccionado} // Esto recarga la tarjeta mágicamente al guardar
+          />
+        )}
         {!pacienteSeleccionado && isCreandoNuevo && (
           <FormularioPaciente 
             formData={formData} setFormData={setFormData}
@@ -220,5 +281,14 @@ export default function RegistroPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// Next.js requiere Suspense para usar useSearchParams() en componentes del cliente
+export default function RegistroPage() {
+  return (
+    <Suspense fallback={<div className="p-10 text-center font-bold">Cargando módulo de registro...</div>}>
+      <RegistroContent />
+    </Suspense>
   );
 }

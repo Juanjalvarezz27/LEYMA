@@ -11,6 +11,13 @@ interface ResumenPagoProps {
   onFinalizar: (datos: any) => void;
 }
 
+type Pago = {
+  metodoId: string;
+  monto: number;
+  moneda: "USD" | "BS";
+  referencia: string;
+};
+
 export default function ResumenPago({
   pruebasSeleccionadas,
   setPruebasSeleccionadas,
@@ -72,11 +79,43 @@ export default function ResumenPago({
   const totalFinalUSD = Math.max(0, subtotalUSD - montoDescGral);
   const totalFinalBS = totalFinalUSD * tasaBCV;
 
-  // --- 3. LÓGICA DE PAGOS ---
+  // --- 3. LÓGICA ESTRICTA DE PAGOS ---
   const agregarPago = () => setPagos([...pagos, { metodoId: "", monto: 0, moneda: "USD", referencia: "" }]);
+  
   const actualizarPago = (index: number, campo: string, valor: any) => {
     const nuevosPagos = [...pagos];
-    nuevosPagos[index] = { ...nuevosPagos[index], [campo]: valor };
+    
+    if (campo === "monto") {
+      let montoIngresado = Number(valor);
+      const monedaActual = nuevosPagos[index].moneda;
+
+      // Calculamos cuánto ha pagado en las OTRAS líneas (excluyendo la que está editando)
+      const otrosPagosUSD = nuevosPagos.reduce((acc, p, i) => {
+        if (i === index) return acc;
+        return acc + (p.moneda === "USD" ? (p.monto || 0) : (p.monto || 0) / tasaBCV);
+      }, 0);
+
+      // Calculamos el máximo que se le permite escribir en este input
+      const maxUSD = Math.max(0, totalFinalUSD - otrosPagosUSD);
+      const maxPermitido = monedaActual === "USD" ? maxUSD : (maxUSD * tasaBCV);
+
+      // Bloqueamos si intenta pagar de más
+      if (montoIngresado > maxPermitido) {
+        montoIngresado = parseFloat(maxPermitido.toFixed(2));
+        toast.warn("El pago no puede exceder el monto restante de la orden.", { toastId: "pago-excedido" });
+      }
+
+      nuevosPagos[index].monto = montoIngresado;
+    } 
+    else if (campo === "moneda") {
+      // Si cambia de moneda, reseteamos el monto a 0 por seguridad
+      nuevosPagos[index].moneda = valor;
+      nuevosPagos[index].monto = 0;
+    } 
+    else {
+      (nuevosPagos[index] as any)[campo] = valor;
+    }
+    
     setPagos(nuevosPagos);
   };
 
@@ -87,7 +126,6 @@ export default function ResumenPago({
 
   const restanteUSD = Math.max(0, totalFinalUSD - totalPagadoUSD);
   const restanteBS = restanteUSD * tasaBCV;
-  const cambioUSD = totalPagadoUSD > totalFinalUSD ? (totalPagadoUSD - totalFinalUSD) : 0;
 
   return (
     <section className="bg-white rounded-[24px] border border-slate-200/80 shadow-sm p-8 mb-10 animate-in fade-in duration-500 flex flex-col gap-8 relative">
@@ -105,50 +143,63 @@ export default function ResumenPago({
       <div>
         <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest block mb-4">Detalle de Pruebas Seleccionadas</label>
         <div className="bg-slate-50/50 border border-slate-200/60 rounded-2xl overflow-hidden">
-          {pruebasSeleccionadas.map((p, idx) => (
-            <div key={p.id} className={`flex items-center justify-between p-5 ${idx !== pruebasSeleccionadas.length - 1 ? 'border-b border-slate-200/60' : ''}`}>
-              <div className="flex flex-col w-1/3">
-                <span className="font-bold text-[15px] text-[#1D1D1F] leading-tight">{p.nombre}</span>
-                <span className="text-sm font-medium text-slate-500 mt-0.5">
-                  {p.cantidad} x ${p.precioUSD.toFixed(2)}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-end gap-6 w-2/3">
-                <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm focus-within:ring-2 focus-within:ring-[#0071E3]/20">
-                  <span className="text-[11px] font-bold px-3 text-slate-400 uppercase">Desc.</span>
-                  <div className="flex border-l border-slate-100 pl-1">
+          {pruebasSeleccionadas.map((p, idx) => {
+            const subtotalIndUSD = (p.precioFinal ?? p.precioUSD) * p.cantidad;
+            const subtotalIndBS = subtotalIndUSD * tasaBCV;
+
+            return (
+              <div key={p.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-5 gap-4 ${idx !== pruebasSeleccionadas.length - 1 ? 'border-b border-slate-200/60' : ''}`}>
+                <div className="flex flex-col w-full sm:w-1/3">
+                  <span className="font-bold text-[15px] text-[#1D1D1F] leading-tight">{p.nombre}</span>
+                  <span className="text-sm font-medium text-slate-500 mt-0.5">
+                    {p.cantidad} x ${p.precioUSD.toFixed(2)} 
+                    <span className="text-[10px] ml-2 opacity-70 font-bold bg-slate-200/50 px-1.5 py-0.5 rounded">
+                      (Bs {(p.precioUSD * tasaBCV).toLocaleString('es-VE', {minimumFractionDigits: 2})})
+                    </span>
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-end gap-6 w-full sm:w-2/3">
+                  
+                  {/* Selector de Descuento ESTILIZADO */}
+                  <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1.5 shadow-sm focus-within:ring-2 focus-within:ring-[#0071E3]/20">
+                    <span className="text-[11px] font-bold px-2 text-slate-400 uppercase">Desc.</span>
                     <input 
                       type="number" 
                       min="0"
-                      className="w-16 text-sm font-bold text-center outline-none text-[#1D1D1F]" 
+                      className="w-14 text-sm font-bold text-center outline-none text-[#1D1D1F]" 
                       placeholder="0"
                       value={p.descInd || ""}
                       onChange={(e) => aplicarDescuentoIndividual(p.id, e.target.value, p.tipoDescInd || "PORCENTAJE")}
                     />
-                    <select 
-                      className="text-xs font-bold bg-slate-100 text-slate-600 rounded-lg px-2 py-1 outline-none appearance-none text-center cursor-pointer hover:bg-slate-200 transition-colors"
-                      value={p.tipoDescInd || "PORCENTAJE"}
-                      onChange={(e) => {
-                        const nuevoTipo = e.target.value as any;
-                        aplicarDescuentoIndividual(p.id, "0", nuevoTipo);
-                      }}
-                    >
-                      <option value="PORCENTAJE">%</option>
-                      <option value="MONTO">$</option>
-                    </select>
+                    <div className="flex bg-[#F5F5F7] p-0.5 rounded-lg border border-slate-200 ml-1">
+                      <button 
+                        type="button" 
+                        onClick={() => aplicarDescuentoIndividual(p.id, p.descInd?.toString() || "0", "PORCENTAJE")}
+                        className={`px-2.5 py-1 text-[11px] font-black rounded-md transition-all ${p.tipoDescInd !== "MONTO" ? 'bg-white text-[#1D1D1F] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                      >%</button>
+                      <button 
+                        type="button" 
+                        onClick={() => aplicarDescuentoIndividual(p.id, p.descInd?.toString() || "0", "MONTO")}
+                        className={`px-2.5 py-1 text-[11px] font-black rounded-md transition-all ${p.tipoDescInd === "MONTO" ? 'bg-white text-[#1D1D1F] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                      >$</button>
+                    </div>
+                  </div>
+
+                  {/* Subtotales USD y BS */}
+                  <div className="flex flex-col items-end min-w-[100px]">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Subtotal</span>
+                    <span className="text-lg font-black text-[#0071E3] leading-none">
+                      ${subtotalIndUSD.toFixed(2)}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 mt-1">
+                      Bs {subtotalIndBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}
+                    </span>
                   </div>
                 </div>
-
-                <div className="flex flex-col items-end min-w-[100px]">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Subtotal</span>
-                  <span className="text-lg font-black text-[#0071E3] leading-none">
-                    ${((p.precioFinal ?? p.precioUSD) * p.cantidad).toFixed(2)}
-                  </span>
-                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -156,18 +207,18 @@ export default function ResumenPago({
       <div className="bg-[#F5F5F7]/50 rounded-2xl p-6 border border-slate-200/60">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-4">
-             <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest block">Métodos de Pago</label>
-             {restanteUSD > 0 ? (
-               <span className="px-3 py-1 bg-orange-100 text-orange-600 rounded-lg text-xs font-bold flex items-center gap-1.5 border border-orange-200">
-                 <AlertCircle size={14} /> Restante: ${restanteUSD.toFixed(2)} / Bs {restanteBS.toFixed(2)}
-               </span>
-             ) : (
-               <span className="px-3 py-1 bg-green-100 text-green-600 rounded-lg text-xs font-bold flex items-center gap-1.5 border border-green-200">
-                 <CheckCircle size={14} /> Orden Cubierta {cambioUSD > 0 && `(Cambio: $${cambioUSD.toFixed(2)})`}
-               </span>
-             )}
+            <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest block">Métodos de Pago</label>
+            {restanteUSD > 0.05 ? (
+              <span className="px-3 py-1 bg-orange-100 text-orange-600 rounded-lg text-xs font-bold flex items-center gap-1.5 border border-orange-200">
+                <AlertCircle size={14} /> Restante: ${restanteUSD.toFixed(2)} / Bs {restanteBS.toFixed(2)}
+              </span>
+            ) : (
+              <span className="px-3 py-1 bg-green-100 text-green-600 rounded-lg text-xs font-bold flex items-center gap-1.5 border border-green-200 shadow-sm">
+                <CheckCircle size={14} /> Orden Totalmente Cubierta
+              </span>
+            )}
           </div>
-          <button onClick={agregarPago} className="text-sm font-bold text-[#0071E3] flex items-center gap-1.5 hover:underline bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200 transition-all">
+          <button onClick={agregarPago} disabled={restanteUSD <= 0.05} className="text-sm font-bold text-[#0071E3] disabled:text-slate-400 flex items-center gap-1.5 disabled:hover:no-underline hover:underline bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200 transition-all">
             <Plus size={16} /> Agregar Pago
           </button>
         </div>
@@ -199,7 +250,7 @@ export default function ResumenPago({
                           setDropdownAbierto(null);
                         }}
                         className={`w-full text-left px-4 py-3 text-[14px] font-semibold transition-colors flex items-center justify-between
-                          ${pago.metodoId === m.id ? 'bg-[#0071E3] text-white' : 'text-[#1D1D1F] hover:bg-slate-100'}`}
+                        ${pago.metodoId === m.id ? 'bg-[#0071E3] text-white' : 'text-[#1D1D1F] hover:bg-slate-100'}`}
                       >
                         {formatMetodoPago(m.nombre)}
                         {pago.metodoId === m.id && <CheckCircle size={16} />}
@@ -214,17 +265,18 @@ export default function ResumenPago({
                   type="button"
                   onClick={() => actualizarPago(idx, "moneda", pago.moneda === "USD" ? "BS" : "USD")}
                   className={`px-3 font-black text-xs transition-colors border-r border-slate-200 w-12 flex items-center justify-center shrink-0
-                    ${pago.moneda === "USD" ? 'bg-[#0071E3]/10 text-[#0071E3]' : 'bg-orange-100 text-orange-600'}`}
+                  ${pago.moneda === "USD" ? 'bg-[#0071E3]/10 text-[#0071E3]' : 'bg-orange-100 text-orange-600'}`}
                 >
                   {pago.moneda === "USD" ? "$" : "Bs"}
                 </button>
                 <input 
                   type="number" 
                   min="0"
+                  step="any"
                   placeholder="0.00"
                   value={pago.monto || ""}
                   className="w-full px-3 py-2 bg-transparent text-[15px] font-bold text-[#1D1D1F] outline-none placeholder:text-slate-400"
-                  onChange={(e) => actualizarPago(idx, "monto", Number(e.target.value))}
+                  onChange={(e) => actualizarPago(idx, "monto", e.target.value)}
                 />
               </div>
 
@@ -254,14 +306,14 @@ export default function ResumenPago({
             <div className="flex flex-col gap-2">
               <span className="text-[11px] font-bold text-white/50 uppercase tracking-widest">Desc. General</span>
               <div className="flex bg-white/10 p-1 rounded-xl w-fit">
-                 <button 
+                <button 
                   onClick={() => { setTipoDescGral("PORCENTAJE"); setDescuentoGeneral(0); }} 
                   className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors ${tipoDescGral === "PORCENTAJE" ? 'bg-white text-black' : 'text-white/60 hover:text-white'}`}
-                 >%</button>
-                 <button 
+                >%</button>
+                <button 
                   onClick={() => { setTipoDescGral("MONTO"); setDescuentoGeneral(0); }} 
                   className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors ${tipoDescGral === "MONTO" ? 'bg-white text-black' : 'text-white/60 hover:text-white'}`}
-                 >$</button>
+                >$</button>
               </div>
             </div>
             <div className="relative">
@@ -278,8 +330,8 @@ export default function ResumenPago({
 
           <div className="flex-1 flex items-center justify-end gap-10 w-full xl:w-auto">
             <div className="flex flex-col text-right opacity-60">
-               <span className="text-xs uppercase font-bold tracking-widest mb-1">Subtotal</span>
-               <span className="text-xl font-bold">${subtotalUSD.toFixed(2)}</span>
+              <span className="text-xs uppercase font-bold tracking-widest mb-1">Subtotal</span>
+              <span className="text-xl font-bold">${subtotalUSD.toFixed(2)}</span>
             </div>
             <div className="h-12 w-px bg-white/20"></div>
             <div className="flex flex-col text-right">
@@ -290,20 +342,18 @@ export default function ResumenPago({
           </div>
 
           <div className="flex flex-col sm:flex-row xl:flex-col gap-3 w-full xl:w-auto shrink-0 pl-0 xl:pl-6">
-             <button 
-                // AQUÍ PASAMOS subtotalUSD
-                onClick={() => onFinalizar({ subtotalUSD, totalFinalUSD, totalFinalBS, pagos, descuentoGeneral, tipoDescGral, estado: "BORRADOR", restanteUSD })}
-                className="w-full xl:w-64 py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
-              >
-                <Save size={18} /> Guardar como Borrador
-              </button>
-              <button 
-                // AQUÍ TAMBIÉN PASAMOS subtotalUSD
-                onClick={() => onFinalizar({ subtotalUSD, totalFinalUSD, totalFinalBS, pagos, descuentoGeneral, tipoDescGral, estado: "CERRADA", restanteUSD })}
-                className="w-full xl:w-64 py-3.5 bg-[#0071E3] hover:bg-[#0077ED] text-white font-black rounded-xl shadow-[0_0_20px_rgba(0,113,227,0.4)] transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
-              >
-                <CheckCircle size={18} /> Cerrar y Procesar
-              </button>
+            <button 
+              onClick={() => onFinalizar({ subtotalUSD, totalFinalUSD, totalFinalBS, pagos, descuentoGeneral, tipoDescGral, estado: "BORRADOR", restanteUSD })}
+              className="w-full xl:w-64 py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
+            >
+              <Save size={18} /> Guardar como Borrador
+            </button>
+            <button 
+              onClick={() => onFinalizar({ subtotalUSD, totalFinalUSD, totalFinalBS, pagos, descuentoGeneral, tipoDescGral, estado: "CERRADA", restanteUSD })}
+              className="w-full xl:w-64 py-3.5 bg-[#0071E3] hover:bg-[#0077ED] text-white font-black rounded-xl shadow-[0_0_20px_rgba(0,113,227,0.4)] transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
+            >
+              <CheckCircle size={18} /> Cerrar y Procesar
+            </button>
           </div>
         </div>
       </div>

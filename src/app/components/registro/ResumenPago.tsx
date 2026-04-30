@@ -1,0 +1,312 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { DollarSign, Percent, Plus, Trash2, CheckCircle, ChevronDown, Save, AlertCircle } from "lucide-react";
+import { toast } from "react-toastify";
+
+interface ResumenPagoProps {
+  pruebasSeleccionadas: any[];
+  setPruebasSeleccionadas: (pruebas: any[]) => void;
+  tasaBCV: number;
+  onFinalizar: (datos: any) => void;
+}
+
+export default function ResumenPago({
+  pruebasSeleccionadas,
+  setPruebasSeleccionadas,
+  tasaBCV,
+  onFinalizar
+}: ResumenPagoProps) {
+  const [metodosBD, setMetodosBD] = useState<any[]>([]);
+  const [descuentoGeneral, setDescuentoGeneral] = useState(0);
+  const [tipoDescGral, setTipoDescGral] = useState<"PORCENTAJE" | "MONTO">("PORCENTAJE");
+  
+  const [pagos, setPagos] = useState([{ metodoId: "", monto: 0, moneda: "USD", referencia: "" }]);
+  const [dropdownAbierto, setDropdownAbierto] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/metodos-pago").then(res => res.json()).then(setMetodosBD);
+  }, []);
+
+  const formatMetodoPago = (str: string) => {
+    const map: Record<string, string> = {
+      'EFECTIVO_USD': 'Efectivo $',
+      'EFECTIVO_BS': 'Efectivo Bs',
+      'PAGO_MOVIL': 'Pago Móvil',
+      'PUNTO': 'Punto de Venta',
+      'ZELLE': 'Zelle'
+    };
+    return map[str] || str.split('_').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
+  };
+
+  // --- 1. LÓGICA DE DESCUENTOS INDIVIDUALES ---
+  const aplicarDescuentoIndividual = (id: string, valorStr: string, tipo: "PORCENTAJE" | "MONTO") => {
+    let valor = parseFloat(valorStr) || 0;
+    
+    setPruebasSeleccionadas(pruebasSeleccionadas.map(p => {
+      if (p.id === id) {
+        if (tipo === "MONTO" && valor > p.precioUSD) {
+          valor = p.precioUSD;
+          toast.warn(`El descuento no puede superar el precio base ($${p.precioUSD})`, { toastId: `desc-${id}` });
+        }
+        if (tipo === "PORCENTAJE" && valor > 100) valor = 100;
+
+        const desc = tipo === "PORCENTAJE" ? (p.precioUSD * (valor / 100)) : valor;
+        return { ...p, descInd: valor, tipoDescInd: tipo, precioFinal: p.precioUSD - desc };
+      }
+      return p;
+    }));
+  };
+
+  // --- 2. CÁLCULO DE TOTALES ---
+  const subtotalUSD = pruebasSeleccionadas.reduce((acc, p) => acc + ((p.precioFinal ?? p.precioUSD) * p.cantidad), 0);
+  
+  const handleDescuentoGeneral = (valorStr: string) => {
+    let valor = parseFloat(valorStr) || 0;
+    if (tipoDescGral === "MONTO" && valor > subtotalUSD) valor = subtotalUSD;
+    if (tipoDescGral === "PORCENTAJE" && valor > 100) valor = 100;
+    setDescuentoGeneral(valor);
+  };
+
+  const montoDescGral = tipoDescGral === "PORCENTAJE" ? (subtotalUSD * (descuentoGeneral / 100)) : descuentoGeneral;
+  const totalFinalUSD = Math.max(0, subtotalUSD - montoDescGral);
+  const totalFinalBS = totalFinalUSD * tasaBCV;
+
+  // --- 3. LÓGICA DE PAGOS ---
+  const agregarPago = () => setPagos([...pagos, { metodoId: "", monto: 0, moneda: "USD", referencia: "" }]);
+  const actualizarPago = (index: number, campo: string, valor: any) => {
+    const nuevosPagos = [...pagos];
+    nuevosPagos[index] = { ...nuevosPagos[index], [campo]: valor };
+    setPagos(nuevosPagos);
+  };
+
+  const totalPagadoUSD = pagos.reduce((acc, pago) => {
+    const montoUSD = pago.moneda === "USD" ? (pago.monto || 0) : ((pago.monto || 0) / tasaBCV);
+    return acc + montoUSD;
+  }, 0);
+
+  const restanteUSD = Math.max(0, totalFinalUSD - totalPagadoUSD);
+  const restanteBS = restanteUSD * tasaBCV;
+  const cambioUSD = totalPagadoUSD > totalFinalUSD ? (totalPagadoUSD - totalFinalUSD) : 0;
+
+  return (
+    <section className="bg-white rounded-[24px] border border-slate-200/80 shadow-sm p-8 mb-10 animate-in fade-in duration-500 flex flex-col gap-8 relative">
+      
+      {dropdownAbierto !== null && (
+        <div className="fixed inset-0 z-30" onClick={() => setDropdownAbierto(null)}></div>
+      )}
+
+      <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+        <div className="w-8 h-8 rounded-full bg-[#0071E3]/10 flex items-center justify-center text-[#0071E3] font-bold">3</div>
+        <h2 className="text-xl font-bold text-[#1D1D1F]">Desglose y Pago Final</h2>
+      </div>
+
+      {/* BLOQUE A: Detalle de Pruebas */}
+      <div>
+        <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest block mb-4">Detalle de Pruebas Seleccionadas</label>
+        <div className="bg-slate-50/50 border border-slate-200/60 rounded-2xl overflow-hidden">
+          {pruebasSeleccionadas.map((p, idx) => (
+            <div key={p.id} className={`flex items-center justify-between p-5 ${idx !== pruebasSeleccionadas.length - 1 ? 'border-b border-slate-200/60' : ''}`}>
+              <div className="flex flex-col w-1/3">
+                <span className="font-bold text-[15px] text-[#1D1D1F] leading-tight">{p.nombre}</span>
+                <span className="text-sm font-medium text-slate-500 mt-0.5">
+                  {p.cantidad} x ${p.precioUSD.toFixed(2)}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-end gap-6 w-2/3">
+                <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm focus-within:ring-2 focus-within:ring-[#0071E3]/20">
+                  <span className="text-[11px] font-bold px-3 text-slate-400 uppercase">Desc.</span>
+                  <div className="flex border-l border-slate-100 pl-1">
+                    <input 
+                      type="number" 
+                      min="0"
+                      className="w-16 text-sm font-bold text-center outline-none text-[#1D1D1F]" 
+                      placeholder="0"
+                      value={p.descInd || ""}
+                      onChange={(e) => aplicarDescuentoIndividual(p.id, e.target.value, p.tipoDescInd || "PORCENTAJE")}
+                    />
+                    <select 
+                      className="text-xs font-bold bg-slate-100 text-slate-600 rounded-lg px-2 py-1 outline-none appearance-none text-center cursor-pointer hover:bg-slate-200 transition-colors"
+                      value={p.tipoDescInd || "PORCENTAJE"}
+                      onChange={(e) => {
+                        const nuevoTipo = e.target.value as any;
+                        aplicarDescuentoIndividual(p.id, "0", nuevoTipo);
+                      }}
+                    >
+                      <option value="PORCENTAJE">%</option>
+                      <option value="MONTO">$</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-end min-w-[100px]">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Subtotal</span>
+                  <span className="text-lg font-black text-[#0071E3] leading-none">
+                    ${((p.precioFinal ?? p.precioUSD) * p.cantidad).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* BLOQUE B: Métodos de Pago */}
+      <div className="bg-[#F5F5F7]/50 rounded-2xl p-6 border border-slate-200/60">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-4">
+             <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest block">Métodos de Pago</label>
+             {restanteUSD > 0 ? (
+               <span className="px-3 py-1 bg-orange-100 text-orange-600 rounded-lg text-xs font-bold flex items-center gap-1.5 border border-orange-200">
+                 <AlertCircle size={14} /> Restante: ${restanteUSD.toFixed(2)} / Bs {restanteBS.toFixed(2)}
+               </span>
+             ) : (
+               <span className="px-3 py-1 bg-green-100 text-green-600 rounded-lg text-xs font-bold flex items-center gap-1.5 border border-green-200">
+                 <CheckCircle size={14} /> Orden Cubierta {cambioUSD > 0 && `(Cambio: $${cambioUSD.toFixed(2)})`}
+               </span>
+             )}
+          </div>
+          <button onClick={agregarPago} className="text-sm font-bold text-[#0071E3] flex items-center gap-1.5 hover:underline bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200 transition-all">
+            <Plus size={16} /> Agregar Pago
+          </button>
+        </div>
+        
+        <div className="space-y-3">
+          {pagos.map((pago, idx) => (
+            <div key={idx} className="flex gap-4 animate-in fade-in bg-white p-3 rounded-2xl border border-slate-200 shadow-sm items-center relative z-40">
+              
+              <div className="relative flex-1">
+                <button 
+                  type="button"
+                  onClick={() => setDropdownAbierto(dropdownAbierto === idx ? null : idx)}
+                  className="w-full flex justify-between items-center px-4 py-3 bg-[#F5F5F7] hover:bg-slate-200/50 border border-slate-200 rounded-xl text-[14px] font-semibold text-[#1D1D1F] outline-none transition-colors"
+                >
+                  <span className={pago.metodoId ? "text-[#1D1D1F]" : "text-slate-400"}>
+                    {pago.metodoId ? formatMetodoPago(metodosBD.find(m => m.id === pago.metodoId)?.nombre || "") : "Seleccionar método..."}
+                  </span>
+                  <ChevronDown size={18} className={`text-slate-400 transition-transform ${dropdownAbierto === idx ? 'rotate-180' : ''}`} />
+                </button>
+
+                {dropdownAbierto === idx && (
+                  <div className="absolute top-full left-0 mt-2 w-full bg-white/95 backdrop-blur-xl border border-slate-200 rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100 py-1">
+                    {metodosBD.map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => {
+                          actualizarPago(idx, "metodoId", m.id);
+                          setDropdownAbierto(null);
+                        }}
+                        className={`w-full text-left px-4 py-3 text-[14px] font-semibold transition-colors flex items-center justify-between
+                          ${pago.metodoId === m.id ? 'bg-[#0071E3] text-white' : 'text-[#1D1D1F] hover:bg-slate-100'}`}
+                      >
+                        {formatMetodoPago(m.nombre)}
+                        {pago.metodoId === m.id && <CheckCircle size={16} />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex bg-[#F5F5F7] border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[#0071E3]/20 w-48 shrink-0 h-[46px]">
+                <button
+                  type="button"
+                  onClick={() => actualizarPago(idx, "moneda", pago.moneda === "USD" ? "BS" : "USD")}
+                  className={`px-3 font-black text-xs transition-colors border-r border-slate-200 w-12 flex items-center justify-center shrink-0
+                    ${pago.moneda === "USD" ? 'bg-[#0071E3]/10 text-[#0071E3]' : 'bg-orange-100 text-orange-600'}`}
+                >
+                  {pago.moneda === "USD" ? "$" : "Bs"}
+                </button>
+                <input 
+                  type="number" 
+                  min="0"
+                  placeholder="0.00"
+                  value={pago.monto || ""}
+                  className="w-full px-3 py-2 bg-transparent text-[15px] font-bold text-[#1D1D1F] outline-none placeholder:text-slate-400"
+                  onChange={(e) => actualizarPago(idx, "monto", Number(e.target.value))}
+                />
+              </div>
+
+              <input 
+                type="text" 
+                placeholder="N° de Referencia (Opcional)"
+                value={pago.referencia}
+                className="flex-1 h-[46px] px-4 py-3 bg-[#F5F5F7] border border-slate-200 rounded-xl text-[14px] font-medium outline-none focus:ring-2 focus:ring-[#0071E3]/20"
+                onChange={(e) => actualizarPago(idx, "referencia", e.target.value)}
+              />
+              
+              {idx > 0 && (
+                <button onClick={() => setPagos(pagos.filter((_, i) => i !== idx))} className="h-[46px] px-4 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors shrink-0">
+                  <Trash2 size={20} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* BLOQUE C: Footer de Totales */}
+      <div className="bg-[#1D1D1F] rounded-[24px] p-8 text-white shadow-xl">
+        <div className="flex flex-col xl:flex-row justify-between items-center gap-8">
+          
+          <div className="flex items-center gap-6 w-full xl:w-auto border-b xl:border-b-0 xl:border-r border-white/10 pb-6 xl:pb-0 xl:pr-10">
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] font-bold text-white/50 uppercase tracking-widest">Desc. General</span>
+              <div className="flex bg-white/10 p-1 rounded-xl w-fit">
+                 <button 
+                  onClick={() => { setTipoDescGral("PORCENTAJE"); setDescuentoGeneral(0); }} 
+                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors ${tipoDescGral === "PORCENTAJE" ? 'bg-white text-black' : 'text-white/60 hover:text-white'}`}
+                 >%</button>
+                 <button 
+                  onClick={() => { setTipoDescGral("MONTO"); setDescuentoGeneral(0); }} 
+                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors ${tipoDescGral === "MONTO" ? 'bg-white text-black' : 'text-white/60 hover:text-white'}`}
+                 >$</button>
+              </div>
+            </div>
+            <div className="relative">
+              <input 
+                type="number" 
+                min="0"
+                className="w-40 bg-transparent border-b-2 border-white/20 px-2 py-1 text-4xl font-bold outline-none focus:border-[#0071E3] transition-colors" 
+                placeholder="0"
+                value={descuentoGeneral || ""}
+                onChange={(e) => handleDescuentoGeneral(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 flex items-center justify-end gap-10 w-full xl:w-auto">
+            <div className="flex flex-col text-right opacity-60">
+               <span className="text-xs uppercase font-bold tracking-widest mb-1">Subtotal</span>
+               <span className="text-xl font-bold">${subtotalUSD.toFixed(2)}</span>
+            </div>
+            <div className="h-12 w-px bg-white/20"></div>
+            <div className="flex flex-col text-right">
+              <span className="text-[10px] font-black text-[#0071E3] uppercase tracking-[0.3em] mb-1">Total a Pagar</span>
+              <div className="text-5xl font-black tracking-tighter leading-none">${totalFinalUSD.toFixed(2)}</div>
+              <div className="text-lg font-bold text-white/50 mt-1">Bs {totalFinalBS.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row xl:flex-col gap-3 w-full xl:w-auto shrink-0 pl-0 xl:pl-6">
+             <button 
+                // AQUÍ PASAMOS subtotalUSD
+                onClick={() => onFinalizar({ subtotalUSD, totalFinalUSD, totalFinalBS, pagos, descuentoGeneral, tipoDescGral, estado: "BORRADOR", restanteUSD })}
+                className="w-full xl:w-64 py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
+              >
+                <Save size={18} /> Guardar como Borrador
+              </button>
+              <button 
+                // AQUÍ TAMBIÉN PASAMOS subtotalUSD
+                onClick={() => onFinalizar({ subtotalUSD, totalFinalUSD, totalFinalBS, pagos, descuentoGeneral, tipoDescGral, estado: "CERRADA", restanteUSD })}
+                className="w-full xl:w-64 py-3.5 bg-[#0071E3] hover:bg-[#0077ED] text-white font-black rounded-xl shadow-[0_0_20px_rgba(0,113,227,0.4)] transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
+              >
+                <CheckCircle size={18} /> Cerrar y Procesar
+              </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

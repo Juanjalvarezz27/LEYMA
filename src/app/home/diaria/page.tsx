@@ -280,8 +280,8 @@ export default function ListaDiariaPage() {
                     </td>
                     
                     <td className="px-6 py-4 align-middle">
-                      <span className="inline-flex items-center justify-center text-sm font-semibold text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">
-                        {orden.detalles.length} item(s)
+                      <span className="inline-flex items-center justify-center text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">
+                        {orden.detalles.length} Prueba(s)
                       </span>
                     </td>
                     
@@ -290,7 +290,7 @@ export default function ListaDiariaPage() {
                         <span className={`font-black leading-tight ${orden.estado.nombre === "ANULADA" ? 'text-slate-400' : 'text-[#0071E3]'}`}>
                           ${orden.totalUSD.toFixed(2)}
                         </span>
-                        <span className="text-[10px] font-bold text-slate-400 mt-0.5">Bs {orden.totalBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}</span>
+                        <span className="text-[13px] font-bold text-slate-500 mt-0.5">Bs {orden.totalBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}</span>
                       </div>
                     </td>
                     

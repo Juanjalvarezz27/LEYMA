@@ -42,15 +42,16 @@ export default function LoginPage() {
     <main className="min-h-screen w-full flex items-center justify-center font-sans p-6 sm:p-10 relative overflow-hidden selection:bg-[#0071E3]/20 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-100/50 via-[#F2F4F7] to-orange-50/40">
       
       {/* TARJETA MAESTRA RECTANGULAR Optimizada */}
-      <div className="relative w-full max-w-[1100px] flex flex-col lg:flex-row bg-white/60 backdrop-blur-xl rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden z-10 border border-white">
+      <div className="relative w-full max-w-[1100px] flex flex-col lg:flex-row bg-white/60 rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden z-10 border border-white">
         
         {/* COLUMNA IZQUIERDA: LEYMA S.A. */}
         <div className="hidden lg:flex w-[45%] flex-col justify-between p-14 bg-white border-r border-slate-100 relative z-20">
           
           <div className="flex flex-col items-start mt-4">
-            <div className="relative w-28 h-28 mb-10 drop-shadow-sm filter">
+            {/* LOGO AMPLIADO AQUÍ (w-40 h-40 en lugar de w-28 h-28) */}
+            <div className="relative w-40 h-40 mb-8 drop-shadow-sm filter">
               <Image
-                src="/Logo.png" 
+                src="/Logo2.png" 
                 alt="Logo Leyma"
                 fill
                 className="object-contain"

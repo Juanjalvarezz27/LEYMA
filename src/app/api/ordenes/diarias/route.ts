@@ -12,6 +12,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Debe proporcionar una fecha" }, { status: 400 });
     }
 
+    // Aseguramos la franja horaria de Venezuela (UTC-4) para buscar en el día exacto
     const fechaInicio = new Date(`${fechaParam}T00:00:00.000-04:00`);
     const fechaFin = new Date(`${fechaParam}T23:59:59.999-04:00`);
 
@@ -28,8 +29,16 @@ export async function GET(req: Request) {
         tipoDescuento: { select: { nombre: true } }, 
         detalles: {
           include: {
-            prueba: true,
-            tipoDescuento: { select: { nombre: true } } 
+            tipoDescuento: { select: { nombre: true } },
+            prueba: {
+              include: {
+                subcategoria: {
+                  include: {
+                    categoria: true
+                  }
+                }
+              }
+            }
           }
         },
         pagos: {
@@ -38,7 +47,7 @@ export async function GET(req: Request) {
         creadoPor: { select: { nombre: true } }
       },
       orderBy: {
-        fechaCreacion: 'desc'
+        fechaCreacion: 'desc' 
       }
     });
 

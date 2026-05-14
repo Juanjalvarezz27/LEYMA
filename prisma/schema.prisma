@@ -45,8 +45,12 @@ model CategoriaPrueba {
 
 model SubcategoriaPrueba {
   id            String          @id @default(cuid())
-  nombre        String          
-  activa        Boolean         @default(true) 
+  nombre        String
+  activa        Boolean         @default(true)
+  
+  esPaquete     Boolean         @default(false) 
+  precioUSD     Float?          // El precio total si es un paquete
+  
   categoriaId   Int
   categoria     CategoriaPrueba @relation(fields: [categoriaId], references: [id])
   pruebas       Prueba[]
@@ -54,18 +58,20 @@ model SubcategoriaPrueba {
 
 model Prueba {
   id                 String             @id @default(cuid())
-  codigo             String             @unique // El código ahora es de la prueba individual
-  nombre             String             // Ej: GLOBULOS BLANCOS
-  precioUSD          Float              // El precio ahora es de la prueba individual
+  codigo             String             @unique 
+  nombre             String             
+  
+  precioUSD          Float?             
+  
   unidades           String?            
   valoresReferencia  String?            
-  activa             Boolean            @default(true)
+  activa             Boolean            @default(true) 
   ordenVisual        Int                @default(0)
   
   subcategoriaId     String
   subcategoria       SubcategoriaPrueba @relation(fields: [subcategoriaId], references: [id], onDelete: Cascade)
   
-  detallesOrden      DetalleOrden[]     // La factura se llena con pruebas
+  detallesOrden      DetalleOrden[]     
   valoresResultados  ValorResultado[]
 }
 

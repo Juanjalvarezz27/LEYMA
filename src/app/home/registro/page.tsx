@@ -40,8 +40,42 @@ function RegistroContent() {
     const fetchCatalogo = async () => {
       try {
         const res = await fetch("/api/pruebas");
-        const data = await res.json();
-        setPruebasCatalogo(data.filter((p: any) => p.activa));
+        const subcategorias = await res.json();
+        
+        const listaAplanada: any[] = [];
+        
+        subcategorias.forEach((sub: any) => {
+          if (!sub.activa) return;
+          
+          if (sub.esPaquete) {
+            listaAplanada.push({
+              id: `sub-${sub.id}`,
+              idReal: sub.id,
+              tipo: "PAQUETE",
+              codigo: sub.pruebas[0]?.codigo.split('-')[0] || "PK", 
+              nombre: sub.nombre,
+              precioUSD: sub.precioUSD,
+              pruebasHijas: sub.pruebas,
+              categoriaNombre: sub.categoria?.nombre || "S/C",
+              subcategoriaNombre: sub.nombre 
+            });
+          } else {
+            sub.pruebas.forEach((p: any) => {
+              if (!p.activa) return;
+              listaAplanada.push({
+                ...p,
+                tipo: "INDIVIDUAL",
+                idReal: p.id,
+                nombre: p.nombre,
+                precioUSD: p.precioUSD,
+                categoriaNombre: sub.categoria?.nombre || "S/C",
+                subcategoriaNombre: sub.nombre
+              });
+            });
+          }
+        });
+        
+        setPruebasCatalogo(listaAplanada);
       } catch (e) {
         toast.error("Error al cargar el catálogo de pruebas");
       }
@@ -49,31 +83,34 @@ function RegistroContent() {
     fetchCatalogo();
   }, []);
 
-  // 2. Lógica de Edición: Cargar orden si existe editId
-useEffect(() => {
+  // 2. Lógica de Edición
+  useEffect(() => {
     if (editId) {
       const cargarOrdenParaEdicion = async () => {
         try {
-          const res = await fetch(`/api/ordenes/${editId}`); 
+          const res = await fetch(`/api/ordenes/${editId}`);
           const orden = await res.json();
-          
+
           if (res.ok && orden) {
             setPacienteSeleccionado(orden.paciente);
             setPruebasSeleccionadas(orden.detalles.map((d: any) => ({
               ...d.prueba,
+              idReal: d.prueba.id,
+              tipo: "INDIVIDUAL", 
               cantidad: d.cantidad,
               precioUSD: d.precioCongeladoUSD,
               descInd: d.descuento,
-              tipoDescInd: d.tipoDescuento?.nombre || "PORCENTAJE"
+              tipoDescInd: d.tipoDescuento?.nombre || "PORCENTAJE",
+              categoriaNombre: d.prueba?.subcategoria?.categoria?.nombre || "Desconocida",
+              subcategoriaNombre: d.prueba?.subcategoria?.nombre || "Desconocida"
             })));
-            
-            // CORRECCIÓN: Le agregamos un toastId único para evitar el doble render en desarrollo
-            toast.info(`Editando Orden #${editId}`, { 
-              toastId: `edit-toast-${editId}` 
+
+            toast.info(`Editando Orden #${editId}`, {
+              toastId: `edit-toast-${editId}`
             });
-            
+
           } else {
-             toast.error(orden.error || "Error al obtener la orden");
+            toast.error(orden.error || "Error al obtener la orden");
           }
         } catch (error) {
           toast.error("No se pudo cargar la orden para editar");
@@ -99,10 +136,10 @@ useEffect(() => {
         setFormData({ ...formData, cedula: cedulaBusqueda, esBebe: false });
         setIsCreandoNuevo(true);
       }
-    } catch (error) { 
-      toast.error("Error de conexión al buscar paciente"); 
-    } finally { 
-      setBuscando(false); 
+    } catch (error) {
+      toast.error("Error de conexión al buscar paciente");
+    } finally {
+      setBuscando(false);
     }
   };
 
@@ -119,8 +156,8 @@ useEffect(() => {
       return;
     }
     const [dia, mes, ano] = formData.fechaNacimiento.split('/');
-    const fechaISO = `${ano}-${mes}-${dia}`;
-    
+    const fechaISO = `${ano}-${mes}-${dia}T12:00:00Z`; 
+
     setGuardandoPaciente(true);
     try {
       const res = await fetch("/api/pacientes", {
@@ -130,14 +167,14 @@ useEffect(() => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      
+
       toast.success("Paciente registrado exitosamente");
       setPacienteSeleccionado(data);
       setIsCreandoNuevo(false);
-    } catch (error: any) { 
-      toast.error(error.message); 
-    } finally { 
-      setGuardandoPaciente(false); 
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setGuardandoPaciente(false);
     }
   };
 
@@ -150,7 +187,7 @@ useEffect(() => {
       esBebe: false, cedula: "", nombreCompleto: "", fechaNacimiento: "",
       sexo: "M", telefono: "", correo: "", direccion: "", observaciones: ""
     });
-    if (editId) router.push("/home/registro"); // Limpiar la URL de edición
+    if (editId) router.push("/home/registro"); 
   };
 
   const finalizarOrden = async (resumenData: any) => {
@@ -161,22 +198,40 @@ useEffect(() => {
 
     toast.info(editId ? "Actualizando orden..." : "Guardando orden...");
 
+    const pruebasParaEnviar: any[] = [];
+
+    pruebasSeleccionadas.forEach(item => {
+      if (item.tipo === "PAQUETE") {
+        item.pruebasHijas.forEach((ph: any, index: number) => {
+          pruebasParaEnviar.push({
+            pruebaId: ph.id,
+            cantidad: item.cantidad,
+            precioCongelado: index === 0 ? item.precioUSD : 0, 
+            descuentoInd: index === 0 ? (item.descInd || 0) : 0,
+            tipoDescuentoInd: item.tipoDescInd || "PORCENTAJE"
+          });
+        });
+      } else {
+        pruebasParaEnviar.push({
+          pruebaId: item.idReal || item.id,
+          cantidad: item.cantidad,
+          precioCongelado: item.precioUSD,
+          descuentoInd: item.descInd || 0,
+          tipoDescuentoInd: item.tipoDescInd || "PORCENTAJE"
+        });
+      }
+    });
+
     const ordenParaGuardar = {
       pacienteId: pacienteSeleccionado.id,
-      estado: resumenData.estado, 
+      estado: resumenData.estado,
       tasaBCV: tasaBCV,
       subtotalUSD: resumenData.subtotalUSD,
       totalUSD: resumenData.totalFinalUSD,
       totalBS: resumenData.totalFinalBS,
       descuentoGeneral: resumenData.descuentoGeneral,
       tipoDescuentoGral: resumenData.tipoDescGral,
-      pruebas: pruebasSeleccionadas.map(p => ({
-        pruebaId: p.id,
-        cantidad: p.cantidad,
-        precioCongelado: p.precioUSD,
-        descuentoInd: p.descInd || 0,
-        tipoDescuentoInd: p.tipoDescInd || "PORCENTAJE"
-      })),
+      pruebas: pruebasParaEnviar,
       pagos: resumenData.pagos.filter((p: any) => p.metodoId && p.monto > 0).map((p: any) => ({
         metodoId: p.metodoId,
         monto: p.monto,
@@ -186,7 +241,6 @@ useEffect(() => {
     };
 
     try {
-      // Si editId existe usamos PUT, si no POST
       const url = editId ? `/api/ordenes/${editId}` : "/api/ordenes";
       const method = editId ? "PUT" : "POST";
 
@@ -198,11 +252,11 @@ useEffect(() => {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      
+
       toast.success(editId ? "Orden actualizada correctamente" : "Orden guardada correctamente");
-      
+
       if (editId) {
-        router.push("/home/diaria"); // Volver a la lista diaria después de editar
+        router.push("/home/diaria");
       } else {
         limpiarSeleccion();
       }
@@ -224,7 +278,7 @@ useEffect(() => {
           </p>
         </div>
         {editId && (
-          <button 
+          <button
             onClick={() => router.push("/home/diaria")}
             className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-all"
           >
@@ -239,21 +293,21 @@ useEffect(() => {
           <h2 className="text-xl font-bold text-[#1D1D1F]">Datos del Paciente</h2>
         </div>
         {!pacienteSeleccionado && !isCreandoNuevo && (
-          <BuscadorPaciente 
+          <BuscadorPaciente
             cedulaBusqueda={cedulaBusqueda} setCedulaBusqueda={setCedulaBusqueda}
             buscando={buscando} buscarPaciente={buscarPaciente}
             iniciarRegistroSinCedula={iniciarRegistroSinCedula}
           />
         )}
-       {pacienteSeleccionado && (
-          <TarjetaPaciente 
-            paciente={pacienteSeleccionado} 
-            limpiarSeleccion={limpiarSeleccion} 
-            onActualizarPaciente={setPacienteSeleccionado} // Esto recarga la tarjeta mágicamente al guardar
+        {pacienteSeleccionado && (
+          <TarjetaPaciente
+            paciente={pacienteSeleccionado}
+            limpiarSeleccion={limpiarSeleccion}
+            onActualizarPaciente={setPacienteSeleccionado} 
           />
         )}
         {!pacienteSeleccionado && isCreandoNuevo && (
-          <FormularioPaciente 
+          <FormularioPaciente
             formData={formData} setFormData={setFormData}
             registrarNuevoPaciente={registrarNuevoPaciente}
             guardandoPaciente={guardandoPaciente} limpiarSeleccion={limpiarSeleccion}
@@ -262,14 +316,14 @@ useEffect(() => {
       </section>
 
       {pacienteSeleccionado && (
-        <SeleccionPruebas 
+        <SeleccionPruebas
           pruebasCatalogo={pruebasCatalogo} pruebasSeleccionadas={pruebasSeleccionadas}
           setPruebasSeleccionadas={setPruebasSeleccionadas} tasaBCV={tasaBCV}
         />
       )}
 
       {pruebasSeleccionadas.length > 0 && (
-        <ResumenPago 
+        <ResumenPago
           pruebasSeleccionadas={pruebasSeleccionadas} setPruebasSeleccionadas={setPruebasSeleccionadas}
           tasaBCV={tasaBCV} onFinalizar={finalizarOrden}
         />
@@ -284,7 +338,6 @@ useEffect(() => {
   );
 }
 
-// Next.js requiere Suspense para usar useSearchParams() en componentes del cliente
 export default function RegistroPage() {
   return (
     <Suspense fallback={<div className="p-10 text-center font-bold">Cargando módulo de registro...</div>}>

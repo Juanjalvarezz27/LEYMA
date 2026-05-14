@@ -7,32 +7,66 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// TABLAS DE REFERENCIA 
+// --- TABLAS DE REFERENCIA ---
 
 model Rol {
-  id       Int       @id @default(autoincrement())
-  nombre   String    @unique // Ej: ADMIN, USUARIO
+  id      Int       @id @default(autoincrement())
+  nombre  String    @unique
   usuarios Usuario[]
 }
 
 model EstadoOrden {
-  id      Int     @id @default(autoincrement())
-  nombre  String  @unique // Ej: BORRADOR, CERRADA, ANULADA
+  id      Int       @id @default(autoincrement())
+  nombre  String    @unique
   ordenes Orden[]
 }
 
 model TipoDescuento {
-  id             Int            @id @default(autoincrement())
-  nombre         String         @unique // Ej: PORCENTAJE, MONTO
-  ordenes        Orden[]
-  detallesOrden  DetalleOrden[]
+  id            Int            @id @default(autoincrement())
+  nombre        String         @unique
+  ordenes       Orden[]
+  detallesOrden DetalleOrden[]
 }
 
 model MetodoPago {
-  id      Int     @id @default(autoincrement())
-  nombre  String  @unique // Ej: EFECTIVO_USD, PAGO_MOVIL, ZELLE, etc.
+  id      Int       @id @default(autoincrement())
+  nombre  String    @unique
   pagos   Pago[]
   gastos  Gasto[]
+}
+
+// --- MODELOS DE PRUEBAS (Nivel 1, 2 y 3) ---
+
+model CategoriaPrueba {
+  id            Int                  @id @default(autoincrement())
+  nombre        String               @unique 
+  subcategorias SubcategoriaPrueba[]
+}
+
+model SubcategoriaPrueba {
+  id            String          @id @default(cuid())
+  nombre        String          
+  activa        Boolean         @default(true) 
+  categoriaId   Int
+  categoria     CategoriaPrueba @relation(fields: [categoriaId], references: [id])
+  pruebas       Prueba[]
+}
+
+model Prueba {
+  id                 String             @id @default(cuid())
+  codigo             String             @unique // El código ahora es de la prueba individual
+  nombre             String             // Ej: GLOBULOS BLANCOS
+  precioUSD          Float              // El precio ahora es de la prueba individual
+  unidades           String?            
+  valoresReferencia  String?            
+  activa             Boolean            @default(true)
+  ordenVisual        Int                @default(0)
+  
+  subcategoriaId     String
+  subcategoria       SubcategoriaPrueba @relation(fields: [subcategoriaId], references: [id], onDelete: Cascade)
+  
+  detallesOrden      DetalleOrden[]     // La factura se llena con pruebas
+  valoresResultados  ValorResultado[]
 }
 
 // --- MODELOS PRINCIPALES ---
@@ -43,15 +77,11 @@ model Usuario {
   correo            String            @unique
   clave             String
   activo            Boolean           @default(true)
-  
-  // Relación con Rol
   rolId             Int
   rol               Rol               @relation(fields: [rolId], references: [id])
-  
   ordenesCreadas    Orden[]
   gastosRegistrados Gasto[]
   resultadosValidados ResultadoPrueba[]
-  
   fechaCreacion     DateTime          @default(now())
 }
 
@@ -66,109 +96,88 @@ model Paciente {
   correo          String?
   direccion       String?
   observaciones   String?  @db.Text
-  
   ordenes         Orden[]
   fechaRegistro   DateTime @default(now())
 }
 
-model Prueba {
-  id             String         @id @default(cuid())
-  codigo         String         @unique
-  nombre         String
-  precioUSD      Float
-  activa         Boolean        @default(true)
-  
-  detallesOrden  DetalleOrden[]
-}
-
 model Orden {
-  id                   Int            @id @default(autoincrement())
-  pacienteId           String
-  paciente             Paciente       @relation(fields: [pacienteId], references: [id])
-  usuarioId            String
-  creadoPor            Usuario        @relation(fields: [usuarioId], references: [id])
-  
-  // Relación con Estado
-  estadoId             Int
-  estado               EstadoOrden    @relation(fields: [estadoId], references: [id])
-  
-  subtotalUSD          Float
-  descuentoGeneral     Float          @default(0)
-  
-  // Relación con Tipo Descuento
-  tipoDescuentoId      Int?
-  tipoDescuento        TipoDescuento? @relation(fields: [tipoDescuentoId], references: [id])
-  
-  totalUSD             Float
-  totalBS              Float          
-  tasaBCV              Float          
-  
-  resultadosCompletados Boolean       @default(false)
-  fechaCreacion        DateTime       @default(now())
-  
-  pagos                Pago[]
-  detalles             DetalleOrden[]
+  id                  Int            @id @default(autoincrement())
+  pacienteId          String
+  paciente            Paciente       @relation(fields: [pacienteId], references: [id])
+  usuarioId           String
+  creadoPor           Usuario        @relation(fields: [usuarioId], references: [id])
+  estadoId            Int
+  estado              EstadoOrden    @relation(fields: [estadoId], references: [id])
+  subtotalUSD         Float
+  descuentoGeneral    Float          @default(0)
+  tipoDescuentoId     Int?
+  tipoDescuento       TipoDescuento? @relation(fields: [tipoDescuentoId], references: [id])
+  totalUSD            Float
+  totalBS             Float 
+  tasaBCV             Float 
+  resultadosCompletados Boolean      @default(false)
+  fechaCreacion       DateTime       @default(now())
+  pagos               Pago[]
+  detalles            DetalleOrden[]
 }
 
 model DetalleOrden {
-  id                 String           @id @default(cuid())
-  ordenId            Int
-  orden              Orden            @relation(fields: [ordenId], references: [id], onDelete: Cascade)
-  pruebaId           String
-  prueba             Prueba           @relation(fields: [pruebaId], references: [id])
+  id                   String             @id @default(cuid())
+  ordenId              Int
+  orden                Orden              @relation(fields: [ordenId], references: [id], onDelete: Cascade)
   
-  cantidad           Int              @default(1)
-  precioCongeladoUSD Float            
-  descuento          Float            @default(0)
+  pruebaId             String             // Apunta directamente a la prueba cobrada
+  prueba               Prueba             @relation(fields: [pruebaId], references: [id])
   
-  // Relación con Tipo Descuento
-  tipoDescuentoId    Int?
-  tipoDescuento      TipoDescuento?   @relation(fields: [tipoDescuentoId], references: [id])
-  
-  resultado          ResultadoPrueba?
+  cantidad             Int                @default(1)
+  precioCongeladoUSD   Float 
+  descuento            Float              @default(0)
+  tipoDescuentoId      Int?
+  tipoDescuento        TipoDescuento?     @relation(fields: [tipoDescuentoId], references: [id])
+  resultado            ResultadoPrueba?
 }
 
 model ResultadoPrueba {
-  id             String       @id @default(cuid())
-  detalleOrdenId String       @unique
-  detalleOrden   DetalleOrden @relation(fields: [detalleOrdenId], references: [id], onDelete: Cascade)
-  
-  usuarioId      String       
-  procesadoPor   Usuario      @relation(fields: [usuarioId], references: [id])
-  
-  valores        String       @db.Text
-  observaciones  String?      @db.Text
-  fechaProcesado DateTime     @default(now())
+  id             String           @id @default(cuid())
+  detalleOrdenId String           @unique
+  detalleOrden   DetalleOrden     @relation(fields: [detalleOrdenId], references: [id], onDelete: Cascade)
+  usuarioId      String 
+  procesadoPor   Usuario          @relation(fields: [usuarioId], references: [id])
+  observaciones  String?          @db.Text
+  fechaProcesado DateTime         @default(now())
+  valores        ValorResultado[]
+}
+
+model ValorResultado {
+  id                String          @id @default(cuid())
+  resultadoId       String
+  resultado         ResultadoPrueba @relation(fields: [resultadoId], references: [id], onDelete: Cascade)
+  pruebaId          String
+  prueba            Prueba          @relation(fields: [pruebaId], references: [id])
+  valorIngresado    String          
 }
 
 model Pago {
-  id         String     @id @default(cuid())
-  ordenId    Int
-  orden      Orden      @relation(fields: [ordenId], references: [id], onDelete: Cascade)
-  
-  // Relación con Método Pago
-  metodoId   Int
-  metodo     MetodoPago @relation(fields: [metodoId], references: [id])
-  
-  montoUSD   Float
-  montoBS    Float
-  referencia String?    
-  fechaPago  DateTime   @default(now())
+  id          String     @id @default(cuid())
+  ordenId     Int
+  orden       Orden      @relation(fields: [ordenId], references: [id], onDelete: Cascade)
+  metodoId    Int
+  metodo      MetodoPago @relation(fields: [metodoId], references: [id])
+  montoUSD    Float
+  montoBS     Float
+  referencia  String? 
+  fechaPago   DateTime   @default(now())
 }
 
 model Gasto {
-  id         String     @id @default(cuid())
-  usuarioId  String
-  registradoPor Usuario   @relation(fields: [usuarioId], references: [id])
-  
-  concepto   String
-  
-  // Relación con Método Pago
-  metodoId   Int
-  metodo     MetodoPago @relation(fields: [metodoId], references: [id])
-  
-  montoUSD   Float
-  montoBS    Float
-  referencia String?
-  fechaGasto DateTime   @default(now())
+  id            String     @id @default(cuid())
+  usuarioId     String
+  registradoPor Usuario    @relation(fields: [usuarioId], references: [id])
+  concepto      String
+  metodoId      Int
+  metodo        MetodoPago @relation(fields: [metodoId], references: [id])
+  montoUSD      Float
+  montoBS       Float
+  referencia    String?
+  fechaGasto    DateTime   @default(now())
 }

@@ -5,12 +5,19 @@ const prisma = new PrismaClient();
 
 export async function GET() {
   try {
-    const pruebas = await prisma.prueba.findMany({
+    const examenes = await prisma.subcategoriaPrueba.findMany({
+      include: {
+        categoria: true,
+        pruebas: { 
+          orderBy: { ordenVisual: 'asc' } 
+        }
+      },
       orderBy: { nombre: 'asc' },
     });
-    return NextResponse.json(pruebas);
+    // Forzamos que el JSON lleve los campos correctos
+    return NextResponse.json(examenes);
   } catch (error) {
-    return NextResponse.json({ error: "Error al cargar las pruebas" }, { status: 500 });
+    return NextResponse.json({ error: "Error al cargar el catálogo" }, { status: 500 });
   }
 }
 
@@ -18,26 +25,34 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // Verificamos si el código ya existe para evitar errores bruscos de Prisma
-    const existe = await prisma.prueba.findUnique({
-      where: { codigo: body.codigo }
+    const categoria = await prisma.categoriaPrueba.upsert({
+      where: { nombre: body.categoria.toUpperCase() },
+      update: {},
+      create: { nombre: body.categoria.toUpperCase() }
     });
 
-    if (existe) {
-      return NextResponse.json({ error: "El código de prueba ya está registrado" }, { status: 400 });
-    }
-
-    const nuevaPrueba = await prisma.prueba.create({
+    const nuevaSubcategoria = await prisma.subcategoriaPrueba.create({
       data: {
-        codigo: body.codigo,
-        nombre: body.nombre,
-        precioUSD: parseFloat(body.precioUSD),
+        nombre: body.subcategoria,
+        categoriaId: categoria.id,
         activa: true,
-      }
+        pruebas: {
+          create: body.pruebas.map((p: any, index: number) => ({
+            codigo: p.codigo.toUpperCase(),
+            nombre: p.nombre.toUpperCase(),
+            precioUSD: parseFloat(p.precioUSD),
+            unidades: p.unidades || null,
+            valoresReferencia: p.valoresReferencia || null,
+            activa: true,
+            ordenVisual: index + 1
+          }))
+        }
+      },
+      include: { categoria: true, pruebas: true }
     });
     
-    return NextResponse.json(nuevaPrueba);
+    return NextResponse.json(nuevaSubcategoria);
   } catch (error) {
-    return NextResponse.json({ error: "Error interno al crear la prueba" }, { status: 500 });
+    return NextResponse.json({ error: "Error al crear el registro" }, { status: 500 });
   }
 }

@@ -11,36 +11,58 @@ export async function PUT(
     const { id } = await params; 
     const body = await req.json();
     
-    // VALIDACIÓN: Verificar si el nuevo código ya lo tiene OTRA prueba diferente
-    if (body.codigo) {
-      const existeCodigo = await prisma.prueba.findFirst({
-        where: { 
-          codigo: body.codigo,
-          id: { not: id } // Buscamos en todas menos en la que estamos editando
-        }
+    // Si es solo el toggle de activar/desactivar
+    if (body.activa !== undefined && Object.keys(body).length === 1) {
+      const actualizado = await prisma.subcategoriaPrueba.update({
+        where: { id },
+        data: { activa: body.activa }
       });
-
-      if (existeCodigo) {
-        return NextResponse.json(
-          { error: `El código ${body.codigo} ya está en uso por otra prueba.` }, 
-          { status: 400 }
-        );
-      }
+      return NextResponse.json(actualizado);
     }
 
-    const pruebaActualizada = await prisma.prueba.update({
+    const categoria = await prisma.categoriaPrueba.upsert({
+      where: { nombre: body.categoria.toUpperCase() },
+      update: {},
+      create: { nombre: body.categoria.toUpperCase() }
+    });
+
+    const idsMantener = body.pruebas.map((p: any) => p.id).filter(Boolean);
+
+    const subcatActualizada = await prisma.subcategoriaPrueba.update({
       where: { id: id },
       data: {
-        codigo: body.codigo,
-        nombre: body.nombre,
-        precioUSD: body.precioUSD ? parseFloat(body.precioUSD) : undefined,
-        activa: body.activa,
-      }
+        nombre: body.subcategoria,
+        categoriaId: categoria.id,
+        // Al actualizar la estructura, mantenemos el estado activa que ya tenía
+        pruebas: {
+          deleteMany: { id: { notIn: idsMantener } },
+          upsert: body.pruebas.map((p: any, index: number) => ({
+            where: { id: p.id || 'fake-id' },
+            update: { 
+              codigo: p.codigo.toUpperCase(), 
+              nombre: p.nombre.toUpperCase(), 
+              precioUSD: parseFloat(p.precioUSD),
+              unidades: p.unidades, 
+              valoresReferencia: p.valoresReferencia,
+              ordenVisual: index + 1 
+            },
+            create: { 
+              codigo: p.codigo.toUpperCase(), 
+              nombre: p.nombre.toUpperCase(), 
+              precioUSD: parseFloat(p.precioUSD),
+              unidades: p.unidades, 
+              valoresReferencia: p.valoresReferencia,
+              activa: true,
+              ordenVisual: index + 1 
+            }
+          }))
+        }
+      },
+      include: { categoria: true, pruebas: true }
     });
     
-    return NextResponse.json(pruebaActualizada);
+    return NextResponse.json(subcatActualizada);
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Error interno al actualizar la prueba" }, { status: 500 });
+    return NextResponse.json({ error: "Error al actualizar" }, { status: 500 });
   }
 }

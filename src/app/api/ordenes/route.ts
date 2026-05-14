@@ -8,20 +8,22 @@ const prisma = new PrismaClient();
 // Función de utilidad para obtener la hora exacta de Venezuela (UTC-4)
 const getHoraCaracas = (): Date => {
   const ahora = new Date();
-  // Formateamos la fecha a la zona horaria de Caracas
   const caracasString = ahora.toLocaleString('en-US', { timeZone: 'America/Caracas' });
   return new Date(caracasString);
 };
 
+// Utilidad vital: Si el ID es numérico lo convierte, si es texto (CUID/UUID) lo deja intacto.
+const parseId = (id: any) => isNaN(Number(id)) ? id : Number(id);
+
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user || !(session.user as any).id) {
       return NextResponse.json({ error: "No autorizado. Inicie sesión." }, { status: 401 });
     }
 
-    const usuarioId = (session.user as any).id;
+    const usuarioId = parseId((session.user as any).id);
     const body = await req.json();
 
     if (!body.pacienteId) {
@@ -38,10 +40,10 @@ export async function POST(req: Request) {
     const getIdDescuento = (nombreStr: string) => tiposDescuento.find(t => t.nombre === nombreStr)?.id || null;
 
     const detallesData = body.pruebas.map((p: any) => ({
-      pruebaId: p.pruebaId,
+      pruebaId: parseId(p.pruebaId),
       cantidad: p.cantidad,
-      precioCongeladoUSD: p.precioCongelado, 
-      descuento: p.descuentoInd || 0,        
+      precioCongeladoUSD: p.precioCongelado,
+      descuento: p.descuentoInd || 0,
       tipoDescuentoId: p.descuentoInd > 0 ? getIdDescuento(p.tipoDescuentoInd) : null,
     }));
 
@@ -49,22 +51,22 @@ export async function POST(req: Request) {
     const pagosData = body.pagos && body.pagos.length > 0 ? body.pagos.map((p: any) => {
       const montoEnUSD = p.moneda === "USD" ? p.monto : (p.monto / tasa);
       const montoEnBS = p.moneda === "BS" ? p.monto : (p.monto * tasa);
-      
+
       return {
-        metodoId: parseInt(p.metodoId, 10), 
+        metodoId: parseId(p.metodoId), // <-- AQUÍ ESTABA EL ERROR PRINCIPAL
         montoUSD: parseFloat(montoEnUSD.toFixed(2)),
         montoBS: parseFloat(montoEnBS.toFixed(2)),
         referencia: p.referencia || null,
-        fechaPago: getHoraCaracas() // <-- Obligamos a que el pago tenga la hora de VZLA
+        fechaPago: getHoraCaracas() 
       };
     }) : [];
 
-    const horaVenezuela = getHoraCaracas(); // Obtenemos la hora local
+    const horaVenezuela = getHoraCaracas(); 
 
     const nuevaOrden = await prisma.orden.create({
       data: {
-        pacienteId: body.pacienteId,
-        usuarioId: usuarioId, 
+        pacienteId: parseId(body.pacienteId),
+        usuarioId: usuarioId,
         estadoId: estado.id,
         subtotalUSD: body.subtotalUSD,
         descuentoGeneral: body.descuentoGeneral || 0,
@@ -72,7 +74,7 @@ export async function POST(req: Request) {
         totalUSD: body.totalUSD,
         totalBS: body.totalBS,
         tasaBCV: body.tasaBCV,
-        fechaCreacion: horaVenezuela, 
+        fechaCreacion: horaVenezuela,
         detalles: {
           create: detallesData
         },

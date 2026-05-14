@@ -6,14 +6,14 @@ const prisma = new PrismaClient();
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const fechaParam = searchParams.get("fecha"); 
+    const fechaParam = searchParams.get("fecha");
 
     if (!fechaParam) {
       return NextResponse.json({ error: "Debe proporcionar una fecha" }, { status: 400 });
     }
 
-    const fechaInicio = new Date(`${fechaParam}T00:00:00.000-04:00`); 
-    const fechaFin = new Date(`${fechaParam}T23:59:59.999-04:00`);    
+    const fechaInicio = new Date(`${fechaParam}T00:00:00.000-04:00`);
+    const fechaFin = new Date(`${fechaParam}T23:59:59.999-04:00`);
 
     const ordenes = await prisma.orden.findMany({
       where: {
@@ -23,13 +23,13 @@ export async function GET(req: Request) {
         }
       },
       include: {
-        paciente: true, 
+        paciente: true,
         estado: { select: { nombre: true } },
-        tipoDescuento: { select: { nombre: true } }, // <-- AGREGADO: Para el descuento general
+        tipoDescuento: { select: { nombre: true } }, 
         detalles: {
           include: {
             prueba: true,
-            tipoDescuento: { select: { nombre: true } } // <-- AGREGADO: Para el descuento por prueba
+            tipoDescuento: { select: { nombre: true } } 
           }
         },
         pagos: {
@@ -38,7 +38,7 @@ export async function GET(req: Request) {
         creadoPor: { select: { nombre: true } }
       },
       orderBy: {
-        fechaCreacion: 'desc' 
+        fechaCreacion: 'desc'
       }
     });
 

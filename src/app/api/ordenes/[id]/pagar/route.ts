@@ -4,8 +4,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../../../app/api/auth/[...nextauth]/route";
 
 const prisma = new PrismaClient();
+const parseId = (id: any) => isNaN(Number(id)) ? id : Number(id);
 
-// En las versiones recientes de Next.js, params viene como una Promesa
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,11 +13,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    // DESEMPAQUETAMOS LA PROMESA ANTES DE USAR EL ID
     const resolvedParams = await params;
-    const ordenId = parseInt(resolvedParams.id, 10);
+    const ordenId = parseId(resolvedParams.id); // <-- CORREGIDO
 
-    if (isNaN(ordenId)) {
+    if (!ordenId) {
       return NextResponse.json({ error: "ID de orden inválido" }, { status: 400 });
     }
 
@@ -27,26 +26,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ error: "Debe enviar al menos un método de pago." }, { status: 400 });
     }
 
-    // Buscamos el ID del estado CERRADA
     const estadoCerrada = await prisma.estadoOrden.findUnique({ where: { nombre: "CERRADA" } });
-    if (!estadoCerrada) return NextResponse.json({ error: "Estado CERRADA no configurado en BD" }, { status: 500 });
+    if (!estadoCerrada) return NextResponse.json({ error: "Estado CERRADA no configurado" }, { status: 500 });
 
-    // Preparamos los datos de los pagos formateados
     const pagosData = body.pagos.map((p: any) => {
       const montoEnUSD = p.moneda === "USD" ? p.monto : (p.monto / body.tasaBCV);
       const montoEnBS = p.moneda === "BS" ? p.monto : (p.monto * body.tasaBCV);
-      
+
       return {
-        metodoId: parseInt(p.metodoId, 10), 
+        metodoId: parseId(p.metodoId), // <-- CORREGIDO
         montoUSD: parseFloat(montoEnUSD.toFixed(2)),
         montoBS: parseFloat(montoEnBS.toFixed(2)),
         referencia: p.referencia || null
       };
     });
 
-    // Actualizamos la orden: Le agregamos los pagos y le cambiamos el estado
     const ordenActualizada = await prisma.orden.update({
-      where: { id: ordenId },
+      where: { id: ordenId as any },
       data: {
         estadoId: estadoCerrada.id,
         pagos: {

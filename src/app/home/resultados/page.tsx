@@ -157,7 +157,7 @@ export default function ResultadosPage() {
               type="date"
               value={fechaFiltro}
               onChange={(e) => setFechaFiltro(e.target.value)}
-              className="w-full pl-12 pr-4 py-3.5 bg-[#F5F5F7] border border-slate-200/60 rounded-xl text-[15px] font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 transition-all"
+              className="w-full pl-12 pr-4 py-3.5 bg-[#F5F5F7] border border-slate-200/60 rounded-xl text-[15px] font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 transition-all cursor-pointer"
             />
           </div>
         </div>
@@ -234,10 +234,11 @@ export default function ResultadosPage() {
               });
 
               return (
-                <div key={orden.id} className="bg-white border border-slate-200/80 rounded-[24px] shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden">
+                // SE ELIMINÓ 'overflow-hidden' PARA QUE LOS TOOLTIPS NO SE CORTEN
+                <div key={orden.id} className="bg-white border border-slate-200/80 rounded-[24px] shadow-sm hover:shadow-md transition-all flex flex-col">
                   
-                  {/* CABECERA DE LA TARJETA */}
-                  <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
+                  {/* CABECERA DE LA TARJETA (Se le agrega rounded-t-[24px]) */}
+                  <div className="p-5 border-b border-slate-100 bg-slate-50/50 rounded-t-[24px] flex justify-between items-center shrink-0">
                     <span className="text-[14px] font-bold text-slate-500 tracking-tight">
                       #{orden.id.toString().padStart(5, '0')}
                     </span>
@@ -313,9 +314,9 @@ export default function ResultadosPage() {
                   <div className="p-5 pt-0 flex gap-3">
                     <button
                       onClick={() => setOrdenSeleccionada(orden)}
-                      className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
+                      className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 hover:-translate-y-0.5 ${
                         tabActiva === "PENDIENTES"
-                          ? 'bg-[#0071E3] text-white hover:bg-[#0077ED] shadow-md shadow-[#0071E3]/20'
+                          ? 'bg-[#0071E3] text-white hover:bg-[#0077ED] shadow-sm hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)]'
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
@@ -325,21 +326,31 @@ export default function ResultadosPage() {
                     {tabActiva === "COMPLETADOS" && (
                       <>
                         {!estaPagada ? (
-                          <button
-                            onClick={() => enviarWhatsAppCobro(orden)}
-                            title="Enviar Recordatorio de Cobro"
-                            className="w-14 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-xl transition-all flex items-center justify-center shadow-sm"
-                          >
-                            <MessageCircle size={20} />
-                          </button>
+                          <div className="relative group/ws flex flex-col items-center justify-center">
+                            <button
+                              onClick={() => enviarWhatsAppCobro(orden)}
+                              className="flex items-center justify-center w-12 h-12 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)] hover:-translate-y-0.5"
+                            >
+                              <MessageCircle size={20} strokeWidth={2.5} />
+                            </button>
+                            <div className="absolute -top-11 opacity-0 group-hover/ws:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/ws:-translate-y-1">
+                              Cobrar (WS)
+                              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
+                            </div>
+                          </div>
                         ) : (
-                          <button
-                            onClick={() => setOrdenPDF(orden)}
-                            title="Ver y Generar PDF"
-                            className="w-14 bg-slate-100 text-[#0071E3] hover:bg-[#0071E3] hover:text-white rounded-xl transition-all flex items-center justify-center shadow-sm"
-                          >
-                            <FileText size={20} />
-                          </button>
+                          <div className="relative group/pdf flex flex-col items-center justify-center">
+                            <button
+                              onClick={() => setOrdenPDF(orden)}
+                              className="flex items-center justify-center w-12 h-12 bg-slate-100 text-[#0071E3] hover:bg-[#0071E3] hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] hover:-translate-y-0.5"
+                            >
+                              <FileText size={20} strokeWidth={2.5} />
+                            </button>
+                            <div className="absolute -top-11 opacity-0 group-hover/pdf:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/pdf:-translate-y-1">
+                              Generar PDF
+                              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
+                            </div>
+                          </div>
                         )}
                       </>
                     )}

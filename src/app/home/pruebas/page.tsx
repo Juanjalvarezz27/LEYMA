@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect, useRef } from "react";
 import { Plus, Edit2, Ban, CheckCircle2, Search, TestTubes, DollarSign, ClipboardList, ChevronDown, ChevronUp, Activity, FlaskConical, Tags, Filter, SlidersHorizontal, Check, Trash2, Package } from "lucide-react";
 import { toast } from "react-toastify";
@@ -12,28 +11,26 @@ export default function PruebasPage() {
   const [examenes, setExamenes] = useState<any[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("Todas");
-  const [filtroEstado, setFiltroEstado] = useState("Todos"); 
-
+  const [filtroEstado, setFiltroEstado] = useState("Todos");
+  
   const [openDropdownCategoria, setOpenDropdownCategoria] = useState(false);
   const [openDropdownEstado, setOpenDropdownEstado] = useState(false);
-
   const dropdownCategoriaRef = useRef<HTMLDivElement>(null);
   const dropdownEstadoRef = useRef<HTMLDivElement>(null);
-
   const [cargando, setCargando] = useState(true);
   const [examenExpandido, setExamenExpandido] = useState<string | null>(null);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pruebaEditando, setPruebaEditando] = useState<any>(null);
-
+  
   const [isModalItemOpen, setIsModalItemOpen] = useState(false);
   const [itemEditando, setItemEditando] = useState<any>(null);
-
+  
   const [isModalConfirmOpen, setIsModalConfirmOpen] = useState(false);
   const [subcategoriaAEliminar, setSubcategoriaAEliminar] = useState<string | null>(null);
-
+  
   const { tasa, loading: loadingTasa } = useTasaBCV();
-  const tasaBCV = tasa ?? 36.5; 
+  const tasaBCV = tasa ?? 36.5;
 
   const fetchExamenes = async () => {
     try {
@@ -68,17 +65,16 @@ export default function PruebasPage() {
     const isEdit = !!pruebaEditando;
     const url = isEdit ? `/api/pruebas/${pruebaEditando.id}` : "/api/pruebas";
     const method = isEdit ? "PUT" : "POST";
-
+    
     try {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Ocurrió un error inesperado");
-
+      
       toast.success(isEdit ? "Catálogo actualizado" : "Catálogo registrado exitosamente");
       setIsModalOpen(false);
       fetchExamenes();
@@ -94,10 +90,9 @@ export default function PruebasPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Ocurrió un error inesperado");
-
+      
       toast.success("Prueba individual actualizada");
       setIsModalItemOpen(false);
       fetchExamenes();
@@ -152,7 +147,7 @@ export default function PruebasPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error al eliminar");
-
+      
       toast.success("Estructura eliminada permanentemente");
       fetchExamenes();
     } catch (error: any) {
@@ -182,17 +177,17 @@ export default function PruebasPage() {
   };
 
   const categoriasExistentes = Array.from(new Set(examenes.map(e => e.categoria.nombre)));
-
+  
   const pruebasFiltradas = examenes.filter((p) => {
     const matchBusqueda = p.nombre.toLowerCase().includes(busqueda.toLowerCase()) || 
-                          p.categoria.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-                          p.pruebas.some((prueba: any) => prueba.codigo.toLowerCase().includes(busqueda.toLowerCase()) || prueba.nombre.toLowerCase().includes(busqueda.toLowerCase()));
+      p.categoria.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+      p.pruebas.some((prueba: any) => prueba.codigo.toLowerCase().includes(busqueda.toLowerCase()) || prueba.nombre.toLowerCase().includes(busqueda.toLowerCase()));
     const matchCategoria = filtroCategoria === "Todas" || p.categoria.nombre === filtroCategoria;
     const matchEstado = filtroEstado === "Todos" ? true : filtroEstado === "Activas" ? p.activa === true : p.activa === false;
-
+    
     return matchBusqueda && matchCategoria && matchEstado;
   });
-
+  
   const examenesAgrupados = pruebasFiltradas.reduce((acc, examen) => {
     const cat = examen.categoria.nombre;
     if (!acc[cat]) acc[cat] = [];
@@ -229,7 +224,7 @@ export default function PruebasPage() {
           </div>
           <input type="text" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200/80 rounded-2xl text-[#1D1D1F] text-[15px] font-medium shadow-sm focus:outline-none focus:ring-4 focus:ring-[#0071E3]/10 focus:border-[#0071E3]/40" placeholder="Buscar por código (Ej. HEM-01)..." />
         </div>
-
+        
         <div className="relative w-[280px] shrink-0" ref={dropdownCategoriaRef}>
           <button onClick={() => setOpenDropdownCategoria(!openDropdownCategoria)} className={`w-full flex items-center justify-between pl-4 pr-4 py-4 bg-white border rounded-2xl text-[14px] font-bold shadow-sm transition-all focus:outline-none focus:ring-4 focus:ring-[#0071E3]/10 ${openDropdownCategoria ? 'border-[#0071E3]/40' : 'border-slate-200/80 hover:border-slate-300'}`}>
             <div className="flex items-center gap-2 text-[#1D1D1F]">
@@ -250,7 +245,7 @@ export default function PruebasPage() {
             </div>
           )}
         </div>
-
+        
         <div className="relative w-[220px] shrink-0" ref={dropdownEstadoRef}>
           <button onClick={() => setOpenDropdownEstado(!openDropdownEstado)} className={`w-full flex items-center justify-between pl-4 pr-4 py-4 bg-white border rounded-2xl text-[14px] font-bold shadow-sm transition-all focus:outline-none focus:ring-4 focus:ring-[#0071E3]/10 ${openDropdownEstado ? 'border-[#0071E3]/40' : 'border-slate-200/80 hover:border-slate-300'}`}>
             <div className="flex items-center gap-2 text-[#1D1D1F]">
@@ -293,9 +288,10 @@ export default function PruebasPage() {
 
               {examenesDeCategoria.map((examen) => {
                 const isExpanded = examenExpandido === examen.id;
-
+                
                 return (
-                  <div key={examen.id} className={`group flex flex-col p-6 rounded-[24px] border shadow-sm hover:shadow-md transition-all duration-300 ${examen.activa ? 'bg-white border-slate-200/80 hover:border-[#0071E3]/30' : 'bg-red-50/50 border-red-200/60'}`}>
+                  // SE ELIMINÓ LA CLASE 'group' DE ESTE CONTENEDOR PRINCIPAL PARA EVITAR BUG DE HOVER CASCADA
+                  <div key={examen.id} className={`flex flex-col p-6 rounded-[24px] border shadow-sm hover:shadow-md transition-all duration-300 ${examen.activa ? 'bg-white border-slate-200/80 hover:border-[#0071E3]/30' : 'bg-red-50/50 border-red-200/60'}`}>
                     <div className="flex items-center justify-between">
                       
                       {/* Lado Izquierdo */}
@@ -311,7 +307,6 @@ export default function PruebasPage() {
                               <Package size={14} strokeWidth={2.5} /> PAQUETE
                             </span>
                           )}
-
                           {!examen.activa && <span className="text-[11px] font-bold text-red-400 flex items-center gap-1"><Ban size={14} /> Inhabilitada</span>}
                         </div>
                         
@@ -320,18 +315,17 @@ export default function PruebasPage() {
                           {examen.nombre}
                         </h3>
                       </div>
-
-                      {/* Lado Derecho */}
+                      
+                      {/* Lado Derecho (Botones y Acciones de la Subcategoría) */}
                       <div className="flex items-center justify-end gap-4 w-[50%]">
                         
-                        {/* PRECIO DEL PAQUETE MOSTRADO EN CABECERA */}
                         {examen.esPaquete && (
                           <div className="flex flex-col items-end mr-4">
                             <span className="text-[10px] font-black text-purple-500 uppercase tracking-widest">Precio Paquete</span>
                             <span className="font-black text-2xl text-[#1D1D1F]">${examen.precioUSD?.toFixed(2) || "0.00"}</span>
                           </div>
                         )}
-
+                        
                         <button onClick={() => toggleExpandir(examen.id)} className={`flex items-center gap-3 px-5 py-3 rounded-xl transition-all border ${isExpanded ? 'bg-[#0071E3]/10 border-[#0071E3]/30 text-[#0071E3]' : 'bg-slate-50 border-slate-200/60 text-slate-600 hover:bg-slate-100 hover:text-[#0071E3]'}`}>
                           <div className="flex items-center gap-2">
                             <Activity size={18} strokeWidth={2.5} />
@@ -339,20 +333,44 @@ export default function PruebasPage() {
                           </div>
                           <div className={isExpanded ? 'text-[#0071E3]' : 'text-slate-400'}>{isExpanded ? <ChevronUp size={18} strokeWidth={3} /> : <ChevronDown size={18} strokeWidth={3} />}</div>
                         </button>
-
-                        <div className="h-8 w-px bg-slate-200 mx-1"></div>
-
-                        <button onClick={() => abrirModalEditar(examen)} className={`p-2.5 rounded-xl transition-colors ${examen.activa ? 'text-slate-400 hover:text-[#0071E3] hover:bg-blue-50 border border-transparent hover:border-blue-100' : 'text-red-400 hover:text-red-600 hover:bg-red-100 border border-transparent hover:border-red-200'}`} title="Editar subcategoría">
-                          <Edit2 size={20} strokeWidth={2.5} />
-                        </button>
                         
-                        <button onClick={() => toggleEstadoSubcategoria(examen.id, examen.activa)} className={`p-2.5 rounded-xl transition-colors flex items-center justify-center ${examen.activa ? 'text-slate-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100' : 'text-green-600 bg-green-100 hover:bg-green-200 shadow-sm border border-green-200'}`} title={examen.activa ? "Desactivar" : "Activar"}>
-                          {examen.activa ? <Ban size={20} strokeWidth={2.5} /> : <CheckCircle2 size={20} strokeWidth={2.5} />}
-                        </button>
+                        <div className="h-8 w-px bg-slate-200 mx-1"></div>
+                        
+                        <div className="flex gap-2">
+                          {/* BOTÓN: EDITAR SUBCATEGORÍA (USANDO GRUPOS NOMBRADOS: group/btn) */}
+                          <div className="relative group/btn flex flex-col items-center">
+                            <button onClick={() => abrirModalEditar(examen)} className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 hover:-translate-y-0.5 ${examen.activa ? 'bg-blue-50 text-[#0071E3] hover:bg-[#0071E3] hover:text-white hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)]' : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}>
+                              <Edit2 size={18} strokeWidth={2.5} />
+                            </button>
+                            <div className="absolute -top-10 opacity-0 group-hover/btn:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/btn:-translate-y-1">
+                              Editar Estructura
+                              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
+                            </div>
+                          </div>
 
-                        <button onClick={() => { setSubcategoriaAEliminar(examen.id); setIsModalConfirmOpen(true); }} className="p-2.5 rounded-xl transition-colors text-slate-300 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 ml-1" title="Eliminar permanentemente">
-                          <Trash2 size={20} strokeWidth={2.5} />
-                        </button>
+                          {/* BOTÓN: ACTIVAR/DESACTIVAR SUBCATEGORÍA */}
+                          <div className="relative group/btn flex flex-col items-center">
+                            <button onClick={() => toggleEstadoSubcategoria(examen.id, examen.activa)} className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 hover:-translate-y-0.5 ${examen.activa ? 'bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white hover:shadow-[0_4px_12px_rgba(249,115,22,0.3)]' : 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white hover:shadow-[0_4px_12px_rgba(22,163,74,0.3)]'}`}>
+                              {examen.activa ? <Ban size={18} strokeWidth={2.5} /> : <CheckCircle2 size={18} strokeWidth={2.5} />}
+                            </button>
+                            <div className="absolute -top-10 opacity-0 group-hover/btn:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/btn:-translate-y-1">
+                              {examen.activa ? "Inhabilitar" : "Reactivar"}
+                              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
+                            </div>
+                          </div>
+
+                          {/* BOTÓN: ELIMINAR SUBCATEGORÍA */}
+                          <div className="relative group/btn flex flex-col items-center">
+                            <button onClick={() => { setSubcategoriaAEliminar(examen.id); setIsModalConfirmOpen(true); }} className="flex items-center justify-center w-10 h-10 bg-slate-100 text-slate-400 hover:bg-red-500 hover:text-white hover:shadow-[0_4px_12px_rgba(239,68,68,0.3)] rounded-xl transition-all duration-300 hover:-translate-y-0.5">
+                              <Trash2 size={18} strokeWidth={2.5} />
+                            </button>
+                            <div className="absolute -top-10 opacity-0 group-hover/btn:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/btn:-translate-y-1">
+                              Eliminar (Clave)
+                              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
+                            </div>
+                          </div>
+                        </div>
+
                       </div>
                     </div>
 
@@ -361,7 +379,7 @@ export default function PruebasPage() {
                         <div className="flex items-center px-4 py-2 mb-2 text-[10px] font-black text-[#1D1D1F] uppercase tracking-widest">
                           <div className={examen.esPaquete ? "w-[40%] pl-2" : "w-[35%] pl-2"}>Ítem / Prueba</div>
                           <div className="w-[20%] text-center">Referencia</div> 
-                          <div className={examen.esPaquete ? "w-[20%] text-center" : "w-[15%] text-center"}>Unidades</div>   
+                          <div className={examen.esPaquete ? "w-[20%] text-center" : "w-[15%] text-center"}>Unidades</div> 
                           <div className={examen.esPaquete ? "w-[20%] text-right pr-2" : "w-[30%] text-right pr-2"}>
                             {examen.esPaquete ? "Estado" : "Precio y Estado"}
                           </div>
@@ -408,13 +426,33 @@ export default function PruebasPage() {
                                     )}
                                     
                                     <div className="flex items-center gap-2">
-                                      <button onClick={() => abrirModalEditarItem(p)} disabled={!examen.activa} className={`p-2 rounded-lg transition-colors shadow-sm border ${!examen.activa ? 'bg-slate-50 text-slate-300 border-slate-200 cursor-not-allowed' : 'bg-blue-50 text-[#0071E3] border-blue-200 hover:bg-[#0071E3] hover:text-white'}`} title="Editar prueba individual">
-                                        <Edit2 size={16} strokeWidth={2.5}/>
-                                      </button>
-                                      <button onClick={() => toggleEstadoPruebaIndividual(p.id, p.activa)} disabled={!examen.activa} className={`p-2 rounded-lg transition-colors shadow-sm border ${!examen.activa ? 'bg-slate-50 text-slate-300 border-slate-200 cursor-not-allowed' : p.activa ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-600 hover:text-white' : 'bg-green-50 text-green-600 border-green-200 hover:bg-green-600 hover:text-white'}`} title={p.activa ? "Inhabilitar prueba" : "Activar prueba"}>
-                                        {p.activa ? <Ban size={16} strokeWidth={2.5}/> : <CheckCircle2 size={16} strokeWidth={2.5}/>}
-                                      </button>
+                                      {/* BOTÓN: EDITAR PRUEBA INDIVIDUAL */}
+                                      <div className="relative group/btn flex flex-col items-center">
+                                        <button onClick={() => abrirModalEditarItem(p)} disabled={!examen.activa} className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300 ${!examen.activa ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-blue-50 text-[#0071E3] hover:bg-[#0071E3] hover:text-white hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] hover:-translate-y-0.5'}`}>
+                                          <Edit2 size={14} strokeWidth={2.5}/>
+                                        </button>
+                                        {examen.activa && (
+                                          <div className="absolute -top-9 opacity-0 group-hover/btn:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[10px] font-bold px-2.5 py-1 rounded-md whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/btn:-translate-y-1">
+                                            Editar Ítem
+                                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* BOTÓN: ACTIVAR/DESACTIVAR PRUEBA INDIVIDUAL */}
+                                      <div className="relative group/btn flex flex-col items-center">
+                                        <button onClick={() => toggleEstadoPruebaIndividual(p.id, p.activa)} disabled={!examen.activa} className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300 ${!examen.activa ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : p.activa ? 'bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white hover:shadow-[0_4px_12px_rgba(249,115,22,0.3)] hover:-translate-y-0.5' : 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white hover:shadow-[0_4px_12px_rgba(22,163,74,0.3)] hover:-translate-y-0.5'}`}>
+                                          {p.activa ? <Ban size={14} strokeWidth={2.5}/> : <CheckCircle2 size={14} strokeWidth={2.5}/>}
+                                        </button>
+                                        {examen.activa && (
+                                          <div className="absolute -top-9 opacity-0 group-hover/btn:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[10px] font-bold px-2.5 py-1 rounded-md whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/btn:-translate-y-1">
+                                            {p.activa ? "Ocultar" : "Reactivar"}
+                                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
+
                                   </div>
                                 </div>
                               );

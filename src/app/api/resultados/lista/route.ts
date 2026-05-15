@@ -5,7 +5,6 @@ const prisma = new PrismaClient();
 
 export async function GET() {
   try {
-    // Traemos TODAS las órdenes que no estén anuladas, sin importar si tienen resultados o no.
     const ordenes = await prisma.orden.findMany({
       where: {
         estado: { nombre: { not: "ANULADA" } }
@@ -15,12 +14,21 @@ export async function GET() {
         estado: { select: { nombre: true } },
         detalles: {
           include: {
-            prueba: true,
-            resultado: true // <--- MUY IMPORTANTE: Traemos el resultado guardado por si queremos editarlo
+            // ¡ESTA LÍNEA ES LA QUE ARREGLA EL PROBLEMA DE LOS GUIONES!
+            resultado: { include: { valores: true } }, 
+            prueba: {
+              include: {
+                subcategoria: {
+                  include: {
+                    categoria: true
+                  }
+                }
+              }
+            }
           }
         }
       },
-      orderBy: { fechaCreacion: 'desc' } // Las más recientes primero
+      orderBy: { fechaCreacion: 'desc' }
     });
 
     return NextResponse.json(ordenes);

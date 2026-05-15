@@ -72,7 +72,7 @@ export default function Sidebar() {
               isCollapsed ? "w-0 opacity-0" : "w-[120px] opacity-100"
             }`}>
               <span className="font-title text-xl font-black text-[#1D1D1F] tracking-tight leading-none">
-                LEYMA <span className="text-sm font-black text-[#1D1D1F]">S.A.</span>
+                LEYMA <span className="text-sm font-black text-[#1D1D1F]">C.A.</span>
               </span>
               <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-[0.2em] mt-1">
                 Laboratorio

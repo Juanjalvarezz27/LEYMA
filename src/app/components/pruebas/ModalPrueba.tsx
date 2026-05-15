@@ -1,5 +1,4 @@
 "use client";
-
 import { X, Plus, Trash2, ChevronDown, Loader2, Package, LayoutList } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
@@ -46,7 +45,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
       })));
     } else {
       setFormData({ categoria: "", subcategoria: "", esPaquete: false, precioPaqueteUSD: "" });
-      setPruebas([{ id: null, codigo: "", nombre: "", precioUSD: "", unidades: "", valoresReferencia: "" }]);
+      setPruebas([{ id: "", codigo: "", nombre: "", precioUSD: "", unidades: "", valoresReferencia: "" }]);
     }
     setGuardando(false);
   }, [pruebaEditar, isOpen]);
@@ -54,7 +53,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
   if (!isOpen) return null;
 
   const agregarFila = () => {
-    setPruebas([...pruebas, { id: null, codigo: "", nombre: "", precioUSD: "", unidades: "", valoresReferencia: "" }]);
+    setPruebas([...pruebas, { id: "", codigo: "", nombre: "", precioUSD: "", unidades: "", valoresReferencia: "" }]);
   };
 
   const eliminarFila = (index: number) => {
@@ -76,12 +75,11 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validación según la modalidad
+    // 1. Validación UI
     if (formData.esPaquete && !formData.precioPaqueteUSD) {
       toast.error("Debe ingresar el precio total del paquete.");
       return;
     }
-
     if (pruebas.some(p => !p.nombre.trim() || !p.codigo.trim() || (!formData.esPaquete && !p.precioUSD))) {
       toast.error("Complete los códigos, nombres y precios requeridos.");
       return;
@@ -89,7 +87,28 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
     
     setGuardando(true);
     try {
-      await onSave({ ...formData, pruebas });
+      // 2. LIMPIEZA DE DATOS (Mapeo estricto para evitar error 500 en Prisma)
+      const payloadLimpio = {
+        categoria: formData.categoria,
+        subcategoria: formData.subcategoria,
+        esPaquete: formData.esPaquete,
+        // Si es paquete, convertimos a Float, si no, lo enviamos como null
+        precioPaqueteUSD: formData.esPaquete ? parseFloat(formData.precioPaqueteUSD) : null, 
+        
+        pruebas: pruebas.map(p => ({
+          // Si el ID viene vacío (""), pasamos undefined para que Prisma sepa que es un registro nuevo
+          id: p.id ? p.id : undefined, 
+          codigo: p.codigo,
+          nombre: p.nombre,
+          // Convertimos el precio individual a Float (si aplica)
+          precioUSD: !formData.esPaquete ? parseFloat(p.precioUSD) : null,
+          unidades: p.unidades,
+          valoresReferencia: p.valoresReferencia
+        }))
+      };
+
+      // 3. Enviamos los datos formateados a la API
+      await onSave(payloadLimpio);
     } finally {
       setGuardando(false);
     }
@@ -117,15 +136,15 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-8 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300">
           
-          {/* SECTOR DE MODALIDAD (NUEVO) */}
+          {/* SECTOR DE MODALIDAD */}
           <div className="flex gap-4 mb-2">
             <button
               type="button"
               onClick={() => setFormData({ ...formData, esPaquete: false })}
               className={`flex-1 flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${
                 !formData.esPaquete 
-                  ? 'border-[#0071E3] bg-[#0071E3]/5 text-[#0071E3]' 
-                  : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                ? 'border-[#0071E3] bg-[#0071E3]/5 text-[#0071E3]' 
+                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
               }`}
             >
               <div className={`p-2 rounded-xl ${!formData.esPaquete ? 'bg-[#0071E3] text-white' : 'bg-slate-100'}`}>
@@ -142,8 +161,8 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
               onClick={() => setFormData({ ...formData, esPaquete: true })}
               className={`flex-1 flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${
                 formData.esPaquete 
-                  ? 'border-purple-500 bg-purple-50 text-purple-700' 
-                  : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                ? 'border-purple-500 bg-purple-50 text-purple-700' 
+                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
               }`}
             >
               <div className={`p-2 rounded-xl ${formData.esPaquete ? 'bg-purple-500 text-white' : 'bg-slate-100'}`}>

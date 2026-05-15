@@ -1,72 +1,193 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { X, Printer, Download, MessageCircle } from "lucide-react";
 import { toast } from "react-toastify";
+import { Document, Page, Text, View, StyleSheet, Image, PDFViewer, pdf, Font } from '@react-pdf/renderer';
+import QRCodeNode from "qrcode";
 
 interface ModalPreviewPDFProps {
   orden: any;
   onClose: () => void;
 }
 
-export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps) {
+// ---------------------------------------------------------------------------
+// 1. REGISTRO DE FUENTES
+// ---------------------------------------------------------------------------
+Font.register({
+  family: 'Montserrat',
+  src: 'https://cdn.jsdelivr.net/fontsource/fonts/montserrat@latest/latin-900-normal.ttf' 
+});
+
+Font.register({
+  family: 'Inter',
+  fonts: [
+    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-normal.ttf', fontWeight: 400 },
+    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-700-normal.ttf', fontWeight: 700 }
+  ]
+});
+
+// ---------------------------------------------------------------------------
+// 2. ESTILOS NATIVOS DE REACT-PDF (COMPRIMIDOS PARA AHORRAR ESPACIO)
+// ---------------------------------------------------------------------------
+const styles = StyleSheet.create({
+  page: {
+    paddingTop: 25, // Reducido de 40
+    paddingBottom: 90, // Reducido para dar justo el espacio del footer
+    paddingHorizontal: 30, // Reducido de 40
+    fontFamily: 'Inter',
+    fontSize: 9, // Reducido de 10
+    color: '#000'
+  },
+  topContact: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    paddingBottom: 4,
+    marginBottom: 6, // Reducido de 10
+  },
+  topContactText: { fontSize: 6.5, color: '#64748B', fontWeight: 700 },
+  topContactRight: { flexDirection: 'row', gap: 10 },
   
-  const handlePrint = () => {
-    window.print();
-  };
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#000',
+    paddingBottom: 8, // Reducido de 12
+    marginBottom: 10 // Reducido de 15
+  },
+  logoRow: { flexDirection: 'row', alignItems: 'center' },
+  logoImage: { width: 50, height: 50, objectFit: 'contain', marginRight: 12 }, // Reducido de 65
+  
+  logoTitle: { fontSize: 22, fontFamily: 'Montserrat', marginBottom: 1 }, // Reducido de 26
+  logoSubtitle: { fontSize: 7.5, fontWeight: 700, letterSpacing: 0.5 }, 
+  
+  headerData: { textAlign: 'right', fontSize: 9 },
+  headerDataRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 2 },
+  headerDataLabel: { fontWeight: 700, marginRight: 4 },
 
-  const handleDownload = async () => {
-    const toastId = toast.loading("Generando documento PDF...");
-    try {
-      // @ts-ignore
-      const html2pdf = (await import('html2pdf.js')).default;
-      
-      const element = document.getElementById('printable-pdf');
-      
-      // CORRECCIÓN 1: Le decimos a TypeScript "Si no encuentras el div, detente"
-      if (!element) {
-        toast.update(toastId, { render: "Error: No se encontró el documento para renderizar.", type: "error", isLoading: false, autoClose: 3000 });
-        return;
-      }
+  patientBox: {
+    flexDirection: 'row',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#000',
+    paddingBottom: 8, // Reducido de 12
+    marginBottom: 10 // Reducido de 15
+  },
+  patientColLeft: { width: '55%', paddingRight: 10 },
+  patientColRight: { width: '45%', borderLeftWidth: 1, borderLeftColor: '#E2E8F0', paddingLeft: 15 },
+  patientRow: { flexDirection: 'row', marginBottom: 3 }, // Reducido de 5
+  patientLabel: { width: 80, fontWeight: 700, fontSize: 9.5 }, // Reducido de 11
+  patientValue: { flex: 1, fontSize: 9.5, textTransform: 'uppercase' },
 
-      const opt = {
-        // CORRECCIÓN 2: Le decimos a TypeScript explícitamente que esto es una tupla de 4 números
-        margin:       [0.5, 0, 0.5, 0] as [number, number, number, number], 
-        filename:     `Resultados_${orden.paciente.nombreCompleto.replace(/\s+/g, '_')}_${orden.id}.pdf`,
-        image:        { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'in' as const, format: 'letter' as const, orientation: 'portrait' as const }
-      };
+  catTitle: {
+    fontSize: 12, // Reducido de 14
+    fontWeight: 700,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#000',
+    paddingBottom: 2,
+    marginBottom: 6, // Reducido de 10
+    marginTop: 6, // Reducido de 10
+    textTransform: 'uppercase'
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#000',
+    paddingBottom: 3,
+    marginBottom: 4 // Reducido de 6
+  },
+  colDesc: { width: '45%', fontWeight: 700, fontSize: 8 },
+  colRes: { width: '15%', fontWeight: 700, fontSize: 8, textAlign: 'center' },
+  colUni: { width: '15%', fontWeight: 700, fontSize: 8, textAlign: 'center' },
+  colRef: { width: '25%', fontWeight: 700, fontSize: 8, textAlign: 'right' },
+  
+  subcatTitle: { fontSize: 8, fontWeight: 700, paddingVertical: 2, paddingLeft: 5 },
+  
+  row: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 2, paddingVertical: 1 }, // Más compacto
+  rowDesc: { width: '45%', fontSize: 8, fontWeight: 700 },
+  rowDescSub: { width: '45%', fontSize: 8, fontWeight: 700, paddingLeft: 15 },
+  multiRowDesc: { width: '45%', fontSize: 7.5, fontWeight: 400, paddingLeft: 25, color: '#334155' },
+  rowRes: { width: '15%', fontSize: 9.5, fontWeight: 700, textAlign: 'center' }, // Resaltado pero un poco menor
+  rowUni: { width: '15%', fontSize: 8, textAlign: 'center' },
+  rowRef: { width: '25%', fontSize: 8, textAlign: 'right' },
+  
+  obsContainer: { marginLeft: 15, marginBottom: 3, marginTop: 1, flexDirection: 'row' },
+  obsLabel: { fontSize: 7.5, fontWeight: 700, color: '#475569' },
+  obsText: { fontSize: 7.5, fontWeight: 400, color: '#475569' },
 
-      await html2pdf().set(opt).from(element).save();
-      toast.update(toastId, { render: "¡PDF descargado con éxito!", type: "success", isLoading: false, autoClose: 3000 });
-    } catch (error) {
-      console.error(error);
-      toast.update(toastId, { render: "Error al generar el PDF", type: "error", isLoading: false, autoClose: 3000 });
-    }
-  };
+  // Footer en dos columnas (Más compacto y apegado al fondo)
+  footer: {
+    position: 'absolute',
+    bottom: 20, // Pegado más al borde
+    left: 30, // Ajustado a los nuevos márgenes
+    right: 30,
+    flexDirection: 'column',
+    alignItems: 'center'
+  },
+  footerColumns: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    width: '100%',
+    marginBottom: 8 // Reducido de 15
+  },
+  footerLeft: {
+    width: '50%',
+    alignItems: 'center'
+  },
+  footerRight: {
+    width: '50%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderLeftWidth: 1,
+    borderLeftColor: '#E2E8F0',
+    paddingLeft: 10
+  },
+  signatureLine: {
+    width: 180,
+    borderTopWidth: 1.5,
+    borderTopColor: '#000',
+    paddingTop: 4,
+    alignItems: 'center'
+  },
+  bioanalista: { fontSize: 9.5, fontWeight: 700, letterSpacing: 1 },
+  labNameFooter: { fontSize: 8, marginTop: 1 },
+  
+  qrImage: {
+    width: 45, // QR más pequeño
+    height: 45
+  },
+  qrLabelBox: {
+    flexDirection: 'column',
+    justifyContent: 'center'
+  },
+  qrTitle: { fontSize: 7.5, fontWeight: 700, color: '#1D1D1F' },
+  qrSubtitle: { fontSize: 6, color: '#64748B', marginTop: 1, maxWidth: 130 },
 
-  const formatWhatsAppNumber = (phone: string) => {
-    if (!phone) return "";
-    let cleaned = phone.replace(/\D/g, "");
-    if (cleaned.startsWith("0")) return "58" + cleaned.substring(1);
-    if (!cleaned.startsWith("58")) return "58" + cleaned;
-    return cleaned;
-  };
+  legalBox: {
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    width: '100%',
+    paddingTop: 4,
+    alignItems: 'center'
+  },
+  legalText: { fontSize: 6.5, fontWeight: 700, color: '#64748B', textAlign: 'center' }
+});
 
-  const enviarWhatsAppText = () => {
-    if (!orden.paciente.telefono) {
-      toast.warning("El paciente no tiene número de teléfono registrado.");
-      return;
-    }
-    const numeroWA = formatWhatsAppNumber(orden.paciente.telefono);
-    
-    let mensaje = `*Laboratorio LEYMA S.A.*\nHola ${orden.paciente.nombreCompleto},\n\n`;
-    mensaje += `Tus resultados ya estan listos y procesados.\n\n`;
-    mensaje += `Adjuntamos a este chat tu informe oficial en formato PDF para que puedas visualizarlo a detalle.\n\n`;
-    mensaje += `Cualquier consulta estamos a tu orden. Feliz dia!`;
-
-    const url = `https://wa.me/${numeroWA}?text=${encodeURIComponent(mensaje)}`;
-    window.open(url, "_blank"); 
+// ---------------------------------------------------------------------------
+// 3. COMPONENTE DEL DOCUMENTO PDF
+// ---------------------------------------------------------------------------
+const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fechaImpresa: string, qrCodeUrl: string }) => {
+  const formatFechaHora = (dateString: string) => {
+    const d = new Date(dateString);
+    const dateStr = d.toLocaleDateString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const timeStr = d.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true });
+    return `${dateStr} ${timeStr}`;
   };
 
   const calcularEdad = (fechaNac: string, esBebe: boolean) => {
@@ -75,140 +196,327 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
     const nacimiento = new Date(fechaNac);
     let edad = hoy.getFullYear() - nacimiento.getFullYear();
     const m = hoy.getMonth() - nacimiento.getMonth();
-    if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) {
-      edad--;
-    }
-    return `${edad} ${esBebe ? 'Meses/Días' : 'Años'}`;
+    if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
+    return `${edad} ${esBebe ? 'Meses' : 'Años'}`;
   };
 
-  const fechaDoc = new Date().toLocaleDateString('es-VE', { 
-    year: 'numeric', month: 'long', day: 'numeric' 
-  });
+  const groupedDetalles = orden.detalles.reduce((acc: any, det: any) => {
+    const catNombre = det.prueba?.subcategoria?.categoria?.nombre || "OTROS";
+    const subcatNombre = det.prueba?.subcategoria?.nombre || "PRUEBAS INDIVIDUALES";
+    if (!acc[catNombre]) acc[catNombre] = {};
+    if (!acc[catNombre][subcatNombre]) acc[catNombre][subcatNombre] = [];
+    acc[catNombre][subcatNombre].push(det);
+    return acc;
+  }, {});
 
   return (
-    <>
-      <style dangerouslySetInnerHTML={{__html: `
-        @media print {
-          body * { visibility: hidden; }
-          #printable-pdf, #printable-pdf * { visibility: visible; }
-          #printable-pdf { position: absolute; left: 0; top: 0; width: 100%; margin: 0; box-shadow: none; min-height: 100vh; }
-          @page { margin: 1cm; size: auto; }
-        }
-      `}} />
-
-      <div className="fixed inset-0 z-[200] flex flex-col items-center p-4 sm:p-8 bg-[#1D1D1F]/95 overflow-y-auto print:bg-white print:p-0 print:block">
+    <Document>
+      <Page size="LETTER" style={styles.page}>
         
-        <div className="w-full max-w-[800px] flex justify-between items-center bg-[#2D2D2F] p-4 rounded-2xl mb-6 print:hidden shrink-0 shadow-lg border border-white/10">
-          <div className="flex gap-3">
-            <button onClick={handlePrint} className="flex items-center gap-2 bg-white text-[#1D1D1F] hover:bg-slate-200 px-4 py-2 rounded-xl text-sm font-bold transition-colors">
-              <Printer size={18} /> Imprimir
-            </button>
-            <button onClick={handleDownload} className="flex items-center gap-2 bg-[#0071E3] text-white hover:bg-[#0077ED] px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm">
-              <Download size={18} /> Descargar PDF
-            </button>
-            <button onClick={enviarWhatsAppText} className="flex items-center gap-2 bg-emerald-500 text-white hover:bg-emerald-600 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm">
-              <MessageCircle size={18} /> Enviar WS
-            </button>
-          </div>
-          <button onClick={onClose} className="p-2 bg-white/10 hover:bg-red-500 text-white rounded-full transition-colors">
-            <X size={20} strokeWidth={2.5} />
+        {/* INFO CONTACTO SUPERIOR */}
+        <View style={styles.topContact}>
+          <Text style={styles.topContactText}>DIRECCIÓN: AV. BOLÍVAR, SECTOR CARMONA, EDIF. LEYMA.</Text>
+          <View style={styles.topContactRight}>
+            <Text style={styles.topContactText}>TELÉFONO: 0412-9164371</Text>
+            <Text style={styles.topContactText}>CORREO: CONTACTO@LEYMA.COM</Text>
+            <Text style={styles.topContactText}>RIF: J-00000000-0</Text>
+          </View>
+        </View>
+
+        {/* HEADER */}
+        <View style={styles.header}>
+          <View style={styles.logoRow}>
+            <Image src="/Logo2.png" style={styles.logoImage} />
+            <View>
+              <Text style={styles.logoTitle}>LEYMA S.A.</Text>
+              <Text style={styles.logoSubtitle}>LABORATORIO CLÍNICO BACTERIOLÓGICO</Text>
+            </View>
+          </View>
+          <View style={styles.headerData}>
+            <View style={styles.headerDataRow}>
+              <Text style={styles.headerDataLabel}>Orden N°:</Text>
+              <Text>#{orden.id.toString().padStart(6, '0')}</Text>
+            </View>
+            <View style={styles.headerDataRow}>
+              <Text style={styles.headerDataLabel}>Ingreso:</Text>
+              <Text>{formatFechaHora(orden.fechaCreacion)}</Text>
+            </View>
+            <View style={styles.headerDataRow}>
+              <Text style={styles.headerDataLabel}>Impreso:</Text>
+              <Text>{fechaImpresa}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* FICHA DEL PACIENTE */}
+        <View style={styles.patientBox}>
+          <View style={styles.patientColLeft}>
+            <View style={styles.patientRow}>
+              <Text style={styles.patientLabel}>Paciente:</Text>
+              <Text style={styles.patientValue}>{orden.paciente.nombreCompleto}</Text>
+            </View>
+            <View style={styles.patientRow}>
+              <Text style={styles.patientLabel}>Edad:</Text>
+              <Text style={styles.patientValue}>{calcularEdad(orden.paciente.fechaNacimiento, orden.paciente.esBebe)}</Text>
+            </View>
+            <View style={styles.patientRow}>
+              <Text style={styles.patientLabel}>Dirección:</Text>
+              <Text style={styles.patientValue}>{orden.paciente.direccion || 'No registrada'}</Text>
+            </View>
+            <View style={styles.patientRow}>
+              <Text style={styles.patientLabel}>Observaciones:</Text>
+              <Text style={styles.patientValue}>{orden.paciente.observaciones || '---'}</Text>
+            </View>
+          </View>
+          
+          <View style={styles.patientColRight}>
+            <View style={styles.patientRow}>
+              <Text style={styles.patientLabel}>C.I:</Text>
+              <Text style={styles.patientValue}>{orden.paciente.cedula || 'S/N'}</Text>
+            </View>
+            <View style={styles.patientRow}>
+              <Text style={styles.patientLabel}>Sexo:</Text>
+              <Text style={styles.patientValue}>{orden.paciente.sexo === 'M' ? 'Masculino' : 'Femenino'}</Text>
+            </View>
+            <View style={styles.patientRow}>
+              <Text style={styles.patientLabel}>Teléfono:</Text>
+              <Text style={styles.patientValue}>{orden.paciente.telefono || 'No registrado'}</Text>
+            </View>
+            <View style={styles.patientRow}>
+              <Text style={styles.patientLabel}>Ubicación:</Text>
+              <Text style={styles.patientValue}>MATRIZ</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* CUERPO DEL REPORTE */}
+        {Object.entries(groupedDetalles).map(([catNombre, subcategorias]) => (
+          <View key={catNombre} wrap={false}>
+            <Text style={styles.catTitle}>{catNombre}</Text>
+
+            {Object.entries(subcategorias as any).map(([subCatNombre, detalles]: [string, any]) => (
+              <View key={subCatNombre} style={{ marginBottom: 10 }}>
+                
+                <View style={styles.tableHeader}>
+                  <Text style={styles.colDesc}>DESCRIPCIÓN DEL EXAMEN</Text>
+                  <Text style={styles.colRes}>RESULTADO</Text>
+                  <Text style={styles.colUni}>UNIDADES</Text>
+                  <Text style={styles.colRef}>VALORES DE REFERENCIA</Text>
+                </View>
+
+                {detalles[0]?.prueba?.subcategoria?.esPaquete && (
+                  <Text style={styles.subcatTitle}>{subCatNombre}</Text>
+                )}
+
+                {detalles.map((det: any) => {
+                  const isPaquete = detalles[0]?.prueba?.subcategoria?.esPaquete;
+                  const listaValores = det.resultado?.valores || [];
+                  
+                  return (
+                    <View key={det.id} wrap={false}>
+                      {det.cantidad > 1 ? (
+                        <View>
+                          <View style={styles.row}>
+                            <Text style={isPaquete ? styles.rowDescSub : styles.rowDesc}>{det.prueba.nombre}</Text>
+                            <Text style={styles.rowRes}></Text>
+                            <Text style={styles.rowUni}>{det.prueba.unidades || ''}</Text>
+                            <Text style={styles.rowRef}>{det.prueba.valoresReferencia || ''}</Text>
+                          </View>
+                          
+                          {Array(det.cantidad).fill(0).map((_, i) => {
+                            const valorMuestra = listaValores[i]?.valorIngresado || "-";
+                            return (
+                              <View key={i} style={styles.row}>
+                                <Text style={styles.multiRowDesc}>Muestra {i + 1}</Text>
+                                <Text style={styles.rowRes}>{valorMuestra}</Text>
+                                <Text style={styles.rowUni}></Text>
+                                <Text style={styles.rowRef}></Text>
+                              </View>
+                            );
+                          })}
+                        </View>
+                      ) : (
+                        <View style={styles.row}>
+                          <Text style={isPaquete ? styles.rowDescSub : styles.rowDesc}>{det.prueba.nombre}</Text>
+                          <Text style={styles.rowRes}>{listaValores[0]?.valorIngresado || "-"}</Text>
+                          <Text style={styles.rowUni}>{det.prueba.unidades || ''}</Text>
+                          <Text style={styles.rowRef}>{det.prueba.valoresReferencia || ''}</Text>
+                        </View>
+                      )}
+                      
+                      {det.resultado?.observaciones && (
+                        <View style={styles.obsContainer}>
+                          <Text style={styles.obsLabel}>Nota ({det.prueba.nombre}): </Text>
+                          <Text style={styles.obsText}>{det.resultado.observaciones}</Text>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            ))}
+          </View>
+        ))}
+
+        {/* FOOTER CONDICIONAL DE LA ÚLTIMA PÁGINA */}
+        <View style={styles.footer} fixed render={(props: any) => {
+          const { pageNumber, totalPages } = props;
+          if (pageNumber === totalPages) {
+            return (
+              <View style={{ width: '100%' }}>
+                <View style={styles.footerColumns}>
+                  
+                  {/* LADO IZQUIERDO: FIRMA */}
+                  <View style={styles.footerLeft}>
+                    <View style={styles.signatureLine}>
+                      <Text style={styles.bioanalista}>{orden.creadoPor?.nombre || 'BIOANALISTA TITULAR'}</Text>
+                      <Text style={styles.labNameFooter}>Laboratorio Clínico LEYMA S.A.</Text>
+                    </View>
+                  </View>
+
+                  {/* LADO DERECHO: QR EN BASE64 NATIVO */}
+                  <View style={styles.footerRight}>
+                    {qrCodeUrl ? (
+                      <Image src={qrCodeUrl} style={styles.qrImage} />
+                    ) : <View style={styles.qrImage} />}
+                    <View style={styles.qrLabelBox}>
+                      <Text style={styles.qrTitle}>DOCUMENTO VERIFICADO</Text>
+                      <Text style={styles.qrSubtitle}>
+                        Escanee este código QR para validar la autenticidad de los resultados directamente desde el servidor central de LEYMA S.A.
+                      </Text>
+                    </View>
+                  </View>
+
+                </View>
+
+                <View style={styles.legalBox}>
+                  <Text style={styles.legalText}>
+                    ESTE REPORTE ES UN DOCUMENTO ELECTRÓNICO OFICIAL GENERADO POR EL SISTEMA LEYMA. VÁLIDO ÚNICAMENTE CON SELLO HÚMEDO ORIGINAL.
+                  </Text>
+                </View>
+              </View>
+            );
+          }
+          return <View />;
+        }} />
+
+      </Page>
+    </Document>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// 4. COMPONENTE PRINCIPAL (MODAL)
+// ---------------------------------------------------------------------------
+export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps) {
+  const [isMounted, setIsMounted] = useState(false);
+  const [fechaImpresa, setFechaImpresa] = useState("");
+  const [qrCodeUrl, setQrCodeUrl] = useState("");
+
+  useEffect(() => {
+    setIsMounted(true);
+    const ahora = new Date();
+    setFechaImpresa(ahora.toLocaleDateString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit' }) + ' ' + ahora.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true }));
+
+    const generarQR = async () => {
+      try {
+        const urlValidacion = `${window.location.origin}/validar/${orden.id}`;
+        const base64Data = await QRCodeNode.toDataURL(urlValidacion, {
+          margin: 1,
+          width: 200,
+          color: { dark: "#000000", light: "#FFFFFF" }
+        });
+        setQrCodeUrl(base64Data);
+      } catch (err) {
+        console.error("Error generando QR", err);
+      }
+    };
+
+    if (orden?.id) generarQR();
+  }, [orden]);
+
+  const handleDownloadBlob = async () => {
+    const toastId = toast.loading("Generando PDF en alta calidad...");
+    try {
+      const blob = await pdf(<ReporteDocument orden={orden} fechaImpresa={fechaImpresa} qrCodeUrl={qrCodeUrl} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Resultados_${orden.paciente.nombreCompleto.replace(/\s+/g, '_')}_#${orden.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.update(toastId, { render: "¡PDF descargado exitosamente!", type: "success", isLoading: false, autoClose: 3000 });
+    } catch (error) {
+      toast.update(toastId, { render: "Error al generar el PDF", type: "error", isLoading: false, autoClose: 3000 });
+    }
+  };
+
+  const handlePrintBlob = async () => {
+    const toastId = toast.loading("Preparando impresión...");
+    try {
+      const blob = await pdf(<ReporteDocument orden={orden} fechaImpresa={fechaImpresa} qrCodeUrl={qrCodeUrl} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = url;
+      document.body.appendChild(iframe);
+      iframe.onload = () => {
+        iframe.contentWindow?.print();
+        toast.dismiss(toastId);
+      };
+    } catch (error) {
+      toast.update(toastId, { render: "Error al preparar impresión", type: "error", isLoading: false, autoClose: 3000 });
+    }
+  };
+
+  const enviarWhatsAppText = () => {
+    if (!orden.paciente.telefono) {
+      toast.warning("El paciente no tiene número de teléfono registrado.");
+      return;
+    }
+    let cleaned = orden.paciente.telefono.replace(/\D/g, "");
+    if (cleaned.startsWith("0")) cleaned = "58" + cleaned.substring(1);
+    else if (!cleaned.startsWith("58")) cleaned = "58" + cleaned;
+    
+    let mensaje = `*Laboratorio LEYMA S.A.*\nHola ${orden.paciente.nombreCompleto},\n\n`;
+    mensaje += `Tus resultados ya están listos y procesados.\n\n`;
+    mensaje += `Adjuntamos a este chat tu informe oficial en formato PDF.\n\n`;
+    mensaje += `¡Cualquier consulta estamos a tu orden. Feliz día!`;
+
+    const url = `https://wa.me/${cleaned}?text=${encodeURIComponent(mensaje)}`;
+    window.open(url, "_blank"); 
+  };
+
+  if (!isMounted) return null;
+
+  return (
+    <div className="fixed inset-0 z-[200] flex flex-col items-center p-4 sm:p-8 bg-[#1D1D1F]/95">
+      
+      <div className="w-full max-w-[850px] flex justify-between items-center bg-[#2D2D2F] p-4 rounded-2xl mb-6 shrink-0 shadow-lg border border-white/10">
+        <div className="flex gap-3">
+          <button onClick={handlePrintBlob} className="flex items-center gap-2 bg-white text-[#1D1D1F] hover:bg-slate-200 px-4 py-2 rounded-xl text-sm font-bold transition-colors">
+            <Printer size={18} /> Imprimir
+          </button>
+          <button onClick={handleDownloadBlob} className="flex items-center gap-2 bg-[#0071E3] text-white hover:bg-[#0077ED] px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm">
+            <Download size={18} /> Descargar
+          </button>
+          <button onClick={enviarWhatsAppText} className="flex items-center gap-2 bg-emerald-500 text-white hover:bg-emerald-600 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm">
+            <MessageCircle size={18} /> Enviar WS
           </button>
         </div>
-
-        <div id="printable-pdf" className="bg-white w-full max-w-[800px] min-h-[1056px] shadow-2xl shrink-0 px-12 pt-12 pb-6 flex flex-col relative print:shadow-none">
-          
-          <div className="flex justify-between items-start border-b-2 border-[#0071E3] pb-6 mb-6">
-            <div className="flex items-center gap-4">
-              <img src="/Logo.png" alt="Logo LEYMA" className="h-16 object-contain" />
-              <div>
-                <h1 className="text-2xl font-black text-[#1D1D1F] tracking-tight leading-none mb-1">LEYMA S.A.</h1>
-                <p className="text-[12px] font-bold text-[#0071E3] tracking-widest uppercase">Laboratorio Clínico</p>
-              </div>
-            </div>
-            <div className="text-right text-sm font-medium text-slate-500">
-              <p>Fecha de emisión: <span className="text-[#1D1D1F] font-bold">{fechaDoc}</span></p>
-              <p>N° de Orden: <span className="text-[#1D1D1F] font-bold tracking-widest">#{orden.id.toString().padStart(5, '0')}</span></p>
-            </div>
-          </div>
-
-          <div className="bg-[#F5F5F7] border border-slate-200 rounded-xl p-5 mb-8">
-            <h3 className="text-[11px] font-black text-[#0071E3] uppercase tracking-widest mb-4 border-b border-slate-200 pb-2">Ficha del Paciente</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-y-4 gap-x-6">
-              <div className="col-span-2">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Nombre Completo</p>
-                <p className="text-sm font-black text-[#1D1D1F]">{orden.paciente.nombreCompleto}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Cédula</p>
-                <p className="text-sm font-bold text-[#1D1D1F]">{orden.paciente.cedula || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Edad y Sexo</p>
-                <p className="text-sm font-bold text-[#1D1D1F]">
-                  {calcularEdad(orden.paciente.fechaNacimiento, orden.paciente.esBebe)} / {orden.paciente.sexo === 'M' ? 'Masculino' : 'Femenino'}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Teléfono</p>
-                <p className="text-sm font-bold text-[#1D1D1F]">{orden.paciente.telefono || 'Sin registrar'}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Correo</p>
-                <p className="text-sm font-bold text-[#1D1D1F] truncate">{orden.paciente.correo || 'Sin registrar'}</p>
-              </div>
-              <div className="col-span-2">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Dirección</p>
-                <p className="text-sm font-bold text-[#1D1D1F] truncate">{orden.paciente.direccion || 'Sin registrar'}</p>
-              </div>
-            </div>
-          </div>
-
-          <h2 className="text-lg font-black text-[#1D1D1F] mb-4 border-b border-slate-200 pb-2">Resultados de Laboratorio</h2>
-          
-          <div className="space-y-6">
-            {orden.detalles.map((det: any) => (
-              <div key={det.id} className="break-inside-avoid">
-                <div className="bg-slate-50 border-l-4 border-[#0071E3] py-2 px-4 mb-3">
-                  <h3 className="text-[14px] font-black text-[#1D1D1F] uppercase">{det.prueba.nombre}</h3>
-                </div>
-                
-                <div className="pl-5 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Resultado</p>
-                    <div className="text-[13px] font-medium text-[#1D1D1F] whitespace-pre-wrap leading-relaxed">
-                      {det.resultado?.valores || 'Sin procesar'}
-                    </div>
-                  </div>
-                  
-                  {det.resultado?.observaciones && (
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Observaciones</p>
-                      <div className="text-[13px] font-medium text-slate-600 whitespace-pre-wrap italic">
-                        {det.resultado.observaciones}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex-1 min-h-[100px]"></div>
-
-          <div className="mt-auto pt-10 text-center break-inside-avoid">
-            <div className="w-64 border-t-[1.5px] border-solid border-slate-800 mx-auto pt-3">
-              <p className="text-[13px] font-black text-[#1D1D1F] uppercase tracking-widest">BIOANALISTA</p>
-            </div>
-            
-            <div className="mt-8 pt-4 border-t border-slate-200">
-               <p className="text-[10px] font-medium text-slate-400">
-                 Documento generado automáticamente por el Sistema LEYMA S.A. No válido como récife de pago.
-               </p>
-            </div>
-          </div>
-
-        </div>
+        <button onClick={onClose} className="p-2 bg-white/10 hover:bg-red-500 text-white rounded-full transition-colors">
+          <X size={20} strokeWidth={2.5} />
+        </button>
       </div>
-    </>
+
+      <div className="w-full max-w-[850px] flex-1 bg-white rounded-xl overflow-hidden shadow-2xl">
+        <PDFViewer width="100%" height="100%" showToolbar={false}>
+          <ReporteDocument orden={orden} fechaImpresa={fechaImpresa} qrCodeUrl={qrCodeUrl} />
+        </PDFViewer>
+      </div>
+
+    </div>
   );
 }

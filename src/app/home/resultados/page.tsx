@@ -12,7 +12,7 @@ export default function ResultadosPage() {
   const [busqueda, setBusqueda] = useState("");
   const [ordenSeleccionada, setOrdenSeleccionada] = useState<any | null>(null);
   const [ordenPDF, setOrdenPDF] = useState<any | null>(null);
-  
+
   const [tabActiva, setTabActiva] = useState<"PENDIENTES" | "COMPLETADOS">("PENDIENTES");
 
   const fetchOrdenes = async () => {
@@ -56,30 +56,29 @@ export default function ResultadosPage() {
     return cleaned;
   };
 
-  // Esta función ahora SOLO se usa para cobrar a los que tienen Deuda
   const enviarWhatsAppCobro = (orden: any) => {
     if (!orden.paciente.telefono) {
       toast.warning("El paciente no tiene un numero de telefono registrado.");
       return;
     }
     const numeroWA = formatWhatsAppNumber(orden.paciente.telefono);
-    
+
     let mensaje = `*Laboratorio LEYMA S.A.*\nHola ${orden.paciente.nombreCompleto},\n\n`;
     mensaje += `Te informamos que tus resultados ya estan listos.\n\n`;
     mensaje += `Por favor, acercate a nuestras instalaciones para realizar el pago pendiente y recibir tu informe oficial.\n\n`;
     mensaje += `*Total de la orden:* $${orden.totalUSD.toFixed(2)} / Bs ${orden.totalBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}\n\n`;
     mensaje += `Te esperamos!`;
-    
+
     const url = `https://wa.me/${numeroWA}?text=${encodeURIComponent(mensaje)}`;
-    window.open(url, "_blank"); 
+    window.open(url, "_blank");
   };
 
   return (
     <div className="h-full flex flex-col pb-10 overflow-y-auto pr-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
-      
+
       {ordenSeleccionada && (
-        <ModalCargarResultados 
-          orden={ordenSeleccionada} 
+        <ModalCargarResultados
+          orden={ordenSeleccionada}
           onClose={() => setOrdenSeleccionada(null)}
           onSuccess={() => {
             setOrdenSeleccionada(null);
@@ -89,9 +88,9 @@ export default function ResultadosPage() {
       )}
 
       {ordenPDF && (
-        <ModalPreviewPDF 
-          orden={ordenPDF} 
-          onClose={() => setOrdenPDF(null)} 
+        <ModalPreviewPDF
+          orden={ordenPDF}
+          onClose={() => setOrdenPDF(null)}
         />
       )}
 
@@ -158,6 +157,20 @@ export default function ResultadosPage() {
           {ordenesFiltradas.map((orden) => {
             const estaPagada = orden.estado.nombre === "CERRADA";
 
+            // LÓGICA DE AGRUPACIÓN PARA PREVISUALIZACIÓN DE ETIQUETAS
+            const tagsAgrupados: any[] = [];
+            orden.detalles.forEach((det: any) => {
+              const isPaquete = det.prueba?.subcategoria?.esPaquete;
+              if (isPaquete) {
+                const subcatId = det.prueba.subcategoria.id;
+                if (!tagsAgrupados.find(i => i.isPaquete && i.id === subcatId)) {
+                  tagsAgrupados.push({ id: subcatId, nombre: det.prueba.subcategoria.nombre, isPaquete: true });
+                }
+              } else {
+                tagsAgrupados.push({ id: det.prueba.id, nombre: det.prueba.nombre, isPaquete: false });
+              }
+            });
+
             return (
               <div key={orden.id} className="bg-white border border-slate-200/80 rounded-[24px] shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden">
                 
@@ -165,7 +178,7 @@ export default function ResultadosPage() {
                   <span className="text-[14px] font-bold text-slate-500 tracking-tight">
                     #{orden.id.toString().padStart(5, '0')}
                   </span>
-                  
+
                   <div className="flex gap-2">
                     {estaPagada ? (
                       <span className="px-2.5 py-1 bg-emerald-100/80 text-emerald-700 text-[10px] font-bold uppercase tracking-wider rounded-md border border-emerald-200">
@@ -191,7 +204,7 @@ export default function ResultadosPage() {
 
                 <div className="p-5 flex-1 flex flex-col">
                   <h3 className="text-lg font-black text-[#1D1D1F] leading-tight mb-2">{orden.paciente.nombreCompleto}</h3>
-                  
+
                   <div className="flex flex-wrap items-center gap-3 mb-2">
                     <div className="flex items-center gap-1.5 text-xs text-slate-600 font-bold">
                       <User size={14} className="text-[#0071E3]" strokeWidth={2.5} />
@@ -210,14 +223,21 @@ export default function ResultadosPage() {
                     <div className="bg-[#F5F5F7] rounded-[16px] p-4 border border-slate-200/60">
                       <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3">Exámenes Solicitados</p>
                       <div className="flex flex-wrap gap-2">
-                        {orden.detalles.slice(0, 4).map((det: any) => (
-                          <span key={det.id} className="text-[12px] font-bold text-slate-600 bg-white border border-slate-200/80 px-2.5 py-1 rounded-md shadow-sm">
-                            {det.prueba.nombre}
+                        {tagsAgrupados.slice(0, 4).map((tag: any) => (
+                          <span 
+                            key={tag.id} 
+                            className={`text-[12px] font-bold px-2.5 py-1 rounded-md shadow-sm border ${
+                              tag.isPaquete 
+                                ? 'bg-purple-50 text-purple-700 border-purple-100' 
+                                : 'bg-white text-slate-600 border-slate-200/80'
+                            }`}
+                          >
+                            {tag.nombre}
                           </span>
                         ))}
-                        {orden.detalles.length > 4 && (
+                        {tagsAgrupados.length > 4 && (
                           <span className="text-[12px] font-bold text-slate-500 bg-slate-200/60 px-2.5 py-1 rounded-md">
-                            +{orden.detalles.length - 4} más
+                            +{tagsAgrupados.length - 4} más
                           </span>
                         )}
                       </div>
@@ -226,22 +246,21 @@ export default function ResultadosPage() {
                 </div>
 
                 <div className="p-5 pt-0 flex gap-3">
-                  <button 
+                  <button
                     onClick={() => setOrdenSeleccionada(orden)}
                     className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
-                      tabActiva === "PENDIENTES" 
-                        ? 'bg-[#0071E3]/10 text-[#0071E3] hover:bg-[#0071E3] hover:text-white' 
+                      tabActiva === "PENDIENTES"
+                        ? 'bg-[#0071E3]/10 text-[#0071E3] hover:bg-[#0071E3] hover:text-white'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
                     <FileEdit size={16} /> {tabActiva === "PENDIENTES" ? 'Ingresar Resultados' : 'Revisar / Editar'}
                   </button>
-                  
-                  {/* LÓGICA DE BOTONES MUTUAMENTE EXCLUYENTES */}
+
                   {tabActiva === "COMPLETADOS" && (
                     <>
                       {!estaPagada ? (
-                        <button 
+                        <button
                           onClick={() => enviarWhatsAppCobro(orden)}
                           title="Enviar Recordatorio de Cobro"
                           className="w-14 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-xl transition-all flex items-center justify-center shadow-sm"
@@ -249,7 +268,7 @@ export default function ResultadosPage() {
                           <MessageCircle size={20} />
                         </button>
                       ) : (
-                        <button 
+                        <button
                           onClick={() => setOrdenPDF(orden)}
                           title="Ver y Generar PDF"
                           className="w-14 bg-blue-50 text-[#0071E3] hover:bg-[#0071E3] hover:text-white rounded-xl transition-all flex items-center justify-center shadow-sm"

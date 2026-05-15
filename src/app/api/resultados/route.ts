@@ -23,21 +23,31 @@ export async function POST(req: Request) {
     }
 
     await prisma.$transaction(async (tx) => {
-      // Usamos upsert para cada resultado. Si ya existía, lo pisa. Si es nuevo, lo crea.
       for (const res of resultados) {
         await tx.resultadoPrueba.upsert({
           where: { detalleOrdenId: res.detalleOrdenId },
           update: {
-            valores: res.valores,
             observaciones: res.observaciones || null,
             usuarioId: usuario.id,
-            fechaProcesado: new Date() // Actualizamos la fecha de modificación
+            fechaProcesado: new Date(),
+            valores: {
+              deleteMany: {}, // Limpiamos todos los registros antiguos de valores de este examen
+              create: res.valores.map((v: any) => ({
+                pruebaId: v.pruebaId,
+                valorIngresado: v.valorIngresado
+              }))
+            }
           },
           create: {
             detalleOrdenId: res.detalleOrdenId,
             usuarioId: usuario.id,
-            valores: res.valores,
-            observaciones: res.observaciones || null
+            observaciones: res.observaciones || null,
+            valores: {
+              create: res.valores.map((v: any) => ({
+                pruebaId: v.pruebaId,
+                valorIngresado: v.valorIngresado
+              }))
+            }
           }
         });
       }
@@ -50,7 +60,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error al guardar resultados:", error);
+    console.error("Error al guardar resultados con multi-cantidad:", error);
     return NextResponse.json({ error: "Error interno al guardar" }, { status: 500 });
   }
 }

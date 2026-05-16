@@ -1,6 +1,7 @@
 "use client";
 
 import { Baby } from "lucide-react";
+import { toast } from "react-toastify";
 
 interface FormularioPacienteProps {
   formData: any;
@@ -23,6 +24,11 @@ export default function FormularioPaciente({
     setFormData({ ...formData, [campo]: valor.replace(/\D/g, '') });
   };
 
+  // Evitar letras en Nombres (permite espacios)
+  const handleSoloLetras = (campo: string, valor: string) => {
+    setFormData({ ...formData, [campo]: valor.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '') });
+  };
+
   // Máscara automática para formato DD/MM/AAAA
   const handleFechaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value.replace(/\D/g, ''); // Solo deja números
@@ -31,8 +37,41 @@ export default function FormularioPaciente({
     setFormData({ ...formData, fechaNacimiento: val });
   };
 
+  // Validación extra antes de enviar al padre
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validar Fecha
+    if (formData.fechaNacimiento.length !== 10) {
+      toast.warning("La fecha de nacimiento debe tener el formato DD/MM/AAAA completo.");
+      return;
+    }
+
+    const anioNacimiento = parseInt(formData.fechaNacimiento.substring(6, 10));
+    const anioActual = new Date().getFullYear();
+
+    if (anioNacimiento < 1900) {
+      toast.error("Año de nacimiento inválido (No puede ser menor a 1900).");
+      return;
+    }
+
+    if (anioNacimiento > anioActual) {
+      toast.error(`Año de nacimiento inválido (No puede ser mayor al año en curso: ${anioActual}).`);
+      return;
+    }
+
+    // Validar Teléfono (opcional, pero si lo ponen, que sea lógico en Venezuela)
+    if (formData.telefono && formData.telefono.length < 10) {
+      toast.warning("Si ingresa un teléfono, debe tener al menos 10 dígitos (Ej. 04141234567).");
+      return;
+    }
+
+    // Si todo está bien, llamamos a la función original
+    registrarNuevoPaciente(e);
+  };
+
   return (
-    <form onSubmit={registrarNuevoPaciente} className="animate-in fade-in slide-in-from-top-4 duration-300">
+    <form onSubmit={handleSubmit} className="animate-in fade-in slide-in-from-top-4 duration-300">
       <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
         <h3 className="text-lg font-bold text-[#1D1D1F]">Registro de Nuevo Paciente</h3>
         
@@ -75,7 +114,7 @@ export default function FormularioPaciente({
             type="text"
             required
             value={formData.nombreCompleto}
-            onChange={(e) => setFormData({ ...formData, nombreCompleto: e.target.value })}
+            onChange={(e) => handleSoloLetras('nombreCompleto', e.target.value)}
             placeholder="Nombres y Apellidos"
             className="w-full px-4 py-3 bg-[#F5F5F7] border border-slate-200/60 rounded-2xl text-[#1D1D1F] text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3]/50"
           />
@@ -88,6 +127,7 @@ export default function FormularioPaciente({
           <input
             type="text"
             required
+            maxLength={10}
             value={formData.fechaNacimiento}
             onChange={handleFechaChange}
             placeholder="01/12/1990"

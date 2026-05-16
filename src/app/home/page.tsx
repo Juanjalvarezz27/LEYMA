@@ -70,7 +70,8 @@ export default function HomeDashboardPage() {
   ];
 
   return (
-    <div className="h-full flex flex-col pb-10 overflow-y-auto pr-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full animate-in fade-in duration-500">
+    // Se agregó 'outline-none' para quitar el borde negro al hacer clic
+    <div className="h-full flex flex-col pb-10 overflow-y-auto outline-none pr-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full animate-in fade-in duration-500">
       
       {/* BANNER DE BIENVENIDA */}
       <div className="relative bg-white border border-slate-200/80 rounded-[32px] p-8 md:p-12 mb-8 overflow-hidden shadow-sm shrink-0">

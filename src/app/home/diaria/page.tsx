@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Calendar as CalendarIcon, Search, Eye, Edit, Ban, 
-  DollarSign, Clock, CheckCircle, Wallet, RefreshCw, KeyRound, Loader2, X 
+  DollarSign, Clock, CheckCircle, Wallet, RefreshCw, KeyRound, Loader2, X, MessageCircle 
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -78,6 +78,26 @@ export default function ListaDiariaPage() {
     router.push(`/home/registro?edit=${ordenId}`);
   };
 
+  // --- LÓGICA DE WHATSAPP ---
+  const formatWhatsAppNumber = (phone: string) => {
+    if (!phone) return "";
+    let cleaned = phone.replace(/\D/g, "");
+    if (cleaned.startsWith("0")) return "58" + cleaned.substring(1);
+    if (!cleaned.startsWith("58")) return "58" + cleaned;
+    return cleaned;
+  };
+
+  const enviarWhatsApp = (orden: any) => {
+    if (!orden.paciente.telefono) {
+      toast.warning("El paciente no tiene un número de teléfono registrado.");
+      return;
+    }
+    const numeroWA = formatWhatsAppNumber(orden.paciente.telefono);
+    const mensaje = `*Laboratorio LEYMA S.A.*\nHola ${orden.paciente.nombreCompleto}, nos comunicamos referente a su orden N° ${orden.id.toString().padStart(5, '0')}.`;
+    const url = `https://wa.me/${numeroWA}?text=${encodeURIComponent(mensaje)}`;
+    window.open(url, "_blank");
+  };
+
   // --- LÓGICA DE ANULAR / ACTIVAR ---
   const pedirClave = (ordenId: number, accion: "ANULAR" | "ACTIVAR") => {
     const orden = ordenes.find(o => o.id === ordenId);
@@ -118,8 +138,19 @@ export default function ListaDiariaPage() {
     <div className="h-full flex flex-col pb-10 overflow-y-auto pr-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
       
       {/* Modales de Detalles y Pagos */}
-      {ordenSeleccionada && <ModalDetalleOrden orden={ordenSeleccionada} onClose={() => setOrdenSeleccionada(null)} />}
-      {ordenParaPagar && <ModalProcesarPago orden={ordenParaPagar} onClose={() => setOrdenParaPagar(null)} onSuccess={() => { setOrdenParaPagar(null); fetchOrdenes(); }} />}
+      {ordenSeleccionada && (
+        <ModalDetalleOrden 
+          orden={ordenSeleccionada} 
+          onClose={() => setOrdenSeleccionada(null)} 
+        />
+      )}
+      {ordenParaPagar && (
+        <ModalProcesarPago 
+          orden={ordenParaPagar} 
+          onClose={() => setOrdenParaPagar(null)} 
+          onSuccess={() => { setOrdenParaPagar(null); fetchOrdenes(); }} 
+        />
+      )}
 
       {/* MODAL DE CLAVE MAESTRA */}
       {modalClave.visible && (
@@ -140,7 +171,7 @@ export default function ListaDiariaPage() {
               value={claveInput}
               onChange={(e) => setClaveInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && ejecutarCambioEstado()}
-              className="w-full px-4 py-3 bg-[#F5F5F7] border border-slate-200 rounded-xl text-center text-lg font-black  outline-none focus:ring-2 focus:ring-[#0071E3]/20 mb-6"
+              className="w-full px-4 py-3 bg-[#F5F5F7] border border-slate-200 rounded-xl text-center text-lg font-black outline-none focus:ring-2 focus:ring-[#0071E3]/20 mb-6"
               autoFocus
             />
 
@@ -186,7 +217,9 @@ export default function ListaDiariaPage() {
           <div>
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Ingreso Cerrado</p>
             <h3 className="text-3xl font-black text-[#1D1D1F] leading-none mb-1.5">${totalIngresosUSD.toFixed(2)}</h3>
-            <p className="text-sm font-bold text-slate-500">Bs {totalIngresosBS.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+            <p className="text-sm font-bold text-slate-500">
+              Bs {totalIngresosBS.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+            </p>
           </div>
         </div>
 
@@ -275,7 +308,9 @@ export default function ListaDiariaPage() {
                         <span className={`font-bold text-[14px] leading-tight ${orden.estado.nombre === "ANULADA" ? 'text-slate-500 line-through' : 'text-[#1D1D1F]'}`}>
                           {orden.paciente.nombreCompleto}
                         </span>
-                        <span className="text-xs font-medium text-slate-500 mt-0.5">C.I: {orden.paciente.cedula || 'Sin identificación'}</span>
+                        <span className="text-xs font-medium text-slate-500 mt-0.5">
+                          C.I: {orden.paciente.cedula || 'Sin identificación'}
+                        </span>
                       </div>
                     </td>
                     
@@ -290,7 +325,9 @@ export default function ListaDiariaPage() {
                         <span className={`font-black leading-tight ${orden.estado.nombre === "ANULADA" ? 'text-slate-400' : 'text-[#0071E3]'}`}>
                           ${orden.totalUSD.toFixed(2)}
                         </span>
-                        <span className="text-[13px] font-bold text-slate-500 mt-0.5">Bs {orden.totalBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}</span>
+                        <span className="text-[13px] font-bold text-slate-500 mt-0.5">
+                          Bs {orden.totalBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}
+                        </span>
                       </div>
                     </td>
                     
@@ -301,58 +338,75 @@ export default function ListaDiariaPage() {
                     </td>
                     
                     <td className="px-6 py-4 align-middle">
-                      <div className="flex items-center justify-center gap-3">
+                      <div className="flex items-center justify-center gap-2 xl:gap-3">
                         
-                        <div className="relative group flex flex-col items-center">
+                        {/* BOTÓN VER DETALLES */}
+                        <div className="relative group/ver flex flex-col items-center">
                           <button 
                             onClick={() => setOrdenSeleccionada(orden)}
                             className="flex items-center justify-center w-10 h-10 bg-blue-50 text-[#0071E3] hover:bg-[#0071E3] hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] hover:-translate-y-0.5"
                           >
                             <Eye size={18} strokeWidth={2.5} />
                           </button>
-                          <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover:-translate-y-1">
+                          <div className="absolute -top-10 opacity-0 group-hover/ver:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/ver:-translate-y-1">
                             Ver Detalles
                             <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
                           </div>
                         </div>
+
+                        {/* BOTÓN WHATSAPP (SIEMPRE DISPONIBLE SALVO ANULADA) */}
+                        {orden.estado.nombre !== "ANULADA" && (
+                          <div className="relative group/ws flex flex-col items-center">
+                            <button 
+                              onClick={() => enviarWhatsApp(orden)} 
+                              className="flex items-center justify-center w-10 h-10 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)] hover:-translate-y-0.5"
+                            >
+                              <MessageCircle size={18} strokeWidth={2.5} />
+                            </button>
+                            <div className="absolute -top-10 opacity-0 group-hover/ws:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/ws:-translate-y-1">
+                              {orden.paciente.telefono ? `Contactar ws: ${orden.paciente.telefono}` : "ws: Sin número"}
+                              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
+                            </div>
+                          </div>
+                        )}
                         
+                        {/* BOTONES PARA BORRADOR */}
                         {orden.estado.nombre === "BORRADOR" && (
                           <>
-                            <div className="relative group flex flex-col items-center">
+                            <div className="relative group/edit flex flex-col items-center">
                               <button 
                                 onClick={() => abrirModalEdicion(orden.id)} 
                                 className="flex items-center justify-center w-10 h-10 bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(249,115,22,0.3)] hover:-translate-y-0.5"
                               >
                                 <Edit size={18} strokeWidth={2.5} />
                               </button>
-                              <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover:-translate-y-1">
+                              <div className="absolute -top-10 opacity-0 group-hover/edit:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/edit:-translate-y-1">
                                 Editar Pruebas
                                 <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
                               </div>
                             </div>
 
-                            <div className="relative group flex flex-col items-center">
+                            <div className="relative group/pay flex flex-col items-center">
                               <button 
                                 onClick={() => abrirModalPago(orden.id)} 
                                 className="flex items-center justify-center w-10 h-10 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(22,163,74,0.3)] hover:-translate-y-0.5"
                               >
                                 <Wallet size={18} strokeWidth={2.5} />
                               </button>
-                              <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover:-translate-y-1">
+                              <div className="absolute -top-10 opacity-0 group-hover/pay:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/pay:-translate-y-1">
                                 Procesar Pago
                                 <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
                               </div>
                             </div>
                             
-                            {/* Botón de anular también para borradores */}
-                            <div className="relative group flex flex-col items-center">
+                            <div className="relative group/ban flex flex-col items-center">
                               <button 
                                 onClick={() => pedirClave(orden.id, "ANULAR")} 
                                 className="flex items-center justify-center w-10 h-10 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(239,68,68,0.3)] hover:-translate-y-0.5"
                               >
                                 <Ban size={18} strokeWidth={2.5} />
                               </button>
-                              <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover:-translate-y-1">
+                              <div className="absolute -top-10 opacity-0 group-hover/ban:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/ban:-translate-y-1">
                                 Anular Orden
                                 <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
                               </div>
@@ -360,16 +414,17 @@ export default function ListaDiariaPage() {
                           </>
                         )}
 
+                        {/* BOTÓN PARA ANULAR ORDEN CERRADA */}
                         {orden.estado.nombre === "CERRADA" && (
-                          <div className="relative group flex flex-col items-center">
+                          <div className="relative group/banc flex flex-col items-center">
                             <button 
                               onClick={() => pedirClave(orden.id, "ANULAR")} 
                               className="flex items-center justify-center w-10 h-10 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(239,68,68,0.3)] hover:-translate-y-0.5"
                             >
                               <Ban size={18} strokeWidth={2.5} />
                             </button>
-                            <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover:-translate-y-1">
-                              Anular (Clave M.)
+                            <div className="absolute -top-10 opacity-0 group-hover/banc:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/banc:-translate-y-1">
+                              Anular (Clave)
                               <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
                             </div>
                           </div>
@@ -377,15 +432,15 @@ export default function ListaDiariaPage() {
 
                         {/* BOTÓN DE ACTIVAR SÓLO PARA ANULADAS */}
                         {orden.estado.nombre === "ANULADA" && (
-                          <div className="relative group flex flex-col items-center">
+                          <div className="relative group/refresh flex flex-col items-center">
                             <button 
                               onClick={() => pedirClave(orden.id, "ACTIVAR")} 
                               className="flex items-center justify-center w-10 h-10 bg-slate-100 text-slate-500 hover:bg-[#0071E3] hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] hover:-translate-y-0.5"
                             >
                               <RefreshCw size={18} strokeWidth={2.5} />
                             </button>
-                            <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover:-translate-y-1">
-                              Reactivar (Clave M.)
+                            <div className="absolute -top-10 opacity-0 group-hover/refresh:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/refresh:-translate-y-1">
+                              Reactivar (Clave)
                               <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
                             </div>
                           </div>

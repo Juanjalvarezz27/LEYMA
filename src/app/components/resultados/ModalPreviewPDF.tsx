@@ -369,7 +369,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                   {/* LADO IZQUIERDO: FIRMA */}
                   <View style={styles.footerLeft}>
                     <View style={styles.signatureLine}>
-                      <Text style={styles.bioanalista}>{orden.creadoPor?.nombre || 'BIOANALISTA TITULAR'}</Text>
+                      <Text style={styles.bioanalista}>{orden.creadoPor?.nombre || 'BIOANALISTA'}</Text>
                       <Text style={styles.labNameFooter}>Laboratorio Clínico LEYMA S.A.</Text>
                     </View>
                   </View>

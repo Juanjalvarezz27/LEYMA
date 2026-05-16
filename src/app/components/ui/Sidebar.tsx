@@ -18,7 +18,8 @@ import {
   Calculator, 
   LogOut, 
   ChevronLeft, 
-  ChevronRight
+  ChevronRight,
+  UserCog // <-- NUEVO ÍCONO
 } from "lucide-react";
 import ModalConfirmacion from "./ModalConfirmacion";
 
@@ -28,10 +29,9 @@ export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  // Leemos el rol (por defecto lo tratamos como USUARIO por seguridad si está cargando)
   const rolUsuario = (session?.user as any)?.rol || "USUARIO";
 
-  // Este es el menú maestro con TODAS las opciones
+  // AGREGAMOS "Mi Perfil" AL MENÚ MAESTRO
   const menuMaestro = [
     { nombre: "Inicio", ruta: "/home", icono: Home }, 
     { nombre: "Registro", ruta: "/home/registro", icono: FileSignature },
@@ -43,14 +43,13 @@ export default function Sidebar() {
     { nombre: "Estadísticas", ruta: "/home/estadisticas", icono: BarChart3 },
     { nombre: "Monedero", ruta: "/home/monedero", icono: Wallet },
     { nombre: "Cierre de Caja", ruta: "/home/cierre", icono: Calculator },
+    { nombre: "Mi Perfil", ruta: "/home/perfil", icono: UserCog }, // <-- NUEVA RUTA
   ];
 
-  // Rutas que SI puede ver el Asistente (USUARIO)
   const rutasPermitidasUsuario = [
-    "/home", "/home/registro", "/home/diaria", "/home/resultados", "/home/pacientes", "/home/constancias"
+    "/home", "/home/registro", "/home/diaria", "/home/resultados", "/home/pacientes", "/home/constancias", "/home/cierre"
   ];
 
-  // Filtramos el menú según el rol
   const menuItems = rolUsuario === "ADMIN" 
     ? menuMaestro 
     : menuMaestro.filter(item => rutasPermitidasUsuario.includes(item.ruta));
@@ -62,7 +61,6 @@ export default function Sidebar() {
           isCollapsed ? "w-[88px]" : "w-[280px]"
         }`}
       >
-        {/* Botón Flotante para Colapsar/Expandir */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="absolute -right-4 top-10 w-8 h-8 bg-white border border-slate-200 shadow-sm rounded-full flex items-center justify-center hover:bg-slate-50 hover:scale-105 transition-all z-50 text-slate-500"
@@ -71,7 +69,6 @@ export default function Sidebar() {
           {isCollapsed ? <ChevronRight size={18} strokeWidth={2.5} /> : <ChevronLeft size={18} strokeWidth={2.5} />}
         </button>
 
-        {/* Cabecera del Sidebar */}
         <div className={`h-24 flex items-center border-b border-[#D2D2D7]/30 transition-all duration-300 overflow-hidden ${
           isCollapsed ? "justify-center px-0" : "px-8"
         }`}>
@@ -95,16 +92,8 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Menú de Navegación */}
-        <div className="flex-1 overflow-y-auto py-5 space-y-1 px-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          
-          <div className={`transition-all duration-300 overflow-hidden ${
-            isCollapsed ? "max-h-0 opacity-0 mb-0" : "max-h-10 opacity-100 mb-3"
-          }`}>
-            <p className="text-[10px] font-bold text-[#1D1D1F]/30 uppercase tracking-[0.15em] px-4 whitespace-nowrap">
-              Módulos del Sistema
-            </p>
-          </div>
+        <div className="flex-1 overflow-y-auto py-1 space-y-1 px-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        
           
           {menuItems.map((item) => {
             const isActive = item.ruta === "/home" 
@@ -144,7 +133,6 @@ export default function Sidebar() {
           })}
         </div>
 
-        {/* Footer del Sidebar */}
         <div className="p-4 border-t border-[#D2D2D7]/30">
           <button
             onClick={() => setShowLogoutModal(true)}

@@ -78,17 +78,19 @@ model Prueba {
 // --- MODELOS PRINCIPALES ---
 
 model Usuario {
-  id                String            @id @default(cuid())
-  nombre            String
-  correo            String            @unique
-  clave             String
-  activo            Boolean           @default(true)
-  rolId             Int
-  rol               Rol               @relation(fields: [rolId], references: [id])
-  ordenesCreadas    Orden[]
-  gastosRegistrados Gasto[]
-  resultadosValidados ResultadoPrueba[]
-  fechaCreacion     DateTime          @default(now())
+  id                 String            @id @default(cuid())
+  nombre             String
+  correo             String            @unique
+  clave              String
+  pinFirma           String?           // <-- NUEVO: PIN de 4 dígitos para firmar exámenes
+  firmaUrl           String?           // <-- NUEVO: Ruta o Base64 de la firma y sello digital
+  activo             Boolean           @default(true)
+  rolId              Int
+  rol                Rol               @relation(fields: [rolId], references: [id])
+  ordenesCreadas     Orden[]
+  gastosRegistrados  Gasto[]
+  resultadosValidados ResultadoPrueba[] // Apunta a los exámenes que este usuario firmó
+  fechaCreacion      DateTime          @default(now())
 }
 
 model Paciente {
@@ -144,13 +146,14 @@ model DetalleOrden {
 }
 
 model ResultadoPrueba {
-  id             String           @id @default(cuid())
-  detalleOrdenId String           @unique
-  detalleOrden   DetalleOrden     @relation(fields: [detalleOrdenId], references: [id], onDelete: Cascade)
-  usuarioId      String 
-  procesadoPor   Usuario          @relation(fields: [usuarioId], references: [id])
-  observaciones  String?          @db.Text
-  fechaProcesado DateTime         @default(now())
+  id             String         @id @default(cuid())
+  detalleOrdenId String         @unique
+  detalleOrden   DetalleOrden   @relation(fields: [detalleOrdenId], references: [id], onDelete: Cascade)
+  usuarioId      String
+  procesadoPor   Usuario        @relation(fields: [usuarioId], references: [id]) // Bioanalista que firmó
+  observaciones  String?        @db.Text
+  firmado        Boolean        @default(false) // <-- NUEVO: Si está guardado por asistente es false, si tiene PIN es true
+  fechaProcesado DateTime       @default(now())
   valores        ValorResultado[]
 }
 

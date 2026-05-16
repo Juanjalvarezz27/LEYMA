@@ -290,7 +290,6 @@ export default function PruebasPage() {
                 const isExpanded = examenExpandido === examen.id;
                 
                 return (
-                  // SE ELIMINÓ LA CLASE 'group' DE ESTE CONTENEDOR PRINCIPAL PARA EVITAR BUG DE HOVER CASCADA
                   <div key={examen.id} className={`flex flex-col p-6 rounded-[24px] border shadow-sm hover:shadow-md transition-all duration-300 ${examen.activa ? 'bg-white border-slate-200/80 hover:border-[#0071E3]/30' : 'bg-red-50/50 border-red-200/60'}`}>
                     <div className="flex items-center justify-between">
                       
@@ -337,7 +336,7 @@ export default function PruebasPage() {
                         <div className="h-8 w-px bg-slate-200 mx-1"></div>
                         
                         <div className="flex gap-2">
-                          {/* BOTÓN: EDITAR SUBCATEGORÍA (USANDO GRUPOS NOMBRADOS: group/btn) */}
+                          {/* BOTÓN: EDITAR SUBCATEGORÍA */}
                           <div className="relative group/btn flex flex-col items-center">
                             <button onClick={() => abrirModalEditar(examen)} className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 hover:-translate-y-0.5 ${examen.activa ? 'bg-blue-50 text-[#0071E3] hover:bg-[#0071E3] hover:text-white hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)]' : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}>
                               <Edit2 size={18} strokeWidth={2.5} />
@@ -348,9 +347,9 @@ export default function PruebasPage() {
                             </div>
                           </div>
 
-                          {/* BOTÓN: ACTIVAR/DESACTIVAR SUBCATEGORÍA */}
+                          {/* BOTÓN: ACTIVAR/DESACTIVAR SUBCATEGORÍA (Ajustado a red-50 y red-500) */}
                           <div className="relative group/btn flex flex-col items-center">
-                            <button onClick={() => toggleEstadoSubcategoria(examen.id, examen.activa)} className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 hover:-translate-y-0.5 ${examen.activa ? 'bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white hover:shadow-[0_4px_12px_rgba(249,115,22,0.3)]' : 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white hover:shadow-[0_4px_12px_rgba(22,163,74,0.3)]'}`}>
+                            <button onClick={() => toggleEstadoSubcategoria(examen.id, examen.activa)} className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 hover:-translate-y-0.5 ${examen.activa ? 'bg-red-50 text-red-500 hover:bg-red-500 hover:text-white hover:shadow-[0_4px_12px_rgba(239,68,68,0.3)]' : 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white hover:shadow-[0_4px_12px_rgba(22,163,74,0.3)]'}`}>
                               {examen.activa ? <Ban size={18} strokeWidth={2.5} /> : <CheckCircle2 size={18} strokeWidth={2.5} />}
                             </button>
                             <div className="absolute -top-10 opacity-0 group-hover/btn:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/btn:-translate-y-1">
@@ -401,7 +400,7 @@ export default function PruebasPage() {
                                 <div key={p.id} className={`flex items-center px-5 py-4 rounded-2xl border transition-all shadow-[0_2px_8px_-4px_rgba(0,0,0,0.02)] hover:border-[#0071E3]/40 ${bgFondoFila}`}>
                                   
                                   <div className={`flex items-center gap-4 ${examen.esPaquete ? 'w-[40%]' : 'w-[35%]'}`}>
-                                    <span className={`px-2.5 py-1 rounded-md text-[10px] font-mono font-black tracking-wider shrink-0 ${p.activa && examen.activa ? 'bg-white text-[#0071E3] shadow-sm' : 'bg-red-100/50 text-red-400'}`}>
+                                    <span className={`px-2.5 py-1 rounded-md text-[10px] font-mono font-black tracking-wider shrink-0 ${p.activa && examen.activa ? 'bg-white text-[#0071E3] shadow-sm' : 'bg-red-100/50 text-red-600'}`}>
                                       {p.codigo}
                                     </span>
                                     <span className={`font-black text-[14px] uppercase tracking-wide truncate pr-2 ${p.activa && examen.activa ? 'text-[#1D1D1F]' : 'text-slate-400 line-through'}`}>
@@ -439,9 +438,9 @@ export default function PruebasPage() {
                                         )}
                                       </div>
 
-                                      {/* BOTÓN: ACTIVAR/DESACTIVAR PRUEBA INDIVIDUAL */}
+                                      {/* BOTÓN: ACTIVAR/DESACTIVAR PRUEBA INDIVIDUAL (Ajustado a red-50 y red-500) */}
                                       <div className="relative group/btn flex flex-col items-center">
-                                        <button onClick={() => toggleEstadoPruebaIndividual(p.id, p.activa)} disabled={!examen.activa} className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300 ${!examen.activa ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : p.activa ? 'bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white hover:shadow-[0_4px_12px_rgba(249,115,22,0.3)] hover:-translate-y-0.5' : 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white hover:shadow-[0_4px_12px_rgba(22,163,74,0.3)] hover:-translate-y-0.5'}`}>
+                                        <button onClick={() => toggleEstadoPruebaIndividual(p.id, p.activa)} disabled={!examen.activa} className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300 ${!examen.activa ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : p.activa ? 'bg-red-50 text-red-500 hover:bg-red-500 hover:text-white hover:shadow-[0_4px_12px_rgba(239,68,68,0.3)] hover:-translate-y-0.5' : 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white hover:shadow-[0_4px_12px_rgba(22,163,74,0.3)] hover:-translate-y-0.5'}`}>
                                           {p.activa ? <Ban size={14} strokeWidth={2.5}/> : <CheckCircle2 size={14} strokeWidth={2.5}/>}
                                         </button>
                                         {examen.activa && (

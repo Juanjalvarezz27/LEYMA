@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, Search, History, Phone, Calendar, ChevronLeft, ChevronRight, Activity, FileText, CheckCircle, Clock, X, Eye } from "lucide-react";
+import { 
+  Users, Search, History, Phone, Calendar, ChevronLeft, ChevronRight, 
+  Activity, FileText, CheckCircle, Clock, X, Eye, MessageCircle 
+} from "lucide-react";
 import { toast } from "react-toastify";
 import ModalPreviewPDF from "../../components/resultados/ModalPreviewPDF"; 
 
@@ -60,7 +63,7 @@ export default function PacientesPage() {
       const coincidePaciente = 
         p.nombreCompleto.toLowerCase().includes(b) ||
         (p.cedula && p.cedula.toLowerCase().includes(b));
-        
+      
       const coincideOrden = p.ordenes.some((o: any) => o.id.toString().includes(b));
 
       if (!coincidePaciente && !coincideOrden) return false;
@@ -88,6 +91,26 @@ export default function PacientesPage() {
     const m = hoy.getMonth() - nacimiento.getMonth();
     if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
     return `${edad} ${esBebe ? 'Meses' : 'Años'}`;
+  };
+
+  // --- LÓGICA DE WHATSAPP ---
+  const formatWhatsAppNumber = (phone: string) => {
+    if (!phone) return "";
+    let cleaned = phone.replace(/\D/g, "");
+    if (cleaned.startsWith("0")) return "58" + cleaned.substring(1);
+    if (!cleaned.startsWith("58")) return "58" + cleaned;
+    return cleaned;
+  };
+
+  const enviarWhatsAppContacto = (paciente: any) => {
+    if (!paciente.telefono) {
+      toast.warning("El paciente no tiene un número de teléfono registrado.");
+      return;
+    }
+    const numeroWA = formatWhatsAppNumber(paciente.telefono);
+    const mensaje = `*Laboratorio LEYMA S.A.*\nHola ${paciente.nombreCompleto}, nos comunicamos con usted para `;
+    const url = `https://wa.me/${numeroWA}?text=${encodeURIComponent(mensaje)}`;
+    window.open(url, "_blank");
   };
 
   return (
@@ -325,19 +348,36 @@ export default function PacientesPage() {
                       </td>
                       
                       <td className="px-6 py-4 align-middle">
-                        <div className="flex items-center justify-center">
-                          <div className="relative group flex flex-col items-center">
+                        <div className="flex items-center justify-center gap-2">
+                          
+                          {/* BOTÓN VER HISTORIAL */}
+                          <div className="relative group/ver flex flex-col items-center">
                             <button 
                               onClick={() => setPacienteSeleccionado(paciente)}
                               className="flex items-center justify-center w-10 h-10 bg-slate-100 text-[#0071E3] hover:bg-[#0071E3] hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] hover:-translate-y-0.5"
                             >
                               <Eye size={18} strokeWidth={2.5} />
                             </button>
-                            <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover:-translate-y-1">
+                            <div className="absolute -top-10 opacity-0 group-hover/ver:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/ver:-translate-y-1">
                               Ver Historial
                               <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
                             </div>
                           </div>
+
+                          {/* BOTÓN WHATSAPP */}
+                          <div className="relative group/ws flex flex-col items-center">
+                            <button 
+                              onClick={() => enviarWhatsAppContacto(paciente)}
+                              className="flex items-center justify-center w-10 h-10 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)] hover:-translate-y-0.5"
+                            >
+                              <MessageCircle size={18} strokeWidth={2.5} />
+                            </button>
+                            <div className="absolute -top-10 opacity-0 group-hover/ws:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/ws:-translate-y-1">
+                              {paciente.telefono ? `WS: ${paciente.telefono}` : "WS: Sin número"}
+                              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
+                            </div>
+                          </div>
+
                         </div>
                       </td>
                     </tr>

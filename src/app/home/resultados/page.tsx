@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Microscope, Search, FileEdit, Clock, CheckCircle, FileText, Phone, MessageCircle, User, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { 
+  Microscope, Search, FileEdit, Clock, CheckCircle, FileText, 
+  Phone, MessageCircle, User, Calendar, ChevronLeft, ChevronRight, DollarSign 
+} from "lucide-react";
 import { toast } from "react-toastify";
 import ModalCargarResultados from "../../components/resultados/ModalCargarResultados";
 import ModalPreviewPDF from "../../components/resultados/ModalPreviewPDF";
@@ -85,13 +88,25 @@ export default function ResultadosPage() {
     return cleaned;
   };
 
+  // WS: CONTACTO GENERAL
+  const enviarWhatsAppContacto = (orden: any) => {
+    if (!orden.paciente.telefono) {
+      toast.warning("El paciente no tiene un número de teléfono registrado.");
+      return;
+    }
+    const numeroWA = formatWhatsAppNumber(orden.paciente.telefono);
+    const mensaje = `*Laboratorio LEYMA S.A.*\nHola ${orden.paciente.nombreCompleto}, nos comunicamos referente a su orden N° ${orden.id.toString().padStart(5, '0')}.`;
+    const url = `https://wa.me/${numeroWA}?text=${encodeURIComponent(mensaje)}`;
+    window.open(url, "_blank");
+  };
+
+  // WS: RECORDATORIO DE PAGO
   const enviarWhatsAppCobro = (orden: any) => {
     if (!orden.paciente.telefono) {
       toast.warning("El paciente no tiene un número de teléfono registrado.");
       return;
     }
     const numeroWA = formatWhatsAppNumber(orden.paciente.telefono);
-
     let mensaje = `*Laboratorio LEYMA S.A.*\nHola ${orden.paciente.nombreCompleto},\n\n`;
     mensaje += `Te informamos que tus resultados ya están listos.\n\n`;
     mensaje += `Por favor, acércate a nuestras instalaciones para realizar el pago pendiente y recibir tu informe oficial.\n\n`;
@@ -234,10 +249,9 @@ export default function ResultadosPage() {
               });
 
               return (
-                // SE ELIMINÓ 'overflow-hidden' PARA QUE LOS TOOLTIPS NO SE CORTEN
                 <div key={orden.id} className="bg-white border border-slate-200/80 rounded-[24px] shadow-sm hover:shadow-md transition-all flex flex-col">
                   
-                  {/* CABECERA DE LA TARJETA (Se le agrega rounded-t-[24px]) */}
+                  {/* CABECERA DE LA TARJETA */}
                   <div className="p-5 border-b border-slate-100 bg-slate-50/50 rounded-t-[24px] flex justify-between items-center shrink-0">
                     <span className="text-[14px] font-bold text-slate-500 tracking-tight">
                       #{orden.id.toString().padStart(5, '0')}
@@ -311,10 +325,12 @@ export default function ResultadosPage() {
                   </div>
 
                   {/* ACCIONES DE LA TARJETA */}
-                  <div className="p-5 pt-0 flex gap-3">
+                  <div className="p-5 pt-0 flex items-center gap-3">
+                    
+                    {/* BOTÓN PRIMARIO (LLENA EL ESPACIO RESTANTE) */}
                     <button
                       onClick={() => setOrdenSeleccionada(orden)}
-                      className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 hover:-translate-y-0.5 ${
+                      className={`flex-1 h-[46px] text-sm font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 hover:-translate-y-0.5 ${
                         tabActiva === "PENDIENTES"
                           ? 'bg-[#0071E3] text-white hover:bg-[#0077ED] shadow-sm hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)]'
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -323,26 +339,41 @@ export default function ResultadosPage() {
                       <FileEdit size={16} /> {tabActiva === "PENDIENTES" ? 'Ingresar Resultados' : 'Revisar / Editar'}
                     </button>
 
+                    {/* BOTÓN WHATSAPP GENERAL (SIEMPRE VISIBLE) */}
+                    <div className="relative group/ws shrink-0 flex flex-col items-center justify-center">
+                      <button
+                        onClick={() => enviarWhatsAppContacto(orden)}
+                        className="flex items-center justify-center w-[46px] h-[46px] bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)] hover:-translate-y-0.5"
+                      >
+                        <MessageCircle size={20} strokeWidth={2.5} />
+                      </button>
+                      <div className="absolute -top-11 opacity-0 group-hover/ws:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/ws:-translate-y-1">
+                        {orden.paciente.telefono ? `WS: ${orden.paciente.telefono}` : "WS: Sin número"}
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
+                      </div>
+                    </div>
+
+                    {/* BOTONES SECUNDARIOS (SOLO EN COMPLETADOS) */}
                     {tabActiva === "COMPLETADOS" && (
                       <>
                         {!estaPagada ? (
-                          <div className="relative group/ws flex flex-col items-center justify-center">
+                          <div className="relative group/cobro shrink-0 flex flex-col items-center justify-center">
                             <button
                               onClick={() => enviarWhatsAppCobro(orden)}
-                              className="flex items-center justify-center w-12 h-12 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)] hover:-translate-y-0.5"
+                              className="flex items-center justify-center w-[46px] h-[46px] bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(249,115,22,0.3)] hover:-translate-y-0.5"
                             >
-                              <MessageCircle size={20} strokeWidth={2.5} />
+                              <DollarSign size={20} strokeWidth={2.5} />
                             </button>
-                            <div className="absolute -top-11 opacity-0 group-hover/ws:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/ws:-translate-y-1">
+                            <div className="absolute -top-11 opacity-0 group-hover/cobro:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/cobro:-translate-y-1">
                               Cobrar (WS)
                               <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
                             </div>
                           </div>
                         ) : (
-                          <div className="relative group/pdf flex flex-col items-center justify-center">
+                          <div className="relative group/pdf shrink-0 flex flex-col items-center justify-center">
                             <button
                               onClick={() => setOrdenPDF(orden)}
-                              className="flex items-center justify-center w-12 h-12 bg-slate-100 text-[#0071E3] hover:bg-[#0071E3] hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] hover:-translate-y-0.5"
+                              className="flex items-center justify-center w-[46px] h-[46px] bg-slate-100 text-[#0071E3] hover:bg-[#0071E3] hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] hover:-translate-y-0.5"
                             >
                               <FileText size={20} strokeWidth={2.5} />
                             </button>

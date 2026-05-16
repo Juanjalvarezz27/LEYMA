@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Fragment } from "react";
-import { Search, FileBadge, Calendar, ChevronLeft, ChevronRight, FileText, Activity, User, ChevronDown, ChevronUp, History } from "lucide-react";
+import { Search, FileBadge, Calendar, ChevronLeft, ChevronRight, FileText, Activity, User, ChevronDown, ChevronUp, History, MessageCircle } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalConstancia from "../../components/constancias/ModalConstancia";
 
@@ -10,7 +10,6 @@ export default function ConstanciasPage() {
   const [cargando, setCargando] = useState(true);
   
   const [busqueda, setBusqueda] = useState("");
-  // Estado de fecha: Vacío ("") significa "TODAS" por defecto
   const [fechaFiltro, setFechaFiltro] = useState<string>(""); 
   
   const [paginaActual, setPaginaActual] = useState(1);
@@ -37,7 +36,6 @@ export default function ConstanciasPage() {
     fetchOrdenes();
   }, []);
 
-  // Reiniciar a la página 1 al buscar o cambiar la fecha
   useEffect(() => {
     setPaginaActual(1);
   }, [busqueda, fechaFiltro]);
@@ -57,9 +55,8 @@ export default function ConstanciasPage() {
 
   const pacientesAgrupados = Array.from(pacientesMap.values());
 
-  // 2. LÓGICA DE FILTRADO COMBINADO (Fecha + Búsqueda)
+  // 2. LÓGICA DE FILTRADO COMBINADO
   const pacientesFiltrados = pacientesAgrupados.filter(grupo => {
-    // Filtro por Fecha
     if (fechaFiltro) {
       const tieneOrdenEnFecha = grupo.ordenes.some((o: any) => {
         const fechaOrden = new Date(o.fechaCreacion).toLocaleDateString('en-CA', { timeZone: 'America/Caracas' });
@@ -68,7 +65,6 @@ export default function ConstanciasPage() {
       if (!tieneOrdenEnFecha) return false;
     }
 
-    // Filtro por Búsqueda
     if (busqueda) {
       const b = busqueda.toLowerCase();
       const coincidePaciente = 
@@ -83,7 +79,7 @@ export default function ConstanciasPage() {
     return true;
   });
 
-  // 3. ORDENAR (Pacientes alfabéticamente y sus órdenes por fecha)
+  // 3. ORDENAR
   pacientesFiltrados.sort((a, b) => a.paciente.nombreCompleto.localeCompare(b.paciente.nombreCompleto));
   pacientesFiltrados.forEach(grupo => {
     grupo.ordenes.sort((a: any, b: any) => new Date(b.fechaCreacion).getTime() - new Date(a.fechaCreacion).getTime());
@@ -104,10 +100,30 @@ export default function ConstanciasPage() {
     setPacienteExpandido(pacienteExpandido === pacienteId ? null : pacienteId);
   };
 
+  // --- LÓGICA DE WHATSAPP ---
+  const formatWhatsAppNumber = (phone: string) => {
+    if (!phone) return "";
+    let cleaned = phone.replace(/\D/g, "");
+    if (cleaned.startsWith("0")) return "58" + cleaned.substring(1);
+    if (!cleaned.startsWith("58")) return "58" + cleaned;
+    return cleaned;
+  };
+
+  const enviarWhatsAppContacto = (e: React.MouseEvent, paciente: any) => {
+    e.stopPropagation(); // Evita que se abra/cierre la fila
+    if (!paciente.telefono) {
+      toast.warning("El paciente no tiene un número de teléfono registrado.");
+      return;
+    }
+    const numeroWA = formatWhatsAppNumber(paciente.telefono);
+    const mensaje = `*Laboratorio LEYMA S.A.*\nHola ${paciente.nombreCompleto}, nos comunicamos con usted para `;
+    const url = `https://wa.me/${numeroWA}?text=${encodeURIComponent(mensaje)}`;
+    window.open(url, "_blank");
+  };
+
   return (
     <div className="h-full flex flex-col pb-10 overflow-y-auto pr-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
 
-      {/* MODAL DE CONSTANCIA */}
       {ordenSeleccionada && (
         <ModalConstancia
           orden={ordenSeleccionada}
@@ -171,7 +187,6 @@ export default function ConstanciasPage() {
                 <th className="px-6 py-5 text-[12px] font-black text-[#1D1D1F] uppercase tracking-[0.15em] text-center align-middle">Acción</th>
               </tr>
             </thead>
-            {/* OJO: Quité el divide-y para que no cree líneas fantasmas en las filas ocultas */}
             <tbody className="">
               {cargando ? (
                 <tr><td colSpan={5} className="text-center py-10 text-slate-400 font-medium">Cargando historial de pacientes...</td></tr>
@@ -218,15 +233,34 @@ export default function ConstanciasPage() {
                           </span>
                         </td>
                         
-                        {/* ACCIÓN (DESPLEGAR) */}
+                        {/* ACCIONES (WHATSAPP + DESPLEGAR) */}
                         <td className="px-6 py-4 align-middle text-center">
-                          <button className={`p-2 rounded-full transition-colors ${isExpanded ? 'bg-[#0071E3] text-white shadow-md shadow-[#0071E3]/20' : 'text-slate-400 hover:bg-slate-200 hover:text-[#1D1D1F]'}`}>
-                            {isExpanded ? <ChevronUp size={20} strokeWidth={2.5}/> : <ChevronDown size={20} strokeWidth={2.5}/>}
-                          </button>
+                          <div className="flex items-center justify-center gap-2">
+                            
+                            {/* BOTÓN WHATSAPP */}
+                            <div className="relative group/ws flex flex-col items-center">
+                              <button 
+                                onClick={(e) => enviarWhatsAppContacto(e, grupo.paciente)}
+                                className="flex items-center justify-center w-10 h-10 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-full transition-all duration-300 hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)] hover:-translate-y-0.5"
+                              >
+                                <MessageCircle size={18} strokeWidth={2.5} />
+                              </button>
+                              <div className="absolute -top-10 opacity-0 group-hover/ws:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/ws:-translate-y-1">
+                                {grupo.paciente.telefono ? `WS: ${grupo.paciente.telefono}` : "WS: Sin número"}
+                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
+                              </div>
+                            </div>
+
+                            {/* BOTÓN DESPLEGAR */}
+                            <button className={`p-2 w-10 h-10 flex items-center justify-center rounded-full transition-colors ${isExpanded ? 'bg-[#0071E3] text-white shadow-md shadow-[#0071E3]/20' : 'text-slate-400 bg-slate-100 hover:bg-slate-200 hover:text-[#1D1D1F]'}`}>
+                              {isExpanded ? <ChevronUp size={20} strokeWidth={2.5}/> : <ChevronDown size={20} strokeWidth={2.5}/>}
+                            </button>
+
+                          </div>
                         </td>
                       </tr>
 
-                      {/* PANEL DESPLEGABLE ANIMADO (TRUCO DE GRID-ROWS) */}
+                      {/* PANEL DESPLEGABLE ANIMADO */}
                       <tr>
                         <td colSpan={5} className="p-0 border-none">
                           <div className={`grid transition-all duration-300 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>

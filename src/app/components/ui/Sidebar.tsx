@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { 
   Home, 
   FileSignature, 
@@ -24,10 +24,15 @@ import ModalConfirmacion from "./ModalConfirmacion";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const menuItems = [
+  // Leemos el rol (por defecto lo tratamos como USUARIO por seguridad si está cargando)
+  const rolUsuario = (session?.user as any)?.rol || "USUARIO";
+
+  // Este es el menú maestro con TODAS las opciones
+  const menuMaestro = [
     { nombre: "Inicio", ruta: "/home", icono: Home }, 
     { nombre: "Registro", ruta: "/home/registro", icono: FileSignature },
     { nombre: "Lista Diaria", ruta: "/home/diaria", icono: CalendarDays },
@@ -40,10 +45,20 @@ export default function Sidebar() {
     { nombre: "Cierre de Caja", ruta: "/home/cierre", icono: Calculator },
   ];
 
+  // Rutas que SI puede ver el Asistente (USUARIO)
+  const rutasPermitidasUsuario = [
+    "/home", "/home/registro", "/home/diaria", "/home/resultados", "/home/pacientes", "/home/constancias"
+  ];
+
+  // Filtramos el menú según el rol
+  const menuItems = rolUsuario === "ADMIN" 
+    ? menuMaestro 
+    : menuMaestro.filter(item => rutasPermitidasUsuario.includes(item.ruta));
+
   return (
     <>
       <aside 
-        className={`relative h-screen bg-white/80 border-r border-[#D2D2D7]/50 flex flex-col shrink-0 transition-[width] duration-300 ease-in-out ${
+        className={`relative h-screen bg-white/80 border-r border-[#D2D2D7]/50 flex flex-col shrink-0 transition-[width] duration-300 ease-in-out z-50 ${
           isCollapsed ? "w-[88px]" : "w-[280px]"
         }`}
       >
@@ -67,7 +82,6 @@ export default function Sidebar() {
               <Image src="/Logo2.png" alt="Leyma" fill className="object-contain" />
             </div>
             
-            {/* Animación fluida de textos quitando 'hidden' */}
             <div className={`flex flex-col whitespace-nowrap transition-all duration-300 overflow-hidden ${
               isCollapsed ? "w-0 opacity-0" : "w-[120px] opacity-100"
             }`}>
@@ -96,7 +110,7 @@ export default function Sidebar() {
             const isActive = item.ruta === "/home" 
               ? pathname === "/home" 
               : pathname.startsWith(item.ruta);
-              
+            
             const Icon = item.icono;
 
             return (
@@ -120,7 +134,6 @@ export default function Sidebar() {
                   />
                 </div>
                 
-                {/* Animación fluida de textos quitando 'hidden' */}
                 <span className={`text-[15px] font-medium transition-all duration-300 overflow-hidden ${
                   isCollapsed ? "w-0 opacity-0 ml-0" : "w-auto opacity-100 ml-3"
                 } ${isActive ? "font-semibold" : "group-hover:text-[#1D1D1F]"}`}>
@@ -144,7 +157,6 @@ export default function Sidebar() {
               <LogOut size={20} strokeWidth={2.5} className="group-hover:scale-110 transition-transform" />
             </div>
             
-            {/* Animación fluida de textos quitando 'hidden' */}
             <span className={`transition-all duration-300 overflow-hidden ${
               isCollapsed ? "w-0 opacity-0 ml-0" : "w-auto opacity-100 ml-3"
             }`}>

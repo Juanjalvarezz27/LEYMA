@@ -7,9 +7,9 @@ export async function middleware(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   const { pathname } = req.nextUrl;
 
-  // 1. Si el usuario ESTÁ logueado y trata de entrar al Login (/), lo mandamos al sistema
+  // 1. Si el usuario ESTÁ logueado y trata de entrar al Login (/), lo mandamos al Dashboard
   if (pathname === "/" && token) {
-    return NextResponse.redirect(new URL("/home/registro", req.url));
+    return NextResponse.redirect(new URL("/home", req.url));
   }
 
   // 2. Si el usuario NO ESTÁ logueado y trata de entrar a cualquier ruta de /home, lo echamos al Login
@@ -17,11 +17,23 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
+  // 3. RUTAS RESTRINGIDAS: Si es un USUARIO normal intentando entrar a módulos de ADMIN
+  if (token && token.rol !== "ADMIN") {
+    const rutasSoloAdmin = ["/home/pruebas", "/home/estadisticas", "/home/monedero", "/home/cierre"];
+    
+    // Verificamos si la ruta actual empieza con alguna de las bloqueadas
+    const intentaEntrarRutaAdmin = rutasSoloAdmin.some(ruta => pathname.startsWith(ruta));
+    
+    if (intentaEntrarRutaAdmin) {
+      // Lo regresamos al Dashboard por "listillo"
+      return NextResponse.redirect(new URL("/home", req.url));
+    }
+  }
+
   // Si todo está en orden, dejamos que la petición continúe
   return NextResponse.next();
 }
 
-// Configuramos en qué rutas debe ejecutarse este middleware para no gastar recursos innecesarios
 export const config = {
   matcher: [
     "/",

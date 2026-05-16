@@ -18,45 +18,39 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Por favor ingresa tu correo y contraseña.");
         }
 
-        const usuario = await prisma.usuario.findUnique({
-          where: { correo: credentials.correo }
-        });
+      const usuario = await prisma.usuario.findUnique({
+                where: { correo: credentials.correo },
+                include: { rol: true } // <-- AGREGAMOS ESTO PARA TRAER EL NOMBRE DEL ROL
+              });
 
-        if (!usuario || !usuario.activo) {
-          throw new Error("El usuario no existe o está inactivo.");
-        }
+              if (!usuario || !usuario.activo) throw new Error("El usuario no existe o está inactivo.");
+              
+              const claveCorrecta = await bcrypt.compare(credentials.clave, usuario.clave);
+              if (!claveCorrecta) throw new Error("Contraseña incorrecta.");
 
-        const claveCorrecta = await bcrypt.compare(credentials.clave, usuario.clave);
-
-        if (!claveCorrecta) {
-          throw new Error("Contraseña incorrecta.");
-        }
-
-        // Si todo está bien, retornamos la data que queremos guardar en la sesión
-        return {
-          id: usuario.id,
-          name: usuario.nombre,
-          email: usuario.correo,
-          rolId: usuario.rolId.toString(),
-        };
-      }
-    })
-  ],
-  callbacks: {
-    // Guardamos el rol en el token para poder validar permisos luego
-    async jwt({ token, user }) {
-      if (user) {
-        token.rolId = (user as any).rolId;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).rolId = token.rolId;
-        (session.user as any).id = token.sub; // sub es el id del usuario
-      }
-      return session;
-    }
+              return {
+                id: usuario.id,
+                name: usuario.nombre,
+                email: usuario.correo,
+                rol: usuario.rol.nombre, // <-- GUARDAMOS EL NOMBRE: "ADMIN" o "USUARIO"
+              };
+            }
+          })
+        ],
+        callbacks: {
+          async jwt({ token, user }) {
+            if (user) {
+              token.rol = (user as any).rol; // Guardamos el nombre en el token
+            }
+            return token;
+          },
+          async session({ session, token }) {
+            if (session.user) {
+              (session.user as any).rol = token.rol; 
+              (session.user as any).id = token.sub; 
+            }
+            return session;
+          }
   },
   pages: {
     signIn: "/", // Le decimos a NextAuth dónde está nuestra vista de login

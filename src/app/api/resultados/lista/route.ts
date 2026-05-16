@@ -12,10 +12,21 @@ export async function GET() {
       include: {
         paciente: true,
         estado: { select: { nombre: true } },
+        creadoPor: { select: { nombre: true } }, // Para saber qué asistente la registró
         detalles: {
           include: {
-            // ¡ESTA LÍNEA ES LA QUE ARREGLA EL PROBLEMA DE LOS GUIONES!
-            resultado: { include: { valores: true } }, 
+            resultado: { 
+              include: { 
+                valores: true,
+                procesadoPor: { 
+                  select: { 
+                    id: true, 
+                    nombre: true, 
+                    firmaUrl: true 
+                  } 
+                }
+              } 
+            }, 
             prueba: {
               include: {
                 subcategoria: {

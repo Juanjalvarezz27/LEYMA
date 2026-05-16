@@ -16,21 +16,36 @@ export async function seedPruebas(prisma: PrismaClient) {
     create: { nombre: 'QUIMICA' },
   });
 
-  // 2. Crear Subcategorías (Nivel 2: Agrupadores)
-  // Nota: Ya no llevan precio ni código aquí.
-  const subHematologia = await prisma.subcategoriaPrueba.create({
-    data: {
-      nombre: 'Hematología Completa',
-      categoriaId: hematologia.id,
-    }
+  // 2. Crear Subcategorías con UPSERT (Nivel 2: Agrupadores)
+  // Nota: Como no tienen un campo @unique nativo en el esquema aparte del ID, 
+  // la mejor estrategia para el seeder es buscarlas por su nombre combinado con la categoría.
+  
+  // Para hacerlo limpio y compatible, usamos un findFirst o un upsert basado en una consulta previa
+  let subHematologia = await prisma.subcategoriaPrueba.findFirst({
+    where: { nombre: 'Hematología Completa', categoriaId: hematologia.id }
+  });
+  
+  if (!subHematologia) {
+    subHematologia = await prisma.subcategoriaPrueba.create({
+      data: {
+        nombre: 'Hematología Completa',
+        categoriaId: hematologia.id,
+      }
+    });
+  }
+
+  let subQuimicaBasica = await prisma.subcategoriaPrueba.findFirst({
+    where: { nombre: 'Química Sanguínea', categoriaId: quimica.id }
   });
 
-  const subQuimicaBasica = await prisma.subcategoriaPrueba.create({
-    data: {
-      nombre: 'Química Sanguínea',
-      categoriaId: quimica.id,
-    }
-  });
+  if (!subQuimicaBasica) {
+    subQuimicaBasica = await prisma.subcategoriaPrueba.create({
+      data: {
+        nombre: 'Química Sanguínea',
+        categoriaId: quimica.id,
+      }
+    });
+  }
 
   // 3. Crear Pruebas Individuales (Nivel 3: Ítems facturables con Precio y Código)
   
@@ -70,10 +85,25 @@ export async function seedPruebas(prisma: PrismaClient) {
     },
   ];
 
+  // Recorremos con UPSERT usando el campo único 'codigo'
   for (const p of pruebasHem) {
-    await prisma.prueba.create({
-      data: {
-        ...p,
+    await prisma.prueba.upsert({
+      where: { codigo: p.codigo },
+      update: {
+        nombre: p.nombre,
+        precioUSD: p.precioUSD,
+        unidades: p.unidades,
+        valoresReferencia: p.valoresReferencia,
+        ordenVisual: p.ordenVisual,
+        subcategoriaId: subHematologia.id,
+      },
+      create: {
+        codigo: p.codigo,
+        nombre: p.nombre,
+        precioUSD: p.precioUSD,
+        unidades: p.unidades,
+        valoresReferencia: p.valoresReferencia,
+        ordenVisual: p.ordenVisual,
         subcategoriaId: subHematologia.id,
       },
     });
@@ -115,10 +145,25 @@ export async function seedPruebas(prisma: PrismaClient) {
     },
   ];
 
+  // Recorremos con UPSERT usando el campo único 'codigo'
   for (const p of pruebasQui) {
-    await prisma.prueba.create({
-      data: {
-        ...p,
+    await prisma.prueba.upsert({
+      where: { codigo: p.codigo },
+      update: {
+        nombre: p.nombre,
+        precioUSD: p.precioUSD,
+        unidades: p.unidades,
+        valoresReferencia: p.valoresReferencia,
+        ordenVisual: p.ordenVisual,
+        subcategoriaId: subQuimicaBasica.id,
+      },
+      create: {
+        codigo: p.codigo,
+        nombre: p.nombre,
+        precioUSD: p.precioUSD,
+        unidades: p.unidades,
+        valoresReferencia: p.valoresReferencia,
+        ordenVisual: p.ordenVisual,
         subcategoriaId: subQuimicaBasica.id,
       },
     });

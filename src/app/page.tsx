@@ -64,7 +64,7 @@ export default function LoginPage() {
                 LEYMA
               </h1>
               <span className="text-2xl font-black text-[#1D1D1F] tracking-tight">
-                S.A.
+                C.A.
               </span>
             </div>
             

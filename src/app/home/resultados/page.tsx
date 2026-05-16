@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { 
   Microscope, Search, FileEdit, Clock, CheckCircle, FileText, 
-  Phone, MessageCircle, User, Calendar, ChevronLeft, ChevronRight, DollarSign 
+  Phone, MessageCircle, User, Calendar, ChevronLeft, ChevronRight, DollarSign, FileSignature 
 } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalCargarResultados from "../../components/resultados/ModalCargarResultados";
@@ -15,8 +15,8 @@ export default function ResultadosPage() {
   
   // ESTADOS DE FILTROS
   const [busqueda, setBusqueda] = useState("");
-  const [tabActiva, setTabActiva] = useState<"PENDIENTES" | "COMPLETADOS">("PENDIENTES");
-  const [fechaFiltro, setFechaFiltro] = useState<string>(new Date().toISOString().split('T')[0]); // Por defecto HOY
+  const [tabActiva, setTabActiva] = useState<"PENDIENTES" | "POR_VALIDAR" | "COMPLETADOS">("PENDIENTES");
+  const [fechaFiltro, setFechaFiltro] = useState<string>(new Date().toISOString().split('T')[0]); 
 
   // ESTADOS DE PAGINACIÓN
   const [paginaActual, setPaginaActual] = useState(1);
@@ -33,6 +33,13 @@ export default function ResultadosPage() {
       if (!res.ok) throw new Error("Error de red");
       const data = await res.json();
       setOrdenes(data);
+      
+      setOrdenSeleccionada((prev: any) => {
+        if (prev) {
+          return data.find((o: any) => o.id === prev.id) || null;
+        }
+        return prev;
+      });
     } catch (error) {
       toast.error("Error al cargar las órdenes.");
     } finally {
@@ -44,24 +51,23 @@ export default function ResultadosPage() {
     fetchOrdenes();
   }, []);
 
-  // Reiniciar a la página 1 cada vez que el usuario cambie un filtro
   useEffect(() => {
     setPaginaActual(1);
   }, [busqueda, tabActiva, fechaFiltro]);
 
-  // LÓGICA DE FILTRADO COMBINADO
   const ordenesFiltradas = ordenes.filter(orden => {
-    // 1. Filtro por Pestaña (Pendiente/Completado)
-    if (tabActiva === "PENDIENTES" && orden.resultadosCompletados) return false;
-    if (tabActiva === "COMPLETADOS" && !orden.resultadosCompletados) return false;
+    const tieneResultadosFaltantes = orden.detalles.some((d: any) => !d.resultado);
+    const todoFirmado = orden.resultadosCompletados; 
 
-    // 2. Filtro por Fecha (Ignorando la hora)
+    if (tabActiva === "PENDIENTES" && !tieneResultadosFaltantes) return false;
+    if (tabActiva === "POR_VALIDAR" && (tieneResultadosFaltantes || todoFirmado)) return false;
+    if (tabActiva === "COMPLETADOS" && !todoFirmado) return false;
+
     if (fechaFiltro) {
       const fechaOrden = new Date(orden.fechaCreacion).toISOString().split('T')[0];
       if (fechaOrden !== fechaFiltro) return false;
     }
 
-    // 3. Filtro por Búsqueda de Texto
     if (busqueda) {
       const b = busqueda.toLowerCase();
       const coincide = 
@@ -74,7 +80,6 @@ export default function ResultadosPage() {
     return true;
   });
 
-  // LÓGICA DE PAGINACIÓN
   const totalPaginas = Math.ceil(ordenesFiltradas.length / itemsPorPagina);
   const indiceUltimoItem = paginaActual * itemsPorPagina;
   const indicePrimerItem = indiceUltimoItem - itemsPorPagina;
@@ -88,7 +93,6 @@ export default function ResultadosPage() {
     return cleaned;
   };
 
-  // WS: CONTACTO GENERAL
   const enviarWhatsAppContacto = (orden: any) => {
     if (!orden.paciente.telefono) {
       toast.warning("El paciente no tiene un número de teléfono registrado.");
@@ -100,7 +104,6 @@ export default function ResultadosPage() {
     window.open(url, "_blank");
   };
 
-  // WS: RECORDATORIO DE PAGO
   const enviarWhatsAppCobro = (orden: any) => {
     if (!orden.paciente.telefono) {
       toast.warning("El paciente no tiene un número de teléfono registrado.");
@@ -108,7 +111,7 @@ export default function ResultadosPage() {
     }
     const numeroWA = formatWhatsAppNumber(orden.paciente.telefono);
     let mensaje = `*Laboratorio LEYMA S.A.*\nHola ${orden.paciente.nombreCompleto},\n\n`;
-    mensaje += `Te informamos que tus resultados ya están listos.\n\n`;
+    mensaje += `Te informamos que tus resultados ya están listos y validados.\n\n`;
     mensaje += `Por favor, acércate a nuestras instalaciones para realizar el pago pendiente y recibir tu informe oficial.\n\n`;
     mensaje += `*Total de la orden:* $${orden.totalUSD.toFixed(2)} / Bs ${orden.totalBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}\n\n`;
     mensaje += `¡Te esperamos!`;
@@ -124,9 +127,9 @@ export default function ResultadosPage() {
         <ModalCargarResultados
           orden={ordenSeleccionada}
           onClose={() => setOrdenSeleccionada(null)}
-          onSuccess={() => {
-            setOrdenSeleccionada(null);
-            fetchOrdenes();
+          onSuccess={(cerrar = true) => {
+            if (cerrar) setOrdenSeleccionada(null); 
+            fetchOrdenes(); 
           }}
         />
       )}
@@ -178,7 +181,7 @@ export default function ResultadosPage() {
         </div>
 
         {/* TABS DE ESTADO */}
-        <div className="flex bg-[#F5F5F7] p-1.5 rounded-xl w-full xl:w-[400px] shrink-0">
+        <div className="flex bg-[#F5F5F7] p-1.5 rounded-xl w-full xl:w-[500px] shrink-0">
           <button
             onClick={() => setTabActiva("PENDIENTES")}
             className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
@@ -186,6 +189,14 @@ export default function ResultadosPage() {
             }`}
           >
             <Clock size={16} /> Pendientes
+          </button>
+          <button
+            onClick={() => setTabActiva("POR_VALIDAR")}
+            className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+              tabActiva === "POR_VALIDAR" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+            }`}
+          >
+            <FileSignature size={16} /> Por Validar
           </button>
           <button
             onClick={() => setTabActiva("COMPLETADOS")}
@@ -211,9 +222,15 @@ export default function ResultadosPage() {
               <CheckCircle size={48} className="text-emerald-400 mb-4" strokeWidth={2} />
               <h3 className="text-xl font-bold text-[#1D1D1F]">¡Bandeja Limpia!</h3>
               <p className="text-slate-500 mt-1 font-medium">
-                {fechaFiltro 
-                  ? "No hay exámenes pendientes para la fecha seleccionada." 
-                  : "No hay exámenes pendientes por transcribir en el sistema."}
+                {fechaFiltro ? "No hay exámenes pendientes para la fecha seleccionada." : "No hay exámenes pendientes por transcribir en el sistema."}
+              </p>
+            </>
+          ) : tabActiva === "POR_VALIDAR" ? (
+            <>
+              <CheckCircle size={48} className="text-blue-400 mb-4" strokeWidth={2} />
+              <h3 className="text-xl font-bold text-[#1D1D1F]">Todo Validado</h3>
+              <p className="text-slate-500 mt-1 font-medium">
+                {fechaFiltro ? "No hay exámenes esperando firma en la fecha seleccionada." : "No hay exámenes transcritos esperando validación médica."}
               </p>
             </>
           ) : (
@@ -221,9 +238,7 @@ export default function ResultadosPage() {
               <FileText size={48} className="text-slate-300 mb-4" strokeWidth={2} />
               <h3 className="text-xl font-bold text-[#1D1D1F]">Sin Historial</h3>
               <p className="text-slate-500 mt-1 font-medium">
-                {fechaFiltro 
-                  ? "No se completaron resultados en la fecha seleccionada." 
-                  : "Aún no se han completado resultados en el sistema."}
+                {fechaFiltro ? "No se completaron resultados en la fecha seleccionada." : "Aún no se han completado resultados en el sistema."}
               </p>
             </>
           )}
@@ -234,7 +249,6 @@ export default function ResultadosPage() {
             {ordenesPaginadas.map((orden) => {
               const estaPagada = orden.estado.nombre === "CERRADA";
 
-              // LÓGICA DE AGRUPACIÓN DE ETIQUETAS
               const tagsAgrupados: any[] = [];
               orden.detalles.forEach((det: any) => {
                 const isPaquete = det.prueba?.subcategoria?.esPaquete;
@@ -268,11 +282,17 @@ export default function ResultadosPage() {
                         </span>
                       )}
 
-                      {tabActiva === "PENDIENTES" ? (
+                      {tabActiva === "PENDIENTES" && (
                         <span className="flex items-center gap-1 px-2.5 py-1 bg-orange-100/80 text-orange-700 text-[10px] font-bold uppercase tracking-wider rounded-md border border-orange-200">
                           <Clock size={10} strokeWidth={3} /> Esperando
                         </span>
-                      ) : (
+                      )}
+                      {tabActiva === "POR_VALIDAR" && (
+                        <span className="flex items-center gap-1 px-2.5 py-1 bg-blue-100/80 text-blue-700 text-[10px] font-bold uppercase tracking-wider rounded-md border border-blue-200">
+                          <FileSignature size={10} strokeWidth={3} /> Falta Firma
+                        </span>
+                      )}
+                      {tabActiva === "COMPLETADOS" && (
                         <span className="flex items-center gap-1 px-2.5 py-1 bg-[#0071E3]/10 text-[#0071E3] text-[10px] font-bold uppercase tracking-wider rounded-md border border-[#0071E3]/20">
                           <CheckCircle size={10} strokeWidth={3} /> Procesado
                         </span>
@@ -327,19 +347,21 @@ export default function ResultadosPage() {
                   {/* ACCIONES DE LA TARJETA */}
                   <div className="p-5 pt-0 flex items-center gap-3">
                     
-                    {/* BOTÓN PRIMARIO (LLENA EL ESPACIO RESTANTE) */}
                     <button
                       onClick={() => setOrdenSeleccionada(orden)}
                       className={`flex-1 h-[46px] text-sm font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 hover:-translate-y-0.5 ${
                         tabActiva === "PENDIENTES"
                           ? 'bg-[#0071E3] text-white hover:bg-[#0077ED] shadow-sm hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)]'
+                          : tabActiva === "POR_VALIDAR"
+                          ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-sm hover:shadow-[0_4px_12px_rgba(59,130,246,0.3)]'
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      <FileEdit size={16} /> {tabActiva === "PENDIENTES" ? 'Ingresar Resultados' : 'Revisar / Editar'}
+                      {tabActiva === "PENDIENTES" && <><FileEdit size={16} /> Ingresar Resultados</>}
+                      {tabActiva === "POR_VALIDAR" && <><FileSignature size={16} /> Validar y Firmar</>}
+                      {tabActiva === "COMPLETADOS" && <><FileEdit size={16} /> Revisar / Editar</>}
                     </button>
 
-                    {/* BOTÓN WHATSAPP GENERAL (SIEMPRE VISIBLE) */}
                     <div className="relative group/ws shrink-0 flex flex-col items-center justify-center">
                       <button
                         onClick={() => enviarWhatsAppContacto(orden)}
@@ -353,7 +375,6 @@ export default function ResultadosPage() {
                       </div>
                     </div>
 
-                    {/* BOTONES SECUNDARIOS (SOLO EN COMPLETADOS) */}
                     {tabActiva === "COMPLETADOS" && (
                       <>
                         {!estaPagada ? (

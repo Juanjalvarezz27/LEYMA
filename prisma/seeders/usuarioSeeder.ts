@@ -11,13 +11,15 @@ export async function seedUsuarios(prisma: PrismaClient) {
   }
 
   const saltRounds = 10;
-  // Hasheamos la clave genérica "1234" para todos los usuarios iniciales
   const claveHasheada = await bcrypt.hash('1234', saltRounds);
 
-  // 2. Administrador Principal (El que ya tenías)
+  // 2. Administrador Principal
   await prisma.usuario.upsert({
     where: { correo: 'admin@admin' },
-    update: {}, 
+    update: {
+      nombre: 'Administrador Principal',
+      rolId: adminRol.id,
+    }, 
     create: {
       nombre: 'Administrador Principal',
       correo: 'admin@admin',
@@ -30,9 +32,12 @@ export async function seedUsuarios(prisma: PrismaClient) {
   // 3. Leslie Alvarez (ADMIN)
   await prisma.usuario.upsert({
     where: { correo: 'hleslieag@gmail.com' },
-    update: {}, 
+    update: {
+      nombre: 'Dra. Leslie Alvarez',
+      rolId: adminRol.id, // Asegura que mantenga el rol correcto
+    }, 
     create: {
-      nombre: 'Leslie Alvarez',
+      nombre: 'Dra. Leslie Alvarez',
       correo: 'hleslieag@gmail.com',
       clave: claveHasheada,
       rolId: adminRol.id,
@@ -43,9 +48,12 @@ export async function seedUsuarios(prisma: PrismaClient) {
   // 4. Mayira (ADMIN)
   await prisma.usuario.upsert({
     where: { correo: 'mayira@gmail.com' },
-    update: {}, 
+    update: {
+      nombre: 'Lcda. Mayira Flores',
+      rolId: adminRol.id,
+    }, 
     create: {
-      nombre: 'Mayira', 
+      nombre: 'Lcda. Mayira Flores', 
       correo: 'mayira@gmail.com',
       clave: claveHasheada,
       rolId: adminRol.id,
@@ -56,7 +64,10 @@ export async function seedUsuarios(prisma: PrismaClient) {
   // 5. Asistente General (USUARIO)
   await prisma.usuario.upsert({
     where: { correo: 'asistente@gmail.com' },
-    update: {}, 
+    update: {
+      nombre: 'Asistente de Laboratorio',
+      rolId: usuarioRol.id,
+    }, 
     create: {
       nombre: 'Asistente de Laboratorio',
       correo: 'asistente@gmail.com',
@@ -66,5 +77,5 @@ export async function seedUsuarios(prisma: PrismaClient) {
     },
   });
 
-  console.log(' Usuarios semilla creados correctamente.');
+  console.log(' Usuarios semilla creados y actualizados correctamente.');
 }

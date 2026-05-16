@@ -28,15 +28,15 @@ Font.register({
 });
 
 // ---------------------------------------------------------------------------
-// 2. ESTILOS NATIVOS DE REACT-PDF (COMPRIMIDOS PARA AHORRAR ESPACIO)
+// 2. ESTILOS NATIVOS DE REACT-PDF
 // ---------------------------------------------------------------------------
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 25, // Reducido de 40
-    paddingBottom: 90, // Reducido para dar justo el espacio del footer
-    paddingHorizontal: 30, // Reducido de 40
+    paddingTop: 25,
+    paddingBottom: 90, 
+    paddingHorizontal: 30,
     fontFamily: 'Inter',
-    fontSize: 9, // Reducido de 10
+    fontSize: 9,
     color: '#000'
   },
   topContact: {
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
     paddingBottom: 4,
-    marginBottom: 6, // Reducido de 10
+    marginBottom: 6,
   },
   topContactText: { fontSize: 6.5, color: '#64748B', fontWeight: 700 },
   topContactRight: { flexDirection: 'row', gap: 10 },
@@ -56,13 +56,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1.5,
     borderBottomColor: '#000',
-    paddingBottom: 8, // Reducido de 12
-    marginBottom: 10 // Reducido de 15
+    paddingBottom: 8,
+    marginBottom: 10
   },
   logoRow: { flexDirection: 'row', alignItems: 'center' },
-  logoImage: { width: 50, height: 50, objectFit: 'contain', marginRight: 12 }, // Reducido de 65
+  logoImage: { width: 50, height: 50, objectFit: 'contain', marginRight: 12 },
   
-  logoTitle: { fontSize: 22, fontFamily: 'Montserrat', marginBottom: 1 }, // Reducido de 26
+  logoTitle: { fontSize: 22, fontFamily: 'Montserrat', marginBottom: 1 },
   logoSubtitle: { fontSize: 7.5, fontWeight: 700, letterSpacing: 0.5 }, 
   
   headerData: { textAlign: 'right', fontSize: 9 },
@@ -73,23 +73,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1.5,
     borderBottomColor: '#000',
-    paddingBottom: 8, // Reducido de 12
-    marginBottom: 10 // Reducido de 15
+    paddingBottom: 8,
+    marginBottom: 10
   },
   patientColLeft: { width: '55%', paddingRight: 10 },
   patientColRight: { width: '45%', borderLeftWidth: 1, borderLeftColor: '#E2E8F0', paddingLeft: 15 },
-  patientRow: { flexDirection: 'row', marginBottom: 3 }, // Reducido de 5
-  patientLabel: { width: 80, fontWeight: 700, fontSize: 9.5 }, // Reducido de 11
+  patientRow: { flexDirection: 'row', marginBottom: 3 },
+  patientLabel: { width: 80, fontWeight: 700, fontSize: 9.5 },
   patientValue: { flex: 1, fontSize: 9.5, textTransform: 'uppercase' },
 
   catTitle: {
-    fontSize: 12, // Reducido de 14
+    fontSize: 12,
     fontWeight: 700,
     borderBottomWidth: 1.5,
     borderBottomColor: '#000',
     paddingBottom: 2,
-    marginBottom: 6, // Reducido de 10
-    marginTop: 6, // Reducido de 10
+    marginBottom: 6,
+    marginTop: 6,
     textTransform: 'uppercase'
   },
   tableHeader: {
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#000',
     paddingBottom: 3,
-    marginBottom: 4 // Reducido de 6
+    marginBottom: 4
   },
   colDesc: { width: '45%', fontWeight: 700, fontSize: 8 },
   colRes: { width: '15%', fontWeight: 700, fontSize: 8, textAlign: 'center' },
@@ -106,11 +106,11 @@ const styles = StyleSheet.create({
   
   subcatTitle: { fontSize: 8, fontWeight: 700, paddingVertical: 2, paddingLeft: 5 },
   
-  row: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 2, paddingVertical: 1 }, // Más compacto
+  row: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 2, paddingVertical: 1 },
   rowDesc: { width: '45%', fontSize: 8, fontWeight: 700 },
   rowDescSub: { width: '45%', fontSize: 8, fontWeight: 700, paddingLeft: 15 },
   multiRowDesc: { width: '45%', fontSize: 7.5, fontWeight: 400, paddingLeft: 25, color: '#334155' },
-  rowRes: { width: '15%', fontSize: 9.5, fontWeight: 700, textAlign: 'center' }, // Resaltado pero un poco menor
+  rowRes: { width: '15%', fontSize: 9.5, fontWeight: 700, textAlign: 'center' },
   rowUni: { width: '15%', fontSize: 8, textAlign: 'center' },
   rowRef: { width: '25%', fontSize: 8, textAlign: 'right' },
   
@@ -118,56 +118,60 @@ const styles = StyleSheet.create({
   obsLabel: { fontSize: 7.5, fontWeight: 700, color: '#475569' },
   obsText: { fontSize: 7.5, fontWeight: 400, color: '#475569' },
 
-  // Footer en dos columnas (Más compacto y apegado al fondo)
+  // FOOTER CON MULTI-FIRMAS CENTRADO
   footer: {
     position: 'absolute',
-    bottom: 20, // Pegado más al borde
-    left: 30, // Ajustado a los nuevos márgenes
+    bottom: 20, 
+    left: 30, 
     right: 30,
     flexDirection: 'column',
     alignItems: 'center'
   },
   footerColumns: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center', // Agrupa todo al centro
     alignItems: 'flex-end',
     width: '100%',
-    marginBottom: 8 // Reducido de 15
+    marginBottom: 10,
+    gap: 30 // Espacio entre las firmas y el QR
   },
-  footerLeft: {
-    width: '50%',
-    alignItems: 'center'
-  },
-  footerRight: {
-    width: '50%',
+  signaturesContainer: {
     flexDirection: 'row',
+    gap: 20, // Espacio entre firmas (si hay 2)
+    alignItems: 'flex-end'
+  },
+  signatureBlock: {
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    borderLeftWidth: 1,
-    borderLeftColor: '#E2E8F0',
-    paddingLeft: 10
+    width: 140, 
+  },
+  firmaImage: {
+    width: 100,
+    height: 50,
+    objectFit: 'contain',
+    marginBottom: -10, 
   },
   signatureLine: {
-    width: 180,
+    width: '100%',
     borderTopWidth: 1.5,
     borderTopColor: '#000',
     paddingTop: 4,
     alignItems: 'center'
   },
-  bioanalista: { fontSize: 9.5, fontWeight: 700, letterSpacing: 1 },
-  labNameFooter: { fontSize: 8, marginTop: 1 },
+  bioanalista: { fontSize: 8.5, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase' },
+  labNameFooter: { fontSize: 7, marginTop: 1, color: '#475569' },
   
-  qrImage: {
-    width: 45, // QR más pequeño
-    height: 45
+  footerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderLeftWidth: 1.5,
+    borderLeftColor: '#000',
+    paddingLeft: 15
   },
-  qrLabelBox: {
-    flexDirection: 'column',
-    justifyContent: 'center'
-  },
+  qrImage: { width: 45, height: 45 },
+  qrLabelBox: { flexDirection: 'column', justifyContent: 'center' },
   qrTitle: { fontSize: 7.5, fontWeight: 700, color: '#1D1D1F' },
-  qrSubtitle: { fontSize: 6, color: '#64748B', marginTop: 1, maxWidth: 130 },
+  qrSubtitle: { fontSize: 5.5, color: '#64748B', marginTop: 1, maxWidth: 110 },
 
   legalBox: {
     borderTopWidth: 1,
@@ -208,6 +212,15 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
     acc[catNombre][subcatNombre].push(det);
     return acc;
   }, {});
+
+  // LÓGICA DE MULTI-FIRMAS: Extraer usuarios únicos que firmaron resultados
+  const signersMap = new Map();
+  orden.detalles.forEach((det: any) => {
+    if (det.resultado?.firmado && det.resultado?.procesadoPor) {
+      signersMap.set(det.resultado.procesadoPor.id, det.resultado.procesadoPor);
+    }
+  });
+  const bioanalistasFirmantes = Array.from(signersMap.values());
 
   return (
     <Document>
@@ -358,7 +371,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
           </View>
         ))}
 
-        {/* FOOTER CONDICIONAL DE LA ÚLTIMA PÁGINA */}
+        {/* FOOTER CONDICIONAL DE LA ÚLTIMA PÁGINA (DINÁMICO SEGÚN QUIÉN FIRMÓ) */}
         <View style={styles.footer} fixed render={(props: any) => {
           const { pageNumber, totalPages } = props;
           if (pageNumber === totalPages) {
@@ -366,12 +379,31 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
               <View style={{ width: '100%' }}>
                 <View style={styles.footerColumns}>
                   
-                  {/* LADO IZQUIERDO: FIRMA */}
-                  <View style={styles.footerLeft}>
-                    <View style={styles.signatureLine}>
-                      <Text style={styles.bioanalista}>{orden.creadoPor?.nombre || 'BIOANALISTA'}</Text>
-                      <Text style={styles.labNameFooter}>Laboratorio Clínico LEYMA S.A.</Text>
-                    </View>
+                  {/* LADO IZQUIERDO: FIRMAS */}
+                  <View style={styles.signaturesContainer}>
+                    {bioanalistasFirmantes.length > 0 ? (
+                      bioanalistasFirmantes.map((bio: any) => (
+                        <View key={bio.id} style={styles.signatureBlock}>
+                          {bio.firmaUrl ? (
+                            <Image src={bio.firmaUrl} style={styles.firmaImage} />
+                          ) : (
+                            <View style={{ height: 40 }} /> 
+                          )}
+                          <View style={styles.signatureLine}>
+                            <Text style={styles.bioanalista}>{bio.nombre}</Text>
+                            <Text style={styles.labNameFooter}>Bioanalista LEYMA S.A.</Text>
+                          </View>
+                        </View>
+                      ))
+                    ) : (
+                      <View style={styles.signatureBlock}>
+                        <View style={{ height: 40 }} />
+                        <View style={styles.signatureLine}>
+                          <Text style={styles.bioanalista}>BIOANALISTA</Text>
+                          <Text style={styles.labNameFooter}>Laboratorio Clínico LEYMA S.A.</Text>
+                        </View>
+                      </View>
+                    )}
                   </View>
 
                   {/* LADO DERECHO: QR EN BASE64 NATIVO */}
@@ -380,9 +412,9 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                       <Image src={qrCodeUrl} style={styles.qrImage} />
                     ) : <View style={styles.qrImage} />}
                     <View style={styles.qrLabelBox}>
-                      <Text style={styles.qrTitle}>DOCUMENTO VERIFICADO</Text>
+                      <Text style={styles.qrTitle}>DOC. VERIFICADO</Text>
                       <Text style={styles.qrSubtitle}>
-                        Escanee este código QR para validar la autenticidad de los resultados directamente desde el servidor central de LEYMA S.A.
+                        Escanee este código para validar la autenticidad en el servidor de LEYMA S.A.
                       </Text>
                     </View>
                   </View>
@@ -406,7 +438,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
 };
 
 // ---------------------------------------------------------------------------
-// 4. COMPONENTE PRINCIPAL (MODAL)
+// 4. COMPONENTE PRINCIPAL (MODAL VISOR)
 // ---------------------------------------------------------------------------
 export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps) {
   const [isMounted, setIsMounted] = useState(false);

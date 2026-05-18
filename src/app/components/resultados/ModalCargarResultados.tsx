@@ -289,8 +289,8 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                     </div>
 
                     <div className="flex items-center text-xs font-black text-slate-800 uppercase tracking-wider mb-2 px-2">
-                      <div className="w-[40%]">Descripción del Examen</div>
-                      <div className="w-[20%] text-center">Resultados ({`Cant.`})</div>
+                      <div className="w-[40%]">Parametro</div>
+                      <div className="w-[20%] text-center">Resultados</div>
                       <div className="w-[20%] text-center">Unidades</div>
                       <div className="w-[20%] text-right">Valores de Referencia</div>
                     </div>

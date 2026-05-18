@@ -33,10 +33,10 @@ Font.register({
 const styles = StyleSheet.create({
   page: {
     paddingTop: 25,
-    paddingBottom: 90, 
+    paddingBottom: 70, 
     paddingHorizontal: 30,
     fontFamily: 'Inter',
-    fontSize: 9,
+    fontSize: 10, 
     color: '#000'
   },
   topContact: {
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     marginBottom: 6,
   },
-  topContactText: { fontSize: 6.5, color: '#64748B', fontWeight: 700 },
+  topContactText: { fontSize: 7, color: '#64748B', fontWeight: 700 }, 
   topContactRight: { flexDirection: 'row', gap: 10 },
   
   header: {
@@ -62,10 +62,10 @@ const styles = StyleSheet.create({
   logoRow: { flexDirection: 'row', alignItems: 'center' },
   logoImage: { width: 50, height: 50, objectFit: 'contain', marginRight: 12 },
   
-  logoTitle: { fontSize: 22, fontFamily: 'Montserrat', marginBottom: 1 },
-  logoSubtitle: { fontSize: 7.5, fontWeight: 700, letterSpacing: 0.5 }, 
+  logoTitle: { fontSize: 24, fontFamily: 'Montserrat', marginBottom: 1 }, 
+  logoSubtitle: { fontSize: 8, fontWeight: 700, letterSpacing: 0.5 }, 
   
-  headerData: { textAlign: 'right', fontSize: 9 },
+  headerData: { textAlign: 'right', fontSize: 10 }, 
   headerDataRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 2 },
   headerDataLabel: { fontWeight: 700, marginRight: 4 },
 
@@ -79,108 +79,122 @@ const styles = StyleSheet.create({
   patientColLeft: { width: '55%', paddingRight: 10 },
   patientColRight: { width: '45%', borderLeftWidth: 1, borderLeftColor: '#E2E8F0', paddingLeft: 15 },
   patientRow: { flexDirection: 'row', marginBottom: 3 },
-  patientLabel: { width: 80, fontWeight: 700, fontSize: 9.5 },
-  patientValue: { flex: 1, fontSize: 9.5, textTransform: 'uppercase' },
+  patientLabel: { width: 85, fontWeight: 700, fontSize: 10.5 }, 
+  patientValue: { flex: 1, fontSize: 10.5, textTransform: 'uppercase' }, 
+
+  // --- ESTRUCTURA DE BLOQUE POR CATEGORÍA ---
+  categoryBlock: {
+    flexDirection: 'row',
+    width: '100%',
+    marginBottom: 20, 
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    paddingBottom: 10
+  },
+  tableSide: {
+    width: '74%', 
+    paddingRight: 15 
+  },
+  signatureSide: {
+    width: '26%', 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    borderLeftWidth: 1,
+    borderLeftColor: '#CBD5E1', 
+    paddingLeft: 15, 
+    paddingBottom: 5
+  },
 
   catTitle: {
-    fontSize: 12,
+    fontSize: 13, 
     fontWeight: 700,
     borderBottomWidth: 1.5,
     borderBottomColor: '#000',
-    paddingBottom: 2,
-    marginBottom: 6,
-    marginTop: 6,
+    paddingBottom: 4,
+    marginBottom: 8,
     textTransform: 'uppercase'
   },
   tableHeader: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#000',
-    paddingBottom: 3,
-    marginBottom: 4
+    paddingBottom: 4,
+    marginBottom: 6
   },
-  colDesc: { width: '45%', fontWeight: 700, fontSize: 8 },
-  colRes: { width: '15%', fontWeight: 700, fontSize: 8, textAlign: 'center' },
-  colUni: { width: '15%', fontWeight: 700, fontSize: 8, textAlign: 'center' },
-  colRef: { width: '25%', fontWeight: 700, fontSize: 8, textAlign: 'right' },
   
-  subcatTitle: { fontSize: 8, fontWeight: 700, paddingVertical: 2, paddingLeft: 5 },
+  colDesc: { width: '38%', fontWeight: 700, fontSize: 8.5 }, 
+  colRes: { width: '17%', fontWeight: 700, fontSize: 8.5, textAlign: 'center' }, 
+  colUni: { width: '15%', fontWeight: 700, fontSize: 8.5, textAlign: 'center' }, 
+  colRef: { width: '30%', fontWeight: 700, fontSize: 8.5, textAlign: 'right' }, 
   
-  row: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 2, paddingVertical: 1 },
-  rowDesc: { width: '45%', fontSize: 8, fontWeight: 700 },
-  rowDescSub: { width: '45%', fontSize: 8, fontWeight: 700, paddingLeft: 15 },
-  multiRowDesc: { width: '45%', fontSize: 7.5, fontWeight: 400, paddingLeft: 25, color: '#334155' },
-  rowRes: { width: '15%', fontSize: 9.5, fontWeight: 700, textAlign: 'center' },
-  rowUni: { width: '15%', fontSize: 8, textAlign: 'center' },
-  rowRef: { width: '25%', fontSize: 8, textAlign: 'right' },
+  subcatTitle: { fontSize: 9.5, fontWeight: 700, paddingVertical: 3, paddingLeft: 5 }, 
   
-  obsContainer: { marginLeft: 15, marginBottom: 3, marginTop: 1, flexDirection: 'row' },
-  obsLabel: { fontSize: 7.5, fontWeight: 700, color: '#475569' },
-  obsText: { fontSize: 7.5, fontWeight: 400, color: '#475569' },
+  row: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4, paddingVertical: 3 },
+  rowDesc: { width: '38%', fontSize: 8.5, fontWeight: 700 }, 
+  rowDescSub: { width: '38%', fontSize: 8.5, fontWeight: 700, paddingLeft: 10 }, 
+  multiRowDesc: { width: '38%', fontSize: 8, fontWeight: 400, paddingLeft: 15, color: '#334155' }, 
+  rowRes: { width: '17%', fontSize: 10.5, fontWeight: 700, textAlign: 'center' }, 
+  rowUni: { width: '15%', fontSize: 8.5, textAlign: 'center' }, 
+  rowRef: { width: '30%', fontSize: 8.5, textAlign: 'right' }, 
+  
+  obsContainer: { marginLeft: 10, marginBottom: 5, marginTop: 2, flexDirection: 'row' },
+  obsLabel: { fontSize: 8.5, fontWeight: 700, color: '#475569' }, 
+  obsText: { fontSize: 8.5, fontWeight: 400, color: '#475569' }, 
 
-  // FOOTER CON MULTI-FIRMAS CENTRADO
+  // ESTILOS DE FIRMAS LATERALES
+  inlineSignatureBlock: {
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 5
+  },
+  inlineFirmaImage: {
+    width: 85,
+    height: 40,
+    objectFit: 'contain',
+    marginBottom: 2, 
+  },
+  inlineSignatureLine: {
+    width: '100%',
+    borderTopWidth: 1,
+    borderTopColor: '#000',
+    paddingTop: 6, 
+    alignItems: 'center'
+  },
+  inlineBioanalista: { fontSize: 8.5, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', textAlign: 'center' }, 
+  inlineLabName: { fontSize: 7, color: '#64748B', marginTop: 1.5, textAlign: 'center' }, 
+
+  // FOOTER GENERAL (Uno al lado del otro)
   footer: {
     position: 'absolute',
-    bottom: 20, 
+    bottom: 25, 
     left: 30, 
     right: 30,
-    flexDirection: 'column',
-    alignItems: 'center'
   },
-  footerColumns: {
+  footerContent: {
     flexDirection: 'row',
-    justifyContent: 'center', // Agrupa todo al centro
-    alignItems: 'flex-end',
-    width: '100%',
-    marginBottom: 10,
-    gap: 30 // Espacio entre las firmas y el QR
-  },
-  signaturesContainer: {
-    flexDirection: 'row',
-    gap: 20, // Espacio entre firmas (si hay 2)
-    alignItems: 'flex-end'
-  },
-  signatureBlock: {
+    justifyContent: 'space-between',
     alignItems: 'center',
-    width: 140, 
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    paddingTop: 10,
+    width: '100%'
   },
-  firmaImage: {
-    width: 100,
-    height: 50,
-    objectFit: 'contain',
-    marginBottom: -10, 
-  },
-  signatureLine: {
-    width: '100%',
-    borderTopWidth: 1.5,
-    borderTopColor: '#000',
-    paddingTop: 4,
-    alignItems: 'center'
-  },
-  bioanalista: { fontSize: 8.5, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase' },
-  labNameFooter: { fontSize: 7, marginTop: 1, color: '#475569' },
-  
-  footerRight: {
+  qrRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    borderLeftWidth: 1.5,
-    borderLeftColor: '#000',
-    paddingLeft: 15
+    gap: 10,
+    width: '50%'
   },
   qrImage: { width: 45, height: 45 },
   qrLabelBox: { flexDirection: 'column', justifyContent: 'center' },
-  qrTitle: { fontSize: 7.5, fontWeight: 700, color: '#1D1D1F' },
-  qrSubtitle: { fontSize: 5.5, color: '#64748B', marginTop: 1, maxWidth: 110 },
+  qrTitle: { fontSize: 8.5, fontWeight: 700, color: '#1D1D1F' }, 
+  qrSubtitle: { fontSize: 7, color: '#64748B', marginTop: 1, maxWidth: 160 }, 
 
   legalBox: {
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    width: '100%',
-    paddingTop: 4,
-    alignItems: 'center'
+    width: '50%',
+    alignItems: 'flex-end',
   },
-  legalText: { fontSize: 6.5, fontWeight: 700, color: '#64748B', textAlign: 'center' }
+  legalText: { fontSize: 7.5, fontWeight: 700, color: '#64748B', textAlign: 'right', textTransform: 'uppercase' } 
 });
 
 // ---------------------------------------------------------------------------
@@ -204,23 +218,29 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
     return `${edad} ${esBebe ? 'Meses' : 'Años'}`;
   };
 
-  const groupedDetalles = orden.detalles.reduce((acc: any, det: any) => {
+  const groupedByCategory = orden.detalles.reduce((acc: any, det: any) => {
     const catNombre = det.prueba?.subcategoria?.categoria?.nombre || "OTROS";
     const subcatNombre = det.prueba?.subcategoria?.nombre || "PRUEBAS INDIVIDUALES";
-    if (!acc[catNombre]) acc[catNombre] = {};
-    if (!acc[catNombre][subcatNombre]) acc[catNombre][subcatNombre] = [];
-    acc[catNombre][subcatNombre].push(det);
+    
+    if (!acc[catNombre]) {
+      acc[catNombre] = {
+        subcategorias: {},
+        signers: new Map() 
+      };
+    }
+    
+    if (!acc[catNombre].subcategorias[subcatNombre]) {
+      acc[catNombre].subcategorias[subcatNombre] = [];
+    }
+    
+    acc[catNombre].subcategorias[subcatNombre].push(det);
+
+    if (det.resultado?.firmado && det.resultado?.procesadoPor) {
+      acc[catNombre].signers.set(det.resultado.procesadoPor.id, det.resultado.procesadoPor);
+    }
+
     return acc;
   }, {});
-
-  // LÓGICA DE MULTI-FIRMAS: Extraer usuarios únicos que firmaron resultados
-  const signersMap = new Map();
-  orden.detalles.forEach((det: any) => {
-    if (det.resultado?.firmado && det.resultado?.procesadoPor) {
-      signersMap.set(det.resultado.procesadoPor.id, det.resultado.procesadoPor);
-    }
-  });
-  const bioanalistasFirmantes = Array.from(signersMap.values());
 
   return (
     <Document>
@@ -241,7 +261,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
           <View style={styles.logoRow}>
             <Image src="/Logo2.png" style={styles.logoImage} />
             <View>
-              <Text style={styles.logoTitle}>LEYMA S.A.</Text>
+              <Text style={styles.logoTitle}>LEYMA C.A.</Text>
               <Text style={styles.logoSubtitle}>LABORATORIO CLÍNICO BACTERIOLÓGICO</Text>
             </View>
           </View>
@@ -302,130 +322,132 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
           </View>
         </View>
 
-        {/* CUERPO DEL REPORTE */}
-        {Object.entries(groupedDetalles).map(([catNombre, subcategorias]) => (
-          <View key={catNombre} wrap={false}>
-            <Text style={styles.catTitle}>{catNombre}</Text>
+        {/* CUERPO DEL REPORTE - DISEÑO DE COLUMNAS (TABLA IZQ / FIRMA DER) */}
+        {Object.entries(groupedByCategory).map(([catNombre, catData]: [string, any]) => (
+          <View key={catNombre} style={styles.categoryBlock} wrap={false}>
+            
+            {/* LADO IZQUIERDO: LA TABLA */}
+            <View style={styles.tableSide}>
+              <Text style={styles.catTitle}>{catNombre}</Text>
 
-            {Object.entries(subcategorias as any).map(([subCatNombre, detalles]: [string, any]) => (
-              <View key={subCatNombre} style={{ marginBottom: 10 }}>
-                
-                <View style={styles.tableHeader}>
-                  <Text style={styles.colDesc}>DESCRIPCIÓN DEL EXAMEN</Text>
-                  <Text style={styles.colRes}>RESULTADO</Text>
-                  <Text style={styles.colUni}>UNIDADES</Text>
-                  <Text style={styles.colRef}>VALORES DE REFERENCIA</Text>
-                </View>
-
-                {detalles[0]?.prueba?.subcategoria?.esPaquete && (
-                  <Text style={styles.subcatTitle}>{subCatNombre}</Text>
-                )}
-
-                {detalles.map((det: any) => {
-                  const isPaquete = detalles[0]?.prueba?.subcategoria?.esPaquete;
-                  const listaValores = det.resultado?.valores || [];
+              {Object.entries(catData.subcategorias).map(([subCatNombre, detalles]: [string, any]) => (
+                <View key={subCatNombre} style={{ marginBottom: 10 }}>
                   
-                  return (
-                    <View key={det.id} wrap={false}>
-                      {det.cantidad > 1 ? (
-                        <View>
+                  <View style={styles.tableHeader}>
+                    <Text style={styles.colDesc}>PARAMETRO</Text>
+                    <Text style={styles.colRes}>RESULTADO</Text>
+                    <Text style={styles.colUni}>UNIDADES</Text>
+                    <Text style={styles.colRef}>VALORES DE REFERENCIA</Text>
+                  </View>
+
+                  {detalles[0]?.prueba?.subcategoria?.esPaquete && (
+                    <Text style={styles.subcatTitle}>{subCatNombre}</Text>
+                  )}
+
+                  {detalles.map((det: any) => {
+                    const isPaquete = detalles[0]?.prueba?.subcategoria?.esPaquete;
+                    const listaValores = det.resultado?.valores || [];
+                    
+                    return (
+                      <View key={det.id} wrap={false}>
+                        {det.cantidad > 1 ? (
+                          <View>
+                            <View style={styles.row}>
+                              <Text style={isPaquete ? styles.rowDescSub : styles.rowDesc}>{det.prueba.nombre}</Text>
+                              <Text style={styles.rowRes}></Text>
+                              <Text style={styles.rowUni}>{det.prueba.unidades || ''}</Text>
+                              <Text style={styles.rowRef}>{det.prueba.valoresReferencia || ''}</Text>
+                            </View>
+                            
+                            {Array(det.cantidad).fill(0).map((_, i) => {
+                              const valorMuestra = listaValores[i]?.valorIngresado || "-";
+                              return (
+                                <View key={i} style={styles.row}>
+                                  <Text style={styles.multiRowDesc}>Muestra {i + 1}</Text>
+                                  <Text style={styles.rowRes}>{valorMuestra}</Text>
+                                  <Text style={styles.rowUni}></Text>
+                                  <Text style={styles.rowRef}></Text>
+                                </View>
+                              );
+                            })}
+                          </View>
+                        ) : (
                           <View style={styles.row}>
                             <Text style={isPaquete ? styles.rowDescSub : styles.rowDesc}>{det.prueba.nombre}</Text>
-                            <Text style={styles.rowRes}></Text>
+                            <Text style={styles.rowRes}>{listaValores[0]?.valorIngresado || "-"}</Text>
                             <Text style={styles.rowUni}>{det.prueba.unidades || ''}</Text>
                             <Text style={styles.rowRef}>{det.prueba.valoresReferencia || ''}</Text>
                           </View>
-                          
-                          {Array(det.cantidad).fill(0).map((_, i) => {
-                            const valorMuestra = listaValores[i]?.valorIngresado || "-";
-                            return (
-                              <View key={i} style={styles.row}>
-                                <Text style={styles.multiRowDesc}>Muestra {i + 1}</Text>
-                                <Text style={styles.rowRes}>{valorMuestra}</Text>
-                                <Text style={styles.rowUni}></Text>
-                                <Text style={styles.rowRef}></Text>
-                              </View>
-                            );
-                          })}
-                        </View>
-                      ) : (
-                        <View style={styles.row}>
-                          <Text style={isPaquete ? styles.rowDescSub : styles.rowDesc}>{det.prueba.nombre}</Text>
-                          <Text style={styles.rowRes}>{listaValores[0]?.valorIngresado || "-"}</Text>
-                          <Text style={styles.rowUni}>{det.prueba.unidades || ''}</Text>
-                          <Text style={styles.rowRef}>{det.prueba.valoresReferencia || ''}</Text>
-                        </View>
-                      )}
-                      
-                      {det.resultado?.observaciones && (
-                        <View style={styles.obsContainer}>
-                          <Text style={styles.obsLabel}>Nota ({det.prueba.nombre}): </Text>
-                          <Text style={styles.obsText}>{det.resultado.observaciones}</Text>
-                        </View>
-                      )}
+                        )}
+                        
+                        {det.resultado?.observaciones && (
+                          <View style={styles.obsContainer}>
+                            <Text style={styles.obsLabel}>Nota ({det.prueba.nombre}): </Text>
+                            <Text style={styles.obsText}>{det.resultado.observaciones}</Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              ))}
+            </View>
+
+            {/* LADO DERECHO: LA FIRMA */}
+            <View style={styles.signatureSide}>
+              {catData.signers.size > 0 ? (
+                Array.from(catData.signers.values()).map((bio: any) => (
+                  <View key={bio.id} style={styles.inlineSignatureBlock}>
+                    {bio.firmaUrl ? (
+                      <Image src={bio.firmaUrl} style={styles.inlineFirmaImage} />
+                    ) : (
+                      <View style={{ height: 35 }} /> 
+                    )}
+                    <View style={styles.inlineSignatureLine}>
+                      <Text style={styles.inlineBioanalista}>{bio.nombre}</Text>
+                      <Text style={styles.inlineLabName}>Bioanalista LEYMA C.A.</Text>
                     </View>
-                  );
-                })}
-              </View>
-            ))}
+                  </View>
+                ))
+              ) : (
+                <View style={styles.inlineSignatureBlock}>
+                  <View style={{ height: 35 }} /> 
+                  <View style={styles.inlineSignatureLine}>
+                    <Text style={styles.inlineBioanalista}>BIOANALISTA</Text>
+                    <Text style={styles.inlineLabName}>LEYMA C.A.</Text>
+                  </View>
+                </View>
+              )}
+            </View>
+
           </View>
         ))}
 
-        {/* FOOTER CONDICIONAL DE LA ÚLTIMA PÁGINA (DINÁMICO SEGÚN QUIÉN FIRMÓ) */}
+        {/* FOOTER GENERAL DE LA ÚLTIMA PÁGINA (QR a la izq y Legal a la der) */}
         <View style={styles.footer} fixed render={(props: any) => {
           const { pageNumber, totalPages } = props;
           if (pageNumber === totalPages) {
             return (
-              <View style={{ width: '100%' }}>
-                <View style={styles.footerColumns}>
-                  
-                  {/* LADO IZQUIERDO: FIRMAS */}
-                  <View style={styles.signaturesContainer}>
-                    {bioanalistasFirmantes.length > 0 ? (
-                      bioanalistasFirmantes.map((bio: any) => (
-                        <View key={bio.id} style={styles.signatureBlock}>
-                          {bio.firmaUrl ? (
-                            <Image src={bio.firmaUrl} style={styles.firmaImage} />
-                          ) : (
-                            <View style={{ height: 40 }} /> 
-                          )}
-                          <View style={styles.signatureLine}>
-                            <Text style={styles.bioanalista}>{bio.nombre}</Text>
-                            <Text style={styles.labNameFooter}>Bioanalista LEYMA S.A.</Text>
-                          </View>
-                        </View>
-                      ))
-                    ) : (
-                      <View style={styles.signatureBlock}>
-                        <View style={{ height: 40 }} />
-                        <View style={styles.signatureLine}>
-                          <Text style={styles.bioanalista}>BIOANALISTA</Text>
-                          <Text style={styles.labNameFooter}>Laboratorio Clínico LEYMA S.A.</Text>
-                        </View>
-                      </View>
-                    )}
+              <View style={styles.footerContent}>
+                
+                <View style={styles.qrRow}>
+                  {qrCodeUrl ? (
+                    <Image src={qrCodeUrl} style={styles.qrImage} />
+                  ) : <View style={styles.qrImage} />}
+                  <View style={styles.qrLabelBox}>
+                    <Text style={styles.qrTitle}>DOC. VERIFICADO</Text>
+                    <Text style={styles.qrSubtitle}>
+                      Escanee este código para validar la autenticidad en el servidor de LEYMA C.A.
+                    </Text>
                   </View>
-
-                  {/* LADO DERECHO: QR EN BASE64 NATIVO */}
-                  <View style={styles.footerRight}>
-                    {qrCodeUrl ? (
-                      <Image src={qrCodeUrl} style={styles.qrImage} />
-                    ) : <View style={styles.qrImage} />}
-                    <View style={styles.qrLabelBox}>
-                      <Text style={styles.qrTitle}>DOC. VERIFICADO</Text>
-                      <Text style={styles.qrSubtitle}>
-                        Escanee este código para validar la autenticidad en el servidor de LEYMA S.A.
-                      </Text>
-                    </View>
-                  </View>
-
                 </View>
 
                 <View style={styles.legalBox}>
                   <Text style={styles.legalText}>
-                    ESTE REPORTE ES UN DOCUMENTO ELECTRÓNICO OFICIAL GENERADO POR EL SISTEMA LEYMA. VÁLIDO ÚNICAMENTE CON SELLO HÚMEDO ORIGINAL.
+                    ESTE REPORTE ES UN DOCUMENTO ELECTRÓNICO OFICIAL{"\n"}GENERADO POR EL SISTEMA LEYMA C.A.
                   </Text>
                 </View>
+                
               </View>
             );
           }
@@ -512,7 +534,7 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
     if (cleaned.startsWith("0")) cleaned = "58" + cleaned.substring(1);
     else if (!cleaned.startsWith("58")) cleaned = "58" + cleaned;
     
-    let mensaje = `*Laboratorio LEYMA S.A.*\nHola ${orden.paciente.nombreCompleto},\n\n`;
+    let mensaje = `*Laboratorio LEYMA C.A.*\nHola ${orden.paciente.nombreCompleto},\n\n`;
     mensaje += `Tus resultados ya están listos y procesados.\n\n`;
     mensaje += `Adjuntamos a este chat tu informe oficial en formato PDF.\n\n`;
     mensaje += `¡Cualquier consulta estamos a tu orden. Feliz día!`;

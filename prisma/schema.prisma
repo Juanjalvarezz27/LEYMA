@@ -190,3 +190,4 @@ model Gasto {
   referencia    String?
   fechaGasto    DateTime   @default(now())
 }
+

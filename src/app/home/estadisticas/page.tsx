@@ -35,7 +35,10 @@ export default function EstadisticasPage() {
         url += `&inicio=${fechaInicio}&fin=${fechaFin}`;
       }
 
-      const res = await fetch(url);
+      // Evitamos caché en la petición
+      url += `${url.includes('?') ? '&' : '?'}t=${new Date().getTime()}`;
+
+      const res = await fetch(url, { cache: 'no-store' });
       if (!res.ok) throw new Error("Error de red");
       const data = await res.json();
       setStats(data);
@@ -65,8 +68,8 @@ export default function EstadisticasPage() {
     fetchEstadisticas();
   };
 
-  const categoryChartMinWidth = stats?.graficoCategorias?.length > 6 
-    ? `${stats.graficoCategorias.length * 15}%` 
+  const categoryChartMinWidth = (stats?.graficoCategorias || []).length > 6 
+    ? `${(stats?.graficoCategorias || []).length * 15}%` 
     : '100%';
 
   return (
@@ -84,10 +87,9 @@ export default function EstadisticasPage() {
           </p>
         </div>
 
-        {/* CONTROLES DE FILTRO (Solución Flex-Wrap Limpia) */}
+        {/* CONTROLES DE FILTRO */}
         <div className="flex flex-wrap items-center justify-start 2xl:justify-end gap-3">
           
-          {/* BOTONES DE PERÍODO */}
           <div className="flex items-center bg-[#F5F5F7] p-1.5 rounded-2xl border border-slate-200/60 w-max overflow-hidden">
             {[
               { id: "HOY", label: "Hoy" },
@@ -111,7 +113,6 @@ export default function EstadisticasPage() {
             ))}
           </div>
 
-          {/* INPUTS CUSTOM (Caerán a la siguiente línea si no hay espacio) */}
           {periodo === "CUSTOM" && (
             <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-left-4 duration-300 w-max">
               <input 
@@ -149,7 +150,7 @@ export default function EstadisticasPage() {
         </div>
       ) : (
         <>
-          {/* GRIDS DE DATOS: ENFOQUE PACIENTES Y EXÁMENES */}
+          {/* GRIDS DE DATOS BLINDADOS */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
             <div className="bg-white p-6 rounded-[24px] border border-slate-200/80 shadow-sm flex items-center gap-5">
               <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#0071E3] flex items-center justify-center shrink-0">
@@ -157,7 +158,7 @@ export default function EstadisticasPage() {
               </div>
               <div>
                 <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Órdenes Atendidas</p>
-                <h3 className="text-2xl font-black text-[#1D1D1F] mt-1">{stats.kpis.totalOrdenes}</h3>
+                <h3 className="text-2xl font-black text-[#1D1D1F] mt-1">{stats?.kpis?.totalOrdenes || 0}</h3>
               </div>
             </div>
 
@@ -167,7 +168,7 @@ export default function EstadisticasPage() {
               </div>
               <div>
                 <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Pacientes Únicos</p>
-                <h3 className="text-2xl font-black text-[#1D1D1F] mt-1">{stats.kpis.pacientesUnicos}</h3>
+                <h3 className="text-2xl font-black text-[#1D1D1F] mt-1">{stats?.kpis?.pacientesUnicos || 0}</h3>
               </div>
             </div>
 
@@ -177,7 +178,7 @@ export default function EstadisticasPage() {
               </div>
               <div>
                 <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Exámenes Procesados</p>
-                <h3 className="text-2xl font-black text-[#1D1D1F] mt-1">{stats.kpis.totalPruebas}</h3>
+                <h3 className="text-2xl font-black text-[#1D1D1F] mt-1">{stats?.kpis?.totalPruebas || 0}</h3>
               </div>
             </div>
 
@@ -187,11 +188,11 @@ export default function EstadisticasPage() {
               </div>
               <div className="z-10">
                 <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Tasa de Resolución</p>
-                <h3 className="text-2xl font-black text-[#1D1D1F] mt-1">{stats.kpis.tasaProcesamiento}%</h3>
+                <h3 className="text-2xl font-black text-[#1D1D1F] mt-1">{stats?.kpis?.tasaProcesamiento || 0}%</h3>
               </div>
               {/* Barra de progreso de fondo */}
               <div className="absolute bottom-0 left-0 h-1.5 bg-orange-100 w-full">
-                <div className="h-full bg-orange-500 rounded-r-full transition-all duration-1000" style={{ width: `${stats.kpis.tasaProcesamiento}%` }}></div>
+                <div className="h-full bg-orange-500 rounded-r-full transition-all duration-1000" style={{ width: `${stats?.kpis?.tasaProcesamiento || 0}%` }}></div>
               </div>
             </div>
           </div>
@@ -205,9 +206,10 @@ export default function EstadisticasPage() {
                 </h3>
                 <p className="text-xs text-slate-500 font-medium mt-1">Evolución de ingresos de pacientes por día.</p>
               </div>
-              <div className="h-[250px] w-full">
+              {/* CORRECCIÓN RECHARTS */}
+              <div className="w-full" style={{ height: 250, minHeight: 250 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={stats.graficoTendencia} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <AreaChart data={stats?.graficoTendencia || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorPacientes" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#0071E3" stopOpacity={0.2}/>
@@ -231,9 +233,10 @@ export default function EstadisticasPage() {
                 </h3>
                 <p className="text-xs text-slate-500 font-medium mt-1">Volumen de exámenes procesados diariamente.</p>
               </div>
-              <div className="h-[250px] w-full">
+              {/* CORRECCIÓN RECHARTS */}
+              <div className="w-full" style={{ height: 250, minHeight: 250 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={stats.graficoTendencia} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <AreaChart data={stats?.graficoTendencia || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorPruebas" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#10B981" stopOpacity={0.2}/>
@@ -259,11 +262,12 @@ export default function EstadisticasPage() {
               </h3>
               <p className="text-xs text-slate-500 font-medium mb-6">Proporción basada en el género biológico registrado.</p>
               
-              <div className="flex-1 min-h-[220px] relative flex items-center justify-center">
+              {/* CORRECCIÓN RECHARTS */}
+              <div className="flex-1 relative flex items-center justify-center w-full" style={{ minHeight: 220 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={stats.graficoSexo}
+                      data={stats?.graficoSexo || []}
                       cx="50%"
                       cy="50%"
                       innerRadius={65}
@@ -272,7 +276,7 @@ export default function EstadisticasPage() {
                       dataKey="value"
                       stroke="none"
                     >
-                      {stats.graficoSexo.map((entry: any, index: number) => (
+                      {(stats?.graficoSexo || []).map((entry: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={PALETA_COLORES[index % PALETA_COLORES.length]} />
                       ))}
                     </Pie>
@@ -289,9 +293,10 @@ export default function EstadisticasPage() {
               </h3>
               <p className="text-xs text-slate-500 font-medium mb-6">Agrupación epidemiológica del volumen de pacientes atendidos.</p>
               
-              <div className="flex-1 min-h-[220px] w-full">
+              {/* CORRECCIÓN RECHARTS */}
+              <div className="flex-1 w-full" style={{ minHeight: 220 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stats.graficoEdad} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <BarChart data={stats?.graficoEdad || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#1D1D1F', fontSize: 11, fontWeight: 700}} dy={5} />
                     <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748B', fontSize: 11, fontWeight: 600}} />
@@ -311,9 +316,10 @@ export default function EstadisticasPage() {
             <p className="text-xs text-slate-500 font-medium mb-6">Demanda analítica desglosada (Desliza si hay muchas categorías).</p>
             
             <div className="w-full overflow-x-auto pb-4 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
-              <div style={{ minWidth: categoryChartMinWidth, height: 320 }}>
+              {/* CORRECCIÓN RECHARTS */}
+              <div style={{ minWidth: categoryChartMinWidth, height: 320, minHeight: 320 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stats.graficoCategorias} margin={{ top: 10, right: 20, left: -25, bottom: 60 }}>
+                  <BarChart data={stats?.graficoCategorias || []} margin={{ top: 10, right: 20, left: -25, bottom: 60 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                     <XAxis 
                       dataKey="name" 
@@ -341,7 +347,7 @@ export default function EstadisticasPage() {
               <p className="text-xs text-slate-500 font-medium mb-6">Parámetros individuales más ordenados.</p>
               
               <div className="flex-1 flex flex-col justify-center gap-4">
-                {stats.topPruebas.map((prueba: any, index: number) => (
+                {(stats?.topPruebas || []).map((prueba: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-[#F5F5F7] rounded-xl border border-slate-200/40">
                     <div className="flex items-center gap-3">
                       <span className="w-6 h-6 rounded-full bg-[#0071E3]/10 text-[#0071E3] font-black text-xs flex items-center justify-center">
@@ -366,7 +372,7 @@ export default function EstadisticasPage() {
               <p className="text-xs text-slate-500 font-medium mb-6">Áreas de procesamiento con mayor demanda.</p>
               
               <div className="flex-1 flex flex-col justify-center gap-4">
-                {stats.topCategorias.map((cat: any, index: number) => (
+                {(stats?.topCategorias || []).map((cat: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-[#F5F5F7] rounded-xl border border-slate-200/40">
                     <div className="flex items-center gap-3">
                       <span className="w-6 h-6 rounded-full bg-[#10B981]/10 text-[#10B981] font-black text-xs flex items-center justify-center">

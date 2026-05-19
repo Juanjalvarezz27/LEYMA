@@ -92,6 +92,7 @@ model Usuario {
   gastosRegistrados  Gasto[]
   resultadosValidados ResultadoPrueba[] // Apunta a los exámenes que este usuario firmó
   fechaCreacion      DateTime          @default(now())
+  cierresRealizados CierreCaja[]
 }
 
 model Paciente {
@@ -192,3 +193,23 @@ model Gasto {
   fechaGasto    DateTime   @default(now())
 }
 
+model CierreCaja {
+  id            String   @id @default(cuid())
+  usuarioId     String
+  realizadoPor  Usuario  @relation(fields: [usuarioId], references: [id])
+  fechaApertura DateTime
+  fechaCierre   DateTime @default(now())
+  
+  totalCalculadoUSD Float
+  totalCalculadoBS  Float
+  totalDeclaradoUSD Float? // Lo que el cajero dice que hay físicamente
+  totalDeclaradoBS  Float?
+  
+  descuadreUSD      Float? // Diferencia (faltante o sobrante)
+  descuadreBS       Float?
+  
+  tasaBCV           Float
+  observaciones     String?  @db.Text
+  
+  desgloseMetodos   String?  @db.Text 
+}

@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { 
   Calculator, Users, Wallet, Landmark, Filter, Search, Loader2, CheckCircle, 
   AlertTriangle, ChevronLeft, ChevronRight, Lock, AlertCircle, Save, X, 
-  ChevronDown, ChevronUp, Activity, History
+  ChevronDown, ChevronUp, Activity, History, Trash2
 } from "lucide-react";
 import { toast } from "react-toastify";
 import useTasaBCV from "../../hooks/useTasaBcv";
+import ModalCierre from "../../components/cierre/ModalCierre";
+import ModalConfirmacion from "../../components/ui/ModalConfirmacion";
 
 type VistaType = "HOY" | "HISTORIAL";
 type PeriodoType = "HOY" | "CUSTOM";
@@ -32,13 +34,16 @@ export default function CierreCajaPage() {
   const [paginaActual, setPaginaActual] = useState(1);
   const ELEMENTOS_POR_PAGINA = 30;
 
+  // Historial
+  const [filtroResponsableHistorial, setFiltroResponsableHistorial] = useState("TODOS");
+  const [paginaActualHistorial, setPaginaActualHistorial] = useState(1);
+  const [filtroPeriodoHistorial, setFiltroPeriodoHistorial] = useState("TODOS");
+  const [fechaInicioHistorial, setFechaInicioHistorial] = useState("");
+  const [fechaFinHistorial, setFechaFinHistorial] = useState("");
+
   // Modal de Cierre
   const [showModalCierre, setShowModalCierre] = useState(false);
-  const [declaradosPorMetodo, setDeclaradosPorMetodo] = useState<Record<string, { usd: string, bs: string }>>({});
-  const [declaradoGlobalUSD, setDeclaradoGlobalUSD] = useState("");
-  const [declaradoGlobalBS, setDeclaradoGlobalBS] = useState("");
-  const [obsCierre, setObsCierre] = useState("");
-  const [guardandoCierre, setGuardandoCierre] = useState(false);
+  const [modalAnularCierreId, setModalAnularCierreId] = useState<string | null>(null);
 
   const [isDiarioOpen, setIsDiarioOpen] = useState(true);
 
@@ -62,22 +67,33 @@ export default function CierreCajaPage() {
     }
   };
 
+  const anularCierre = (id: string) => {
+    setModalAnularCierreId(id);
+  };
+
+  const confirmarAnularCierre = async (clave?: string) => {
+    if (!clave || !modalAnularCierreId) return;
+
+    try {
+      const res = await fetch(`/api/cierre-caja?id=${modalAnularCierreId}&clave=${clave}`, {
+        method: "DELETE"
+      });
+      const dataJson = await res.json();
+      
+      if (!res.ok) throw new Error(dataJson.error || "Error al anular");
+      
+      toast.success("Cierre anulado exitosamente");
+      fetchCierre();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setModalAnularCierreId(null);
+    }
+  };
+
   useEffect(() => {
     if (!loadingTasa) fetchCierre();
   }, [periodo, loadingTasa, tasaBCV]);
-
-  useEffect(() => {
-    if (showModalCierre && data?.desglosesCaja) {
-      const initialDeclaraciones: Record<string, { usd: string, bs: string }> = {};
-      data.desglosesCaja.forEach((box: any) => {
-        initialDeclaraciones[box.nombre] = { usd: "", bs: "" };
-      });
-      setDeclaradosPorMetodo(initialDeclaraciones);
-      setObsCierre("");
-      setDeclaradoGlobalUSD("");
-      setDeclaradoGlobalBS("");
-    }
-  }, [showModalCierre, data]);
 
   const aplicarFiltroCustom = () => {
     if (!fechaInicio || !fechaFin) return toast.warning("Seleccione fechas");
@@ -89,70 +105,6 @@ export default function CierreCajaPage() {
     const validAmount = Number(amount) || 0;
     if (isBs) return new Intl.NumberFormat('es-VE', { style: 'currency', currency: 'VES' }).format(validAmount).replace('VES', 'Bs.');
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(validAmount);
-  };
-
-  const handleMetodoChange = (metodo: string, moneda: 'usd' | 'bs', valor: string) => {
-    setDeclaradosPorMetodo(prev => ({
-      ...prev,
-      [metodo]: { ...prev[metodo], [moneda]: valor }
-    }));
-  };
-
-  const calculoUSD = data?.resumen?.totalEnCajaUSD || 0;
-  
-  const totalDeclaradoDinamicamenteUSD = data?.desglosesCaja?.length > 0 
-    ? Object.values(declaradosPorMetodo).reduce((sum, val) => sum + (parseFloat(val.usd) || 0), 0)
-    : parseFloat(declaradoGlobalUSD || "0");
-    
-  const totalDeclaradoDinamicamenteBS = data?.desglosesCaja?.length > 0
-    ? Object.values(declaradosPorMetodo).reduce((sum, val) => sum + (parseFloat(val.bs) || 0), 0)
-    : parseFloat(declaradoGlobalBS || "0");
-
-  const descuadreCalculadoUSD = totalDeclaradoDinamicamenteUSD - calculoUSD;
-
-  const ejecutarCierre = async () => {
-    if (data?.desglosesCaja?.length > 0) {
-      const algunCampoVacio = Object.values(declaradosPorMetodo).some(m => m.usd === "" && m.bs === "");
-      if (algunCampoVacio) return toast.warning("Complete todos los campos por método (puede ingresar 0).");
-    } else {
-      if (declaradoGlobalUSD === "" || declaradoGlobalBS === "") return toast.warning("Declare el monto físico.");
-    }
-
-    setGuardandoCierre(true);
-    try {
-      const desgloseEnriquecido = (data?.desglosesCaja || []).map((box: any) => ({
-        ...box,
-        declaradoUSD: parseFloat(declaradosPorMetodo[box.nombre]?.usd || "0"),
-        declaradoBS: parseFloat(declaradosPorMetodo[box.nombre]?.bs || "0")
-      }));
-
-      const payload = {
-        totalCalculadoUSD: data.resumen.totalEnCajaUSD,
-        totalCalculadoBS: data.resumen.totalEnCajaBS,
-        totalDeclaradoUSD: totalDeclaradoDinamicamenteUSD,
-        totalDeclaradoBS: totalDeclaradoDinamicamenteBS,
-        observaciones: obsCierre,
-        tasaBCV,
-        desglose: desgloseEnriquecido
-      };
-      
-      const res = await fetch("/api/cierre-caja", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Falló el cierre");
-      
-      toast.success("Cierre de caja guardado exitosamente");
-      setShowModalCierre(false);
-      fetchCierre();
-    } catch (error: any) {
-      toast.error(error.message || "Error al guardar el cierre");
-    } finally {
-      setGuardandoCierre(false);
-    }
   };
 
   const pacientesFiltrados = useMemo(() => {
@@ -171,91 +123,77 @@ export default function CierreCajaPage() {
 
   const totalPaginas = Math.ceil(pacientesFiltrados.length / ELEMENTOS_POR_PAGINA) || 1;
 
+  const responsablesOptions = useMemo(() => {
+    const list = data?.historialCierres || [];
+    const uniqueNames = Array.from(new Set(list.map((c: any) => c.realizadoPor?.nombre).filter(Boolean)));
+    return [
+      { value: "TODOS", label: "Todos los Responsables" },
+      ...uniqueNames.map((name: any) => ({ value: name as string, label: name as string }))
+    ];
+  }, [data]);
+
+  const periodoOptions = [
+    { value: "TODOS", label: "Todos los Tiempos" },
+    { value: "ESTE_MES", label: "Este Mes" },
+    { value: "CUSTOM", label: "Rango Específico" }
+  ];
+
+  const historialFiltrado = useMemo(() => {
+    let lista = data?.historialCierres || [];
+    
+    if (filtroPeriodoHistorial === "CUSTOM") {
+      if (fechaInicioHistorial && fechaFinHistorial) {
+         const inicio = new Date(fechaInicioHistorial).getTime();
+         const fin = new Date(fechaFinHistorial).getTime() + 86399000;
+         lista = lista.filter((c: any) => {
+            const time = new Date(c.fechaCierre).getTime();
+            return time >= inicio && time <= fin;
+         });
+      }
+    } else if (filtroPeriodoHistorial === "ESTE_MES") {
+         const ahora = new Date();
+         const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1).getTime();
+         lista = lista.filter((c: any) => new Date(c.fechaCierre).getTime() >= inicioMes);
+    }
+    
+    if (filtroResponsableHistorial !== "TODOS") {
+       lista = lista.filter((c: any) => c.realizadoPor?.nombre === filtroResponsableHistorial);
+    }
+
+    return lista;
+  }, [data, filtroPeriodoHistorial, fechaInicioHistorial, fechaFinHistorial, filtroResponsableHistorial]);
+
+  const historialPaginado = useMemo(() => {
+    const inicio = (paginaActualHistorial - 1) * ELEMENTOS_POR_PAGINA;
+    return historialFiltrado.slice(inicio, inicio + ELEMENTOS_POR_PAGINA);
+  }, [historialFiltrado, paginaActualHistorial]);
+  
+  const totalPaginasHistorial = Math.ceil(historialFiltrado.length / ELEMENTOS_POR_PAGINA) || 1;
+
   return (
     <div className="w-full min-h-screen p-4 md:p-8 bg-[#FAFAFA] animate-in fade-in duration-300">
       
+      <ModalConfirmacion
+        isOpen={!!modalAnularCierreId}
+        onClose={() => setModalAnularCierreId(null)}
+        onConfirm={confirmarAnularCierre}
+        titulo="Anular Cierre de Caja"
+        mensaje="Esta acción borrará este cierre permanentemente. Necesitas la clave maestra."
+        textoConfirmar="Anular Cierre"
+        requiereInput={true}
+        placeholderInput="Ingrese la CLAVE MAESTRA"
+      />
+
       {showModalCierre && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-[#111827]/80 transition-opacity" onClick={() => !guardandoCierre && setShowModalCierre(false)}></div>
-          <div className="relative w-full max-w-lg bg-white rounded-[32px] shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden max-h-[90vh]">
-            <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100 bg-slate-50/50 shrink-0">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
-                  <Lock size={24} strokeWidth={2.5} />
-                </div>
-                <div>
-                  <h2 className="text-xl font-extrabold text-[#111827]">Cuadre de Turno</h2>
-                  <p className="text-sm font-bold text-slate-500">Sistema espera global: {formatMoney(calculoUSD)}</p>
-                </div>
-              </div>
-              <button onClick={() => setShowModalCierre(false)} disabled={guardandoCierre} className="p-2 text-slate-400 hover:bg-slate-200 rounded-full transition-all"><X size={20} /></button>
-            </div>
-            
-            <div className="p-8 flex flex-col gap-6 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full">
-              
-              <div className="flex flex-col gap-4">
-                {data?.desglosesCaja?.length > 0 ? (
-                  <>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-1">Declare Montos por Método</label>
-                    {data.desglosesCaja.map((box: any) => (
-                      <div key={box.nombre} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
-                        <div className="flex justify-between items-center mb-3">
-                          <h4 className="text-sm font-extrabold text-[#111827] uppercase tracking-wide">{formatearMetodo(box.nombre)}</h4>
-                          <span className="text-xs font-bold text-slate-400">Esperado: <strong className="text-slate-600">{formatMoney(box.netoUSD)}</strong></span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">$</span>
-                            <input type="number" step="0.01" value={declaradosPorMetodo[box.nombre]?.usd || ""} onChange={(e) => handleMetodoChange(box.nombre, 'usd', e.target.value)} className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-black text-[#111827] outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" placeholder="0.00" />
-                          </div>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Bs</span>
-                            <input type="number" step="0.01" value={declaradosPorMetodo[box.nombre]?.bs || ""} onChange={(e) => handleMetodoChange(box.nombre, 'bs', e.target.value)} className="w-full pl-8 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-black text-[#111827] outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" placeholder="0.00" />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-center">
-                    <p className="text-sm font-bold text-slate-500 mb-4">No hay métodos registrados hoy. Declare $0.00 para cerrar.</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Global USD</label>
-                        <input type="number" step="0.01" value={declaradoGlobalUSD} onChange={(e) => setDeclaradoGlobalUSD(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-black outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="0.00" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Global BS</label>
-                        <input type="number" step="0.01" value={declaradoGlobalBS} onChange={(e) => setDeclaradoGlobalBS(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-black outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="0.00" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              {(totalDeclaradoDinamicamenteUSD > 0 || totalDeclaradoDinamicamenteBS > 0 || declaradoGlobalUSD === "0") && (
-                <div className={`p-4 rounded-2xl border flex items-start gap-3 ${descuadreCalculadoUSD === 0 ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
-                  {descuadreCalculadoUSD === 0 ? <CheckCircle size={24} className="shrink-0" /> : <AlertTriangle size={24} className="shrink-0" />}
-                  <div>
-                    <h4 className="text-sm font-extrabold">{descuadreCalculadoUSD === 0 ? 'Cuadre Global Perfecto' : 'Descuadre Detectado en Totales'}</h4>
-                    <p className="text-xs font-bold opacity-80 mt-0.5">
-                      Físico Total: {formatMoney(totalDeclaradoDinamicamenteUSD)} | Diferencia: {formatMoney(descuadreCalculadoUSD)}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Observaciones</label>
-                <textarea value={obsCierre} onChange={(e) => setObsCierre(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-[#111827] outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all h-20 resize-none" placeholder="Motivo del descuadre o nota adicional..."></textarea>
-              </div>
-
-              <button onClick={ejecutarCierre} disabled={guardandoCierre} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-extrabold rounded-2xl transition-all shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 shrink-0">
-                {guardandoCierre ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />} Confirmar y Cerrar Turno
-              </button>
-            </div>
-          </div>
-        </div>
+        <ModalCierre
+          data={data}
+          tasaBCV={tasaBCV}
+          onClose={() => setShowModalCierre(false)}
+          onSuccess={() => {
+            setShowModalCierre(false);
+            fetchCierre();
+          }}
+        />
       )}
 
       {/* HEADER PRINCIPAL */}
@@ -263,7 +201,7 @@ export default function CierreCajaPage() {
         <div>
           <h1 className="text-3xl md:text-4xl font-extrabold text-[#111827] flex items-center gap-3">
             <Calculator className="text-indigo-600" size={36} strokeWidth={2.5} />
-            Arqueo y Cierre
+            Cierre Diario
           </h1>
           <p className="text-sm font-medium text-slate-500 mt-2 flex flex-wrap items-center gap-3">
             <span>Tasa Aplicada: <strong className="text-[#111827]">Bs. {tasaBCV?.toFixed(2) || "---"}</strong></span>
@@ -295,14 +233,23 @@ export default function CierreCajaPage() {
           </div>
 
           {vista === "HOY" && (
-            <button 
-              onClick={() => setShowModalCierre(true)} 
-              disabled={data?.yaCerroHoy}
-              className={`px-6 py-3 text-white text-xs font-extrabold rounded-2xl transition-all shadow-md flex items-center gap-2 ${data?.yaCerroHoy ? 'bg-emerald-500 cursor-not-allowed' : 'bg-[#111827] hover:bg-black'}`}
-            >
-              {data?.yaCerroHoy ? <CheckCircle size={16} strokeWidth={2.5} /> : <Lock size={16} strokeWidth={2.5} />}
-              {data?.yaCerroHoy ? "Turno Cerrado" : "Ejecutar Cierre"}
-            </button>
+            data?.yaCerroHoy ? (
+              <button 
+                onClick={() => data?.historialCierres?.[0]?.id && anularCierre(data.historialCierres[0].id)} 
+                className="px-6 py-3 text-emerald-700 bg-emerald-100 hover:bg-red-100 hover:text-red-700 text-xs font-extrabold rounded-2xl transition-all shadow-md flex items-center justify-center gap-2 group min-w-[160px]"
+                title="Anular Cierre de Hoy"
+              >
+                <span className="group-hover:hidden flex items-center gap-2"><CheckCircle size={16} strokeWidth={2.5} /> Turno Cerrado</span>
+                <span className="hidden group-hover:flex items-center gap-2"><Trash2 size={16} strokeWidth={2.5} /> Anular Cierre</span>
+              </button>
+            ) : (
+              <button 
+                onClick={() => setShowModalCierre(true)} 
+                className="px-6 py-3 text-white text-xs font-extrabold rounded-2xl transition-all shadow-md flex items-center gap-2 bg-[#111827] hover:bg-black"
+              >
+                <Lock size={16} strokeWidth={2.5} /> Ejecutar Cierre
+              </button>
+            )
           )}
         </div>
       </div>
@@ -314,13 +261,36 @@ export default function CierreCajaPage() {
       ) : vista === "HISTORIAL" ? (
         
         <div className="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="px-8 py-6 border-b border-slate-100 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-              <History size={24} />
+          <div className="px-8 py-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                <History size={24} />
+              </div>
+              <div>
+                <h2 className="text-xl font-extrabold text-[#111827]">Historial de Cierres</h2>
+                <p className="text-sm font-medium text-slate-500">Registro inmutable de cortes de caja pasados.</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-extrabold text-[#111827]">Historial de Cierres</h2>
-              <p className="text-sm font-medium text-slate-500">Registro inmutable de cortes de caja pasados.</p>
+            
+            <div className="flex flex-wrap items-center gap-3">
+               <CustomSelect 
+                 options={responsablesOptions} 
+                 value={filtroResponsableHistorial} 
+                 onChange={(v: string) => { setFiltroResponsableHistorial(v); setPaginaActualHistorial(1); }} 
+                 className="w-full lg:w-64 min-w-[260px]"
+               />
+               <CustomSelect 
+                 options={periodoOptions} 
+                 value={filtroPeriodoHistorial} 
+                 onChange={(v: string) => { setFiltroPeriodoHistorial(v); setPaginaActualHistorial(1); }} 
+               />
+               {filtroPeriodoHistorial === "CUSTOM" && (
+                 <div className="flex items-center gap-2">
+                   <input type="date" value={fechaInicioHistorial} onChange={(e) => {setFechaInicioHistorial(e.target.value); setPaginaActualHistorial(1);}} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-600" />
+                   <span className="text-slate-400 font-bold">-</span>
+                   <input type="date" value={fechaFinHistorial} onChange={(e) => {setFechaFinHistorial(e.target.value); setPaginaActualHistorial(1);}} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-600" />
+                 </div>
+               )}
             </div>
           </div>
           <div className="overflow-x-auto w-full">
@@ -332,17 +302,18 @@ export default function CierreCajaPage() {
                   <th className="px-8 py-5 text-right">Sistema (USD)</th>
                   <th className="px-8 py-5 text-right">Físico Declarado (USD)</th>
                   <th className="px-8 py-5 text-center">Estatus</th>
+                  <th className="px-8 py-5 text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {(data?.historialCierres || []).length === 0 ? (
+                {historialPaginado.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-8 py-16 text-center text-slate-500 font-bold text-base">
-                      No hay cierres de caja registrados aún.
+                    <td colSpan={6} className="px-8 py-16 text-center text-slate-500 font-bold text-base">
+                      No se encontraron cierres de caja para este filtro.
                     </td>
                   </tr>
                 ) : (
-                  (data?.historialCierres || []).map((c: any) => (
+                  historialPaginado.map((c: any) => (
                     <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-8 py-5 whitespace-nowrap text-base font-extrabold text-[#111827]">
                         {new Date(c.fechaCierre).toLocaleDateString('es-VE')}
@@ -368,12 +339,30 @@ export default function CierreCajaPage() {
                           </span>
                         )}
                       </td>
+                      <td className="px-8 py-5 text-center whitespace-nowrap">
+                        <button 
+                          onClick={() => anularCierre(c.id)} 
+                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                          title="Anular Cierre"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
           </div>
+          {totalPaginasHistorial > 1 && (
+            <div className="px-8 py-5 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-sm font-bold text-slate-500">Página <strong className="text-[#111827]">{paginaActualHistorial}</strong> de <strong className="text-[#111827]">{totalPaginasHistorial}</strong></span>
+              <div className="flex gap-2">
+                <button onClick={() => setPaginaActualHistorial(p => Math.max(p - 1, 1))} disabled={paginaActualHistorial === 1} className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-[#111827] disabled:opacity-40 transition-colors shadow-sm"><ChevronLeft size={18} strokeWidth={2.5}/></button>
+                <button onClick={() => setPaginaActualHistorial(p => Math.min(p + 1, totalPaginasHistorial))} disabled={paginaActualHistorial === totalPaginasHistorial} className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-[#111827] disabled:opacity-40 transition-colors shadow-sm"><ChevronRight size={18} strokeWidth={2.5}/></button>
+              </div>
+            </div>
+          )}
         </div>
 
       ) : (
@@ -381,12 +370,20 @@ export default function CierreCajaPage() {
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           
           {data?.yaCerroHoy && (
-            <div className="w-full bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center gap-4 text-emerald-800 shadow-sm">
-              <div className="p-2 bg-emerald-100 rounded-xl"><CheckCircle size={24} /></div>
-              <div>
-                <h3 className="font-extrabold text-sm uppercase tracking-wide">El turno de hoy ha sido cerrado</h3>
-                <p className="text-xs font-medium opacity-80">El dinero físico fue auditado. Los nuevos movimientos que registres entrarán en la caja de mañana.</p>
+            <div className="w-full bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-emerald-800 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="p-2 bg-emerald-100 rounded-xl"><CheckCircle size={24} /></div>
+                <div>
+                  <h3 className="font-extrabold text-sm uppercase tracking-wide">El turno de hoy ha sido cerrado</h3>
+                  <p className="text-xs font-medium opacity-80">El dinero físico fue auditado. Los nuevos movimientos que registres entrarán en la caja de mañana.</p>
+                </div>
               </div>
+              <button 
+                onClick={() => data?.historialCierres?.[0]?.id && anularCierre(data.historialCierres[0].id)}
+                className="shrink-0 px-4 py-2 bg-white border border-emerald-200 hover:border-red-200 hover:bg-red-50 hover:text-red-600 text-emerald-700 text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2"
+              >
+                <Trash2 size={14} /> Anular Cierre
+              </button>
             </div>
           )}
 
@@ -542,6 +539,55 @@ function StatCard({ title, usd, bs, icon, color, bgColor, isCount, subtitle }: a
           {isCount ? subtitle : new Intl.NumberFormat('es-VE', { style: 'currency', currency: 'VES' }).format(bs || 0).replace('VES', 'Bs.')}
         </p>
       </div>
+    </div>
+  );
+}
+
+function CustomSelect({ value, onChange, options, className }: { value: string, onChange: (val: string) => void, options: {value: string, label: string}[], className?: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((o) => o.value === value) || options[0];
+
+  return (
+    <div className="relative" ref={ref}>
+      <button 
+        type="button" 
+        onClick={() => setIsOpen(!isOpen)}
+        className={`px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-600 flex items-center justify-between transition-all hover:bg-slate-100 ${className || 'w-full lg:w-48 min-w-[200px]'}`}
+      >
+        <span className="truncate">{selectedOption?.label}</span>
+        <ChevronDown size={16} className={`text-slate-400 transition-transform shrink-0 ml-2 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full mt-1 left-0 w-full bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+          <div className="max-h-60 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full">
+            {options.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-colors ${value === opt.value ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

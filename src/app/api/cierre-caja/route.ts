@@ -157,3 +157,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Error al cerrar caja" }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    const clave = searchParams.get("clave");
+
+    if (!id || !clave) {
+      return NextResponse.json({ error: "Faltan parámetros" }, { status: 400 });
+    }
+
+    if (clave !== process.env.CLAVE_MAESTRA) {
+      return NextResponse.json({ error: "Clave maestra incorrecta" }, { status: 401 });
+    }
+
+    await prisma.cierreCaja.delete({
+      where: { id }
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ error: "Error al anular cierre" }, { status: 500 });
+  }
+}

@@ -7,29 +7,28 @@ const prisma = new PrismaClient();
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const periodo = searchParams.get("periodo") || "HOY";
-    const inicioStr = searchParams.get("inicio");
-    const finStr = searchParams.get("fin");
     const tasaParam = searchParams.get("tasa");
     const tasaBCV = tasaParam ? parseFloat(tasaParam) : 1;
 
-    const ahora = new Date();
-    let fechaInicio = new Date();
-    let fechaFin = new Date();
+    // Rango estricto de HOY
+    const fechaInicio = new Date();
+    fechaInicio.setHours(0, 0, 0, 0);
+    const fechaFin = new Date();
+    fechaFin.setHours(23, 59, 59, 999);
 
-    if (periodo === "HOY") {
-      fechaInicio.setHours(0, 0, 0, 0);
-      fechaFin.setHours(23, 59, 59, 999);
-    } else if (periodo === "CUSTOM" && inicioStr && finStr) {
-      fechaInicio = new Date(`${inicioStr}T00:00:00`);
-      fechaFin = new Date(`${finStr}T23:59:59`);
-    } else {
-      // Por defecto para cierres, forzamos a HOY si seleccionan otra cosa, ya que un cierre es diario
-      fechaInicio.setHours(0, 0, 0, 0);
-      fechaFin.setHours(23, 59, 59, 999);
-    }
+    // 1. VERIFICAR SI YA SE CERRÓ HOY
+    const cierreDeHoy = await prisma.cierreCaja.findFirst({
+      where: { fechaCierre: { gte: fechaInicio, lte: fechaFin } }
+    });
+    const yaCerroHoy = !!cierreDeHoy;
 
-    // 1. TODAS LAS ÓRDENES (Para ver pacientes y cuentas por cobrar)
+    // 2. OBTENER EL HISTORIAL COMPLETO DE CIERRES
+    const historialCierres = await prisma.cierreCaja.findMany({
+      orderBy: { fechaCierre: 'desc' },
+      include: { realizadoPor: { select: { nombre: true } } }
+    });
+
+    // 3. OBTENER ÓRDENES Y SUS PAGOS (DEL DÍA ACTUAL)
     const ordenes = await prisma.orden.findMany({
       where: {
         fechaCreacion: { gte: fechaInicio, lte: fechaFin },
@@ -44,112 +43,90 @@ export async function GET(req: Request) {
       orderBy: { fechaCreacion: 'desc' }
     });
 
-    // 2. TODOS LOS GASTOS (Para restarlos del efectivo en caja)
+    // 4. OBTENER GASTOS DEL DÍA
     const gastos = await prisma.gasto.findMany({
       where: { fechaGasto: { gte: fechaInicio, lte: fechaFin } },
       include: { metodo: true }
     });
 
-    // 3. OBTENER ÚLTIMO CIERRE
-    const ultimoCierre = await prisma.cierreCaja.findFirst({
-      orderBy: { fechaCierre: 'desc' },
-      include: { realizadoPor: { select: { nombre: true } } }
-    });
-
-    // --- CÁLCULO ESTRICTO DE ARQUEO ---
-    const arqueoPorMetodo: Record<string, { nombre: string, ingresosUSD: number, ingresosBS: number, gastosUSD: number, gastosBS: number, netoUSD: number, netoBS: number }> = {};
+    // --- LÓGICA DE ARQUEO ESTRICTA ---
+    const metodosMap: Record<string, { ingresosUSD: number; gastosUSD: number }> = {};
     let totalCuentasPorCobrarUSD = 0;
-    let totalCuentasPorCobrarBS = 0;
 
-    // A. Sumar Pagos Reales
-    ordenes.forEach(orden => {
-      // Si la orden NO está cerrada, el dinero aún no ha entrado, es cuenta por cobrar
-      if (orden.estado.nombre !== "CERRADA") {
-        totalCuentasPorCobrarUSD += Number(orden.totalUSD) || 0;
-        totalCuentasPorCobrarBS += Number(orden.totalBS) || 0;
-      } 
+    ordenes.forEach(o => {
+      const montoOrden = Number(o.totalUSD) || 0;
       
-      // Si tiene pagos registrados, los sumamos al arqueo de ese método
-      if (orden.pagos && orden.pagos.length > 0) {
-        orden.pagos.forEach(pago => {
-          const m = pago.metodo.nombre;
-          if (!arqueoPorMetodo[m]) arqueoPorMetodo[m] = { nombre: m, ingresosUSD: 0, ingresosBS: 0, gastosUSD: 0, gastosBS: 0, netoUSD: 0, netoBS: 0 };
-          
-          arqueoPorMetodo[m].ingresosUSD += Number(pago.montoUSD) || 0;
-          arqueoPorMetodo[m].ingresosBS += Number(pago.montoBS) || 0;
+      // REGLA: Si la orden TIENE pagos registrados, va al Líquido Real
+      if (o.pagos && o.pagos.length > 0) {
+        o.pagos.forEach(p => {
+          const m = p.metodo.nombre;
+          if (!metodosMap[m]) metodosMap[m] = { ingresosUSD: 0, gastosUSD: 0 };
+          metodosMap[m].ingresosUSD += Number(p.montoUSD) || 0;
         });
+      } else {
+        // REGLA: Si NO hay pagos, es dinero que NO ESTÁ EN LA CAJA, va a Por Cobrar
+        totalCuentasPorCobrarUSD += montoOrden;
       }
     });
 
-    // B. Restar Gastos Reales
-    gastos.forEach(gasto => {
-      const m = gasto.metodo.nombre;
-      if (!arqueoPorMetodo[m]) arqueoPorMetodo[m] = { nombre: m, ingresosUSD: 0, ingresosBS: 0, gastosUSD: 0, gastosBS: 0, netoUSD: 0, netoBS: 0 };
-      
-      arqueoPorMetodo[m].gastosUSD += Number(gasto.montoUSD) || 0;
-      arqueoPorMetodo[m].gastosBS += Number(gasto.montoBS) || 0;
+    gastos.forEach(g => {
+      const m = g.metodo.nombre;
+      if (!metodosMap[m]) metodosMap[m] = { ingresosUSD: 0, gastosUSD: 0 };
+      metodosMap[m].gastosUSD += Number(g.montoUSD) || 0;
     });
 
-    // C. Calcular Netos Totales y por Método
-    let totalCajaFisicaUSD = 0;
-    let totalCajaFisicaBS = 0;
-    
-    const desglosesCaja = Object.values(arqueoPorMetodo).map(metodo => {
-      metodo.netoUSD = parseFloat((metodo.ingresosUSD - metodo.gastosUSD).toFixed(2));
-      metodo.netoBS = parseFloat((metodo.ingresosBS - metodo.gastosBS).toFixed(2));
-      
-      totalCajaFisicaUSD += metodo.netoUSD;
-      totalCajaFisicaBS += metodo.netoBS;
-      
-      return metodo;
-    }).sort((a, b) => b.netoUSD - a.netoUSD);
-
-    // --- FLUJO DE PACIENTES ---
-    const flujoPacientes = ordenes.map(o => {
-      let estadoPago = o.estado.nombre === "CERRADA" ? "PAGADO" : "PENDIENTE";
-      return {
-        ordenId: o.id,
-        cedula: o.paciente.cedula || "N/P",
-        paciente: o.paciente.nombreCompleto,
-        totalUSD: Number(o.totalUSD) || 0,
-        totalBS: Number(o.totalBS) || 0,
-        estadoPago,
-        registradoPor: o.creadoPor.nombre,
-        metodoUsado: o.pagos && o.pagos.length > 0 ? o.pagos[0].metodo.nombre : "NINGUNO"
-      };
+    let totalCajaUSD = 0;
+    const desglosesCaja = Object.entries(metodosMap).map(([nombre, valores]) => {
+      const neto = valores.ingresosUSD - valores.gastosUSD;
+      totalCajaUSD += neto;
+      return { nombre, ...valores, netoUSD: neto };
     });
 
     return NextResponse.json({
-      tasaBCV,
+      yaCerroHoy,
+      historialCierres,
       resumen: {
-        totalEnCajaUSD: totalCajaFisicaUSD,
-        totalEnCajaBS: totalCajaFisicaBS,
+        totalEnCajaUSD: totalCajaUSD,
+        totalEnCajaBS: totalCajaUSD * tasaBCV,
         cuentasPorCobrarUSD: totalCuentasPorCobrarUSD,
-        cuentasPorCobrarBS: totalCuentasPorCobrarBS,
+        cuentasPorCobrarBS: totalCuentasPorCobrarUSD * tasaBCV,
         pacientesAtendidos: ordenes.length
       },
-      ultimoCierre: ultimoCierre ? {
-        fecha: ultimoCierre.fechaCierre,
-        por: ultimoCierre.realizadoPor.nombre,
-        monto: ultimoCierre.totalCalculadoUSD
-      } : null,
       desglosesCaja,
-      flujoPacientes
+      flujoPacientes: ordenes.map(o => ({
+        ordenId: o.id,
+        cedula: o.paciente.cedula,
+        paciente: o.paciente.nombreCompleto,
+        totalUSD: Number(o.totalUSD) || 0,
+        // Evitamos el NaN calculando los Bs si la BD los trae vacíos
+        totalBS: Number(o.totalBS) || ((Number(o.totalUSD) || 0) * tasaBCV),
+        // Si no tiene pagos, forzamos estado a PENDIENTE
+        estadoPago: (o.pagos && o.pagos.length > 0) ? "PAGADO" : "PENDIENTE",
+        registradoPor: o.creadoPor.nombre,
+        metodoUsado: (o.pagos && o.pagos.length > 0) ? o.pagos[0].metodo.nombre : "NINGUNO"
+      }))
     });
 
   } catch (error) {
-    console.error("Error en Cierre:", error);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
 
-// ENDPOINT PARA EJECUTAR EL CIERRE
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { totalCalculadoUSD, totalCalculadoBS, totalDeclaradoUSD, totalDeclaradoBS, observaciones, tasaBCV, desglose } = body;
 
-    // Asignar al admin principal (sustituir por sesión real si la tienes)
+    const fechaInicio = new Date();
+    fechaInicio.setHours(0, 0, 0, 0);
+    const cierreExistente = await prisma.cierreCaja.findFirst({
+      where: { fechaCierre: { gte: fechaInicio } }
+    });
+
+    if (cierreExistente) {
+      return NextResponse.json({ error: "El turno de hoy ya fue cerrado." }, { status: 400 });
+    }
+
     const admin = await prisma.usuario.findFirst({ where: { rol: { nombre: "ADMIN" } } });
     if (!admin) return NextResponse.json({ error: "No hay admin" }, { status: 400 });
 

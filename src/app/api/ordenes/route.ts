@@ -78,6 +78,13 @@ export async function POST(req: Request) {
         detalles: {
           create: detallesData
         },
+        serviciosExtra: body.serviciosExtra && body.serviciosExtra.length > 0 ? {
+          create: body.serviciosExtra.map((s: any) => ({
+            servicioId: parseId(s.servicioId),
+            cantidad: s.cantidad || 1,
+            precioCongeladoUSD: s.precioCongelado,
+          }))
+        } : undefined,
         pagos: pagosData.length > 0 ? {
           create: pagosData
         } : undefined

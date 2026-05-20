@@ -1,6 +1,6 @@
 "use client";
 
-import { X, FileText, User, Activity, Wallet, Calendar, MapPin, Mail, Stethoscope, Hash, FlaskConical, Package } from "lucide-react";
+import { X, FileText, User, Activity, Wallet, Calendar, MapPin, Mail, Stethoscope, Hash, FlaskConical, Package, Syringe } from "lucide-react";
 
 interface ModalDetalleOrdenProps {
   orden: any;
@@ -187,10 +187,10 @@ export default function ModalDetalleOrden({ orden, onClose }: ModalDetalleOrdenP
 
           <hr className="my-8 border-t-2 border-dashed border-slate-100" />
 
-          {/* 2. EXÁMENES SOLICITADOS (Diseño Ancho) */}
+          {/* 2. EXÁMENES Y SERVICIOS SOLICITADOS (Diseño Ancho) */}
           <section>
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-              <Activity size={16} className="text-[#0071E3]" /> Exámenes Solicitados
+              <Activity size={16} className="text-[#0071E3]" /> Exámenes y Servicios Solicitados
             </h3>
             
             {/* Flex-col para que ocupen todo el ancho y no se vean apretados */}
@@ -275,6 +275,48 @@ export default function ModalDetalleOrden({ orden, onClose }: ModalDetalleOrdenP
                       </div>
                     </div>
 
+                  </div>
+                );
+              })}
+
+              {/* SERVICIOS EXTRA */}
+              {orden.serviciosExtra?.map((se: any) => {
+                const subtotalItemUSD = se.precioCongeladoUSD * se.cantidad;
+                const precioBS = se.precioCongeladoUSD * orden.tasaBCV;
+                const subtotalItemBS = subtotalItemUSD * orden.tasaBCV;
+
+                return (
+                  <div key={`srv-${se.id}`} className="bg-amber-50/40 border border-amber-200/60 p-5 lg:p-6 rounded-[24px] flex flex-col md:flex-row md:items-center justify-between shadow-sm hover:shadow-md transition-shadow gap-6">
+                    <div className="flex items-start gap-4 flex-1 w-full">
+                      <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl flex items-center justify-center shrink-0 border mt-1 bg-amber-100 text-amber-600 border-amber-200">
+                        <Syringe size={24} strokeWidth={2.5} />
+                      </div>
+                      <div className="flex flex-col w-full justify-center min-h-[48px] lg:min-h-[56px]">
+                        <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Servicio de Extracción</span>
+                        </div>
+                        <h4 className="font-bold text-[#1D1D1F] text-base lg:text-lg leading-tight flex items-center gap-2">
+                          {se.servicio.nombre}
+                        </h4>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-6 lg:gap-10 justify-end w-full md:w-auto border-t md:border-0 border-slate-50 pt-4 md:pt-0 shrink-0">
+                      <div className="text-center">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cant.</p>
+                        <p className="font-bold text-[#1D1D1F] text-base mt-1">{se.cantidad}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Precio</p>
+                        <p className="font-bold text-[#1D1D1F] text-base leading-none mt-1">${se.precioCongeladoUSD.toFixed(2)}</p>
+                        <p className="text-[10px] font-medium text-slate-500 mt-1">Bs {precioBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}</p>
+                      </div>
+                      <div className="text-right min-w-[80px]">
+                        <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Subtotal</p>
+                        <p className="font-black text-amber-600 text-xl leading-none mt-1">${subtotalItemUSD.toFixed(2)}</p>
+                        <p className="text-[11px] font-bold text-slate-500 mt-1">Bs {subtotalItemBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}</p>
+                      </div>
+                    </div>
                   </div>
                 );
               })}

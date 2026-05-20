@@ -41,6 +41,11 @@ export async function GET(req: Request) {
             }
           }
         },
+        serviciosExtra: {
+          include: {
+            servicio: true
+          }
+        },
         pagos: {
           include: { metodo: true }
         },

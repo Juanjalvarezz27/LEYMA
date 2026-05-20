@@ -24,6 +24,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
             prueba: true,
             tipoDescuento: { select: { nombre: true } }
           }
+        },
+        serviciosExtra: {
+          include: {
+            servicio: true
+          }
         }
       }
     });
@@ -61,10 +66,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     // Uso de Transacción: Borramos los detalles viejos y metemos los nuevos
     const ordenActualizada = await prisma.$transaction(async (tx) => {
-      // 1. Limpiar pruebas anteriores
+      // 1. Limpiar pruebas y servicios anteriores
       await tx.detalleOrden.deleteMany({ where: { ordenId } });
+      await tx.servicioEnOrden.deleteMany({ where: { ordenId } });
 
-      // 2. Actualizar totales y crear nuevas pruebas
+      // 2. Actualizar totales, crear nuevas pruebas y servicios
       return await tx.orden.update({
         where: { id: ordenId },
         data: {
@@ -76,7 +82,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           tasaBCV: body.tasaBCV,
           detalles: {
             create: detallesData
-          }
+          },
+          serviciosExtra: body.serviciosExtra && body.serviciosExtra.length > 0 ? {
+            create: body.serviciosExtra.map((s: any) => ({
+              servicioId: s.servicioId,
+              cantidad: s.cantidad || 1,
+              precioCongeladoUSD: s.precioCongelado,
+            }))
+          } : undefined,
         }
       });
     });

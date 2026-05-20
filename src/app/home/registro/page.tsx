@@ -12,6 +12,7 @@ import TarjetaPaciente from "../../components/registro/TarjetaPaciente";
 import FormularioPaciente from "../../components/registro/FormularioPaciente";
 import SeleccionPruebas from "../../components/registro/SeleccionPruebas";
 import ResumenPago from "../../components/registro/ResumenPago";
+import ServiciosExtras from "../../components/registro/ServiciosExtras";
 
 function RegistroContent() {
   const router = useRouter();
@@ -32,6 +33,8 @@ function RegistroContent() {
   // Estados de Pruebas y Tasa
   const [pruebasCatalogo, setPruebasCatalogo] = useState<any[]>([]);
   const [pruebasSeleccionadas, setPruebasSeleccionadas] = useState<any[]>([]);
+  const [serviciosCatalogo, setServiciosCatalogo] = useState<any[]>([]);
+  const [serviciosSeleccionados, setServiciosSeleccionados] = useState<any[]>([]);
   const { tasa } = useTasaBCV();
   const tasaBCV = tasa ?? 36.5;
 
@@ -83,6 +86,22 @@ function RegistroContent() {
     fetchCatalogo();
   }, []);
 
+  // 1b. Cargar Catálogo de Servicios Extra
+  useEffect(() => {
+    const fetchServicios = async () => {
+      try {
+        const res = await fetch("/api/servicios-extra");
+        if (res.ok) {
+          const data = await res.json();
+          setServiciosCatalogo(data);
+        }
+      } catch (e) {
+        // Silencioso — los servicios son opcionales
+      }
+    };
+    fetchServicios();
+  }, []);
+
   // 2. Lógica de Edición
   useEffect(() => {
     if (editId) {
@@ -104,6 +123,14 @@ function RegistroContent() {
               categoriaNombre: d.prueba?.subcategoria?.categoria?.nombre || "Desconocida",
               subcategoriaNombre: d.prueba?.subcategoria?.nombre || "Desconocida"
             })));
+
+            // Cargar servicios extra de la orden si los hay
+            if (orden.serviciosExtra && orden.serviciosExtra.length > 0) {
+              setServiciosSeleccionados(orden.serviciosExtra.map((se: any) => ({
+                ...se.servicio,
+                cantidad: se.cantidad || 1
+              })));
+            }
 
             toast.info(`Editando Orden #${editId}`, {
               toastId: `edit-toast-${editId}`
@@ -183,6 +210,7 @@ function RegistroContent() {
     setCedulaBusqueda("");
     setIsCreandoNuevo(false);
     setPruebasSeleccionadas([]);
+    setServiciosSeleccionados([]);
     setFormData({
       esBebe: false, cedula: "", nombreCompleto: "", fechaNacimiento: "",
       sexo: "M", telefono: "", correo: "", direccion: "", observaciones: ""
@@ -232,6 +260,11 @@ function RegistroContent() {
       descuentoGeneral: resumenData.descuentoGeneral,
       tipoDescuentoGral: resumenData.tipoDescGral,
       pruebas: pruebasParaEnviar,
+      serviciosExtra: serviciosSeleccionados.map((s: any) => ({
+        servicioId: s.id,
+        cantidad: s.cantidad || 1,
+        precioCongelado: s.precioUSD,
+      })),
       pagos: resumenData.pagos.filter((p: any) => p.metodoId && p.monto > 0).map((p: any) => ({
         metodoId: p.metodoId,
         monto: p.monto,
@@ -322,9 +355,19 @@ function RegistroContent() {
         />
       )}
 
+      {pacienteSeleccionado && (
+        <ServiciosExtras
+          catalogo={serviciosCatalogo}
+          seleccionados={serviciosSeleccionados}
+          onCambio={setServiciosSeleccionados}
+          tasaBCV={tasaBCV}
+        />
+      )}
+
       {pruebasSeleccionadas.length > 0 && (
         <ResumenPago
           pruebasSeleccionadas={pruebasSeleccionadas} setPruebasSeleccionadas={setPruebasSeleccionadas}
+          serviciosSeleccionados={serviciosSeleccionados}
           tasaBCV={tasaBCV} onFinalizar={finalizarOrden}
         />
       )}

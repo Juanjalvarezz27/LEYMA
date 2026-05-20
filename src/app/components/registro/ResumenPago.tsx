@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 interface ResumenPagoProps {
   pruebasSeleccionadas: any[];
   setPruebasSeleccionadas: (pruebas: any[]) => void;
+  serviciosSeleccionados?: any[];
   tasaBCV: number;
   onFinalizar: (datos: any) => void;
 }
@@ -14,6 +15,7 @@ interface ResumenPagoProps {
 export default function ResumenPago({
   pruebasSeleccionadas,
   setPruebasSeleccionadas,
+  serviciosSeleccionados = [],
   tasaBCV,
   onFinalizar
 }: ResumenPagoProps) {
@@ -57,7 +59,9 @@ export default function ResumenPago({
     }));
   };
 
-  const subtotalUSD = pruebasSeleccionadas.reduce((acc, p) => acc + ((p.precioFinal ?? p.precioUSD) * p.cantidad), 0);
+  const subtotalPruebas = pruebasSeleccionadas.reduce((acc, p) => acc + ((p.precioFinal ?? p.precioUSD) * p.cantidad), 0);
+  const subtotalServicios = serviciosSeleccionados.reduce((acc, s) => acc + (s.precioUSD * (s.cantidad || 1)), 0);
+  const subtotalUSD = subtotalPruebas + subtotalServicios;
 
   const handleDescuentoGeneral = (valorStr: string) => {
     let valor = parseFloat(valorStr) || 0;
@@ -126,8 +130,29 @@ export default function ResumenPago({
       </div>
 
       <div>
-        <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest block mb-3">Detalle de Pruebas Seleccionadas</label>
+        <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest block mb-3">Detalle de la Orden</label>
         <div className="bg-white border border-slate-200/80 shadow-sm rounded-2xl overflow-hidden">
+          {/* Servicios Extra (logísticos) */}
+          {serviciosSeleccionados.map((s, idx) => {
+            const cantidad = s.cantidad || 1;
+            const subtotalS = s.precioUSD * cantidad;
+            return (
+              <div key={`srv-${s.id}`} className={`flex items-center justify-between p-5 gap-5 bg-amber-50/50 ${(idx < serviciosSeleccionados.length - 1 || pruebasSeleccionadas.length > 0) ? 'border-b border-amber-100' : ''}`}>
+                <div className="flex flex-col flex-1">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-amber-500 mb-1">Servicio de Extracción</span>
+                  <span className="font-bold text-base text-[#1D1D1F] leading-tight">{s.nombre}</span>
+                  <span className="text-sm font-bold text-slate-500 mt-1">{cantidad} x ${s.precioUSD.toFixed(2)}</span>
+                </div>
+                <div className="flex flex-col items-end min-w-[100px]">
+                  <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-0.5">Subtotal</span>
+                  <span className="text-xl font-black text-amber-600 leading-none">${subtotalS.toFixed(2)}</span>
+                  <span className="text-[13px] font-bold text-slate-500 mt-1">Bs {(subtotalS * tasaBCV).toLocaleString('es-VE', {minimumFractionDigits: 2})}</span>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Pruebas médicas */}
           {pruebasSeleccionadas.map((p, idx) => {
             const subtotalIndUSD = (p.precioFinal ?? p.precioUSD) * p.cantidad;
             const subtotalIndBS = subtotalIndUSD * tasaBCV;

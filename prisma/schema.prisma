@@ -129,6 +129,7 @@ model Orden {
   fechaCreacion       DateTime       @default(now())
   pagos               Pago[]
   detalles            DetalleOrden[]
+  serviciosExtra      ServicioEnOrden[]
 }
 
 model DetalleOrden {
@@ -212,4 +213,26 @@ model CierreCaja {
   observaciones     String?  @db.Text
   
   desgloseMetodos   String?  @db.Text 
+}
+
+// --- SERVICIOS LOGÍSTICOS (No generan resultado médico) ---
+
+// Catálogo de servicios de extracción disponibles
+model ServicioExtra {
+  id        Int               @id @default(autoincrement())
+  nombre    String            @unique
+  precioUSD Float
+  activo    Boolean           @default(true)
+  ordenes   ServicioEnOrden[]
+}
+
+// Tabla de relación: servicios contratados en una orden específica
+model ServicioEnOrden {
+  id                 String        @id @default(cuid())
+  ordenId            Int
+  orden              Orden         @relation(fields: [ordenId], references: [id], onDelete: Cascade)
+  servicioId         Int
+  servicio           ServicioExtra @relation(fields: [servicioId], references: [id])
+  cantidad           Int           @default(1)
+  precioCongeladoUSD Float         // Precio al momento de crear la orden
 }

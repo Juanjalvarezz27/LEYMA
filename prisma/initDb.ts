@@ -5,6 +5,7 @@ import { seedMetodosPago } from './seeders/metodoPagoSeeder';
 import { seedTiposDescuento } from './seeders/tipoDescuentoSeeder';
 import { seedUsuarios } from './seeders/usuarioSeeder';
 import { seedPruebas } from './seeders/pruebaSeeder';
+import { seedServiciosExtra } from './seeders/servicioExtraSeeder';
 
 const prisma = new PrismaClient();
 
@@ -29,6 +30,9 @@ async function main() {
 
     await seedPruebas(prisma);
     console.log('Pruebas de laboratorio cargadas correctamente.');
+
+    await seedServiciosExtra(prisma);
+    console.log('Servicios extra cargados correctamente.');
 
     console.log('Sistema inicializado con exito.');
   } catch (error) {

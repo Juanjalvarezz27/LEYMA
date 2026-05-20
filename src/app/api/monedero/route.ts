@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { getCaracasTodayBounds, subtractDaysCaracas, getCaracasThisMonthBounds, getCaracasBoundsForDate, formatToCaracasDateString } from "../../../lib/dateUtils";
 
 export const dynamic = 'force-dynamic';
 
@@ -15,21 +16,30 @@ export async function GET(req: Request) {
     const tasaParam = searchParams.get("tasa");
     const tasaBCV = tasaParam ? parseFloat(tasaParam) : 1; 
 
-    const ahora = new Date();
     let fechaInicio = new Date();
     let fechaFin = new Date();
 
     if (periodo === "HOY") {
-      fechaInicio.setHours(0, 0, 0, 0);
+      const bounds = getCaracasTodayBounds();
+      fechaInicio = bounds.inicio;
+      fechaFin = bounds.fin;
     } else if (periodo === "7DIAS") {
-      fechaInicio.setDate(ahora.getDate() - 7);
+      const bounds = getCaracasBoundsForDate(subtractDaysCaracas(7));
+      fechaInicio = bounds.inicio;
+      fechaFin = getCaracasTodayBounds().fin;
     } else if (periodo === "30DIAS") {
-      fechaInicio.setDate(ahora.getDate() - 30);
+      const bounds = getCaracasBoundsForDate(subtractDaysCaracas(30));
+      fechaInicio = bounds.inicio;
+      fechaFin = getCaracasTodayBounds().fin;
     } else if (periodo === "MES_ACTUAL") {
-      fechaInicio = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+      const bounds = getCaracasThisMonthBounds();
+      fechaInicio = bounds.inicio;
+      fechaFin = bounds.fin;
     } else if (periodo === "CUSTOM" && inicioStr && finStr) {
-      fechaInicio = new Date(`${inicioStr}T00:00:00`);
-      fechaFin = new Date(`${finStr}T23:59:59`);
+      const boundInicio = getCaracasBoundsForDate(inicioStr);
+      const boundFin = getCaracasBoundsForDate(finStr);
+      fechaInicio = boundInicio.inicio;
+      fechaFin = boundFin.fin;
     }
 
     // 1. OBTENER INGRESOS
@@ -84,20 +94,20 @@ export async function GET(req: Request) {
     
     if (diferenciaDias <= 60) {
       while (temporalDate <= fechaFin) {
-        const key = temporalDate.toISOString().split("T")[0];
-        diasDelPeriodo.push(key);
-        conteoTendencia[key] = { ingresos: 0, gastos: 0 };
-        temporalDate.setDate(temporalDate.getDate() + 1);
+        const key = formatToCaracasDateString(temporalDate);
+        if (!diasDelPeriodo.includes(key)) diasDelPeriodo.push(key);
+        if (!conteoTendencia[key]) conteoTendencia[key] = { ingresos: 0, gastos: 0 };
+        temporalDate.setUTCHours(temporalDate.getUTCHours() + 24);
       }
     }
 
     ingresos.forEach(i => {
-      const key = i.fechaCreacion.toISOString().split("T")[0];
+      const key = formatToCaracasDateString(i.fechaCreacion);
       if (conteoTendencia[key]) conteoTendencia[key].ingresos += (Number(i.totalUSD) || 0);
     });
 
     gastos.forEach(g => {
-      const key = g.fechaGasto.toISOString().split("T")[0];
+      const key = formatToCaracasDateString(g.fechaGasto);
       if (conteoTendencia[key]) conteoTendencia[key].gastos += (Number(g.montoUSD) || 0);
     });
 

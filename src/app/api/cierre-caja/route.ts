@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { getCaracasTodayBounds, getCaracasBoundsForDate } from "../../../lib/dateUtils";
 
 export const dynamic = 'force-dynamic';
 const prisma = new PrismaClient();
@@ -10,11 +11,8 @@ export async function GET(req: Request) {
     const tasaParam = searchParams.get("tasa");
     const tasaBCV = tasaParam ? parseFloat(tasaParam) : 1;
 
-    // Rango estricto de HOY
-    const fechaInicio = new Date();
-    fechaInicio.setHours(0, 0, 0, 0);
-    const fechaFin = new Date();
-    fechaFin.setHours(23, 59, 59, 999);
+    // Rango estricto de HOY adaptado a Caracas
+    const { inicio: fechaInicio, fin: fechaFin } = getCaracasTodayBounds();
 
     // 1. VERIFICAR SI YA SE CERRÓ HOY
     const cierreDeHoy = await prisma.cierreCaja.findFirst({
@@ -116,9 +114,8 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { totalCalculadoUSD, totalCalculadoBS, totalDeclaradoUSD, totalDeclaradoBS, observaciones, tasaBCV, desglose } = body;
+    const { inicio: fechaInicio, fin: fechaFin } = getCaracasTodayBounds();
 
-    const fechaInicio = new Date();
-    fechaInicio.setHours(0, 0, 0, 0);
     const cierreExistente = await prisma.cierreCaja.findFirst({
       where: { fechaCierre: { gte: fechaInicio } }
     });
@@ -131,7 +128,7 @@ export async function POST(req: Request) {
     if (!admin) return NextResponse.json({ error: "No hay admin" }, { status: 400 });
 
     const ultimoCierre = await prisma.cierreCaja.findFirst({ orderBy: { fechaCierre: 'desc' } });
-    const fechaApertura = ultimoCierre ? ultimoCierre.fechaCierre : new Date(new Date().setHours(0,0,0,0));
+    const fechaApertura = ultimoCierre ? ultimoCierre.fechaCierre : fechaInicio;
 
     const descuadreUSD = parseFloat(totalDeclaradoUSD) - parseFloat(totalCalculadoUSD);
     const descuadreBS = parseFloat(totalDeclaradoBS) - parseFloat(totalCalculadoBS);

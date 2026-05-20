@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { getCaracasTodayBounds, subtractDaysCaracas, getCaracasThisMonthBounds, getCaracasBoundsForDate, formatToCaracasDateString } from "../../../lib/dateUtils";
 
 const prisma = new PrismaClient();
 
@@ -10,21 +11,31 @@ export async function GET(req: Request) {
     const inicioStr = searchParams.get("inicio");
     const finStr = searchParams.get("fin");
 
-    const ahora = new Date();
+    const ahora = new Date(); // Utilizado abajo para la edad, se deja
     let fechaInicio = new Date();
-    let fechaFin = new Date(); // Por defecto hasta ahora
+    let fechaFin = new Date(); 
 
     if (periodo === "HOY") {
-      fechaInicio.setHours(0, 0, 0, 0);
+      const bounds = getCaracasTodayBounds();
+      fechaInicio = bounds.inicio;
+      fechaFin = bounds.fin;
     } else if (periodo === "7DIAS") {
-      fechaInicio.setDate(ahora.getDate() - 7);
+      const bounds = getCaracasBoundsForDate(subtractDaysCaracas(7));
+      fechaInicio = bounds.inicio;
+      fechaFin = getCaracasTodayBounds().fin;
     } else if (periodo === "30DIAS") {
-      fechaInicio.setDate(ahora.getDate() - 30);
+      const bounds = getCaracasBoundsForDate(subtractDaysCaracas(30));
+      fechaInicio = bounds.inicio;
+      fechaFin = getCaracasTodayBounds().fin;
     } else if (periodo === "MES_ACTUAL") {
-      fechaInicio = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+      const bounds = getCaracasThisMonthBounds();
+      fechaInicio = bounds.inicio;
+      fechaFin = bounds.fin;
     } else if (periodo === "CUSTOM" && inicioStr && finStr) {
-      fechaInicio = new Date(`${inicioStr}T00:00:00`);
-      fechaFin = new Date(`${finStr}T23:59:59`);
+      const boundInicio = getCaracasBoundsForDate(inicioStr);
+      const boundFin = getCaracasBoundsForDate(finStr);
+      fechaInicio = boundInicio.inicio;
+      fechaFin = boundFin.fin;
     }
 
     const ordenes = await prisma.orden.findMany({
@@ -79,17 +90,17 @@ export async function GET(req: Request) {
     
     if (diferenciaDias <= 60) {
       while (temporalDate <= fechaFin) {
-        const key = temporalDate.toISOString().split("T")[0];
-        diasDelPeriodo.push(key);
-        conteoTendencia[key] = { ordenes: 0, pruebas: 0 };
-        temporalDate.setDate(temporalDate.getDate() + 1);
+        const key = formatToCaracasDateString(temporalDate);
+        if (!diasDelPeriodo.includes(key)) diasDelPeriodo.push(key);
+        if (!conteoTendencia[key]) conteoTendencia[key] = { ordenes: 0, pruebas: 0 };
+        temporalDate.setUTCHours(temporalDate.getUTCHours() + 24);
       }
     }
 
     ordenes.forEach((orden) => {
       if (orden.resultadosCompletados) ordenesCompletadas++;
       
-      const fechaKey = orden.fechaCreacion.toISOString().split("T")[0];
+      const fechaKey = formatToCaracasDateString(orden.fechaCreacion);
       pacientesUnicosSet.add(orden.pacienteId);
 
       if (conteoTendencia[fechaKey]) {

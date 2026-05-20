@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import DescargarPDFButton from "./DescargarPDFButton";
 
 const prisma = new PrismaClient();
 
@@ -128,6 +129,16 @@ export default async function ValidarPage({ params }: { params: any }) {
             </>
           )}
         </div>
+
+        {/* BOTÓN DE DESCARGA (Solo cuando los resultados están verificados) */}
+        {orden.resultadosCompletados && (
+          <div className="mt-10 pt-8 border-t border-slate-100">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider text-center mb-4">
+              Descarga tu informe oficial
+            </p>
+            <DescargarPDFButton ordenId={orden.id} nombrePaciente={orden.paciente.nombreCompleto} />
+          </div>
+        )}
 
         {/* Footer Legal */}
         <div className="mt-12 pt-6 border-t-[1.5px] border-black text-center">

@@ -10,9 +10,23 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const tasaParam = searchParams.get("tasa");
     const tasaBCV = tasaParam ? parseFloat(tasaParam) : 1;
+    const periodo = searchParams.get("periodo") || "HOY";
+    const inicioStr = searchParams.get("inicio");
+    const finStr = searchParams.get("fin");
 
-    // Rango estricto de HOY adaptado a Caracas
-    const { inicio: fechaInicio, fin: fechaFin } = getCaracasTodayBounds();
+    let fechaInicio: Date;
+    let fechaFin: Date;
+
+    if (periodo === "CUSTOM" && inicioStr && finStr) {
+      // Si mandan un rango custom
+      fechaInicio = new Date(`${inicioStr}T00:00:00`);
+      fechaFin = new Date(`${finStr}T23:59:59`);
+    } else {
+      // Rango estricto de HOY adaptado a Caracas
+      const bounds = getCaracasTodayBounds();
+      fechaInicio = bounds.inicio;
+      fechaFin = bounds.fin;
+    }
 
     // 1. VERIFICAR SI YA SE CERRÓ HOY
     const cierreDeHoy = await prisma.cierreCaja.findFirst({
@@ -26,7 +40,7 @@ export async function GET(req: Request) {
       include: { realizadoPor: { select: { nombre: true } } }
     });
 
-    // 3. OBTENER ÓRDENES Y SUS PAGOS (DEL DÍA ACTUAL)
+    // 3. OBTENER ÓRDENES Y SUS PAGOS (DEL PERÍODO)
     const ordenes = await prisma.orden.findMany({
       where: {
         fechaCreacion: { gte: fechaInicio, lte: fechaFin },
@@ -41,24 +55,18 @@ export async function GET(req: Request) {
       orderBy: { fechaCreacion: 'desc' }
     });
 
-    // 4. OBTENER GASTOS DEL DÍA
-    const gastos = await prisma.gasto.findMany({
-      where: { fechaGasto: { gte: fechaInicio, lte: fechaFin } },
-      include: { metodo: true }
-    });
-
-    // --- LÓGICA DE ARQUEO ESTRICTA ---
-    const metodosMap: Record<string, { ingresosUSD: number; gastosUSD: number }> = {};
+    // --- LÓGICA DE ARQUEO (SOLO INGRESOS) ---
+    const metodosMap: Record<string, { ingresosUSD: number }> = {};
     let totalCuentasPorCobrarUSD = 0;
 
     ordenes.forEach(o => {
       const montoOrden = Number(o.totalUSD) || 0;
-      
+
       // REGLA: Si la orden TIENE pagos registrados, va al Líquido Real
       if (o.pagos && o.pagos.length > 0) {
         o.pagos.forEach(p => {
           const m = p.metodo.nombre;
-          if (!metodosMap[m]) metodosMap[m] = { ingresosUSD: 0, gastosUSD: 0 };
+          if (!metodosMap[m]) metodosMap[m] = { ingresosUSD: 0 };
           metodosMap[m].ingresosUSD += Number(p.montoUSD) || 0;
         });
       } else {
@@ -67,17 +75,11 @@ export async function GET(req: Request) {
       }
     });
 
-    gastos.forEach(g => {
-      const m = g.metodo.nombre;
-      if (!metodosMap[m]) metodosMap[m] = { ingresosUSD: 0, gastosUSD: 0 };
-      metodosMap[m].gastosUSD += Number(g.montoUSD) || 0;
-    });
-
     let totalCajaUSD = 0;
     const desglosesCaja = Object.entries(metodosMap).map(([nombre, valores]) => {
-      const neto = valores.ingresosUSD - valores.gastosUSD;
-      totalCajaUSD += neto;
-      return { nombre, ...valores, netoUSD: neto };
+      totalCajaUSD += valores.ingresosUSD;
+      // Mantenemos netoUSD igual a ingresosUSD para compatibilidad con el modal
+      return { nombre, ingresosUSD: valores.ingresosUSD, netoUSD: valores.ingresosUSD };
     });
 
     return NextResponse.json({
@@ -96,9 +98,7 @@ export async function GET(req: Request) {
         cedula: o.paciente.cedula,
         paciente: o.paciente.nombreCompleto,
         totalUSD: Number(o.totalUSD) || 0,
-        // Evitamos el NaN calculando los Bs si la BD los trae vacíos
         totalBS: Number(o.totalBS) || ((Number(o.totalUSD) || 0) * tasaBCV),
-        // Si no tiene pagos, forzamos estado a PENDIENTE
         estadoPago: (o.pagos && o.pagos.length > 0) ? "PAGADO" : "PENDIENTE",
         registradoPor: o.creadoPor.nombre,
         metodoUsado: (o.pagos && o.pagos.length > 0) ? o.pagos[0].metodo.nombre : "NINGUNO"
@@ -114,7 +114,9 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { totalCalculadoUSD, totalCalculadoBS, totalDeclaradoUSD, totalDeclaradoBS, observaciones, tasaBCV, desglose } = body;
-    const { inicio: fechaInicio, fin: fechaFin } = getCaracasTodayBounds();
+    
+    // Obtenemos el rango del día actual en Caracas
+    const { inicio: fechaInicio } = getCaracasTodayBounds();
 
     const cierreExistente = await prisma.cierreCaja.findFirst({
       where: { fechaCierre: { gte: fechaInicio } }

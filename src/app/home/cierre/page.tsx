@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { 
-  Calculator, Users, Wallet, Landmark, Filter, Search, Loader2, CheckCircle, 
-  AlertTriangle, ChevronLeft, ChevronRight, Lock, AlertCircle, Save, X, 
+import {
+  Calculator, Users, Wallet, Landmark, Filter, Search, Loader2, CheckCircle,
+  AlertTriangle, ChevronLeft, ChevronRight, Lock, AlertCircle, Save, X,
   ChevronDown, ChevronUp, Activity, History, Trash2
 } from "lucide-react";
 import { toast } from "react-toastify";
@@ -26,10 +26,10 @@ export default function CierreCajaPage() {
   const [periodo, setPeriodo] = useState<PeriodoType>("HOY");
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
-  
+
   const [data, setData] = useState<any>(null);
   const [cargando, setCargando] = useState(true);
-  
+
   const [busqueda, setBusqueda] = useState("");
   const [paginaActual, setPaginaActual] = useState(1);
   const ELEMENTOS_POR_PAGINA = 30;
@@ -79,9 +79,9 @@ export default function CierreCajaPage() {
         method: "DELETE"
       });
       const dataJson = await res.json();
-      
+
       if (!res.ok) throw new Error(dataJson.error || "Error al anular");
-      
+
       toast.success("Cierre anulado exitosamente");
       fetchCierre();
     } catch (error: any) {
@@ -100,7 +100,6 @@ export default function CierreCajaPage() {
     fetchCierre();
   };
 
-  // Corrección Anti-NaN
   const formatMoney = (amount: number, isBs = false) => {
     const validAmount = Number(amount) || 0;
     if (isBs) return new Intl.NumberFormat('es-VE', { style: 'currency', currency: 'VES' }).format(validAmount).replace('VES', 'Bs.');
@@ -110,7 +109,7 @@ export default function CierreCajaPage() {
   const pacientesFiltrados = useMemo(() => {
     const lista = data?.flujoPacientes || [];
     if (!busqueda) return lista;
-    return lista.filter((p: any) => 
+    return lista.filter((p: any) =>
       p.paciente.toLowerCase().includes(busqueda.toLowerCase()) ||
       p.cedula.includes(busqueda) || p.ordenId.toString().includes(busqueda)
     );
@@ -140,24 +139,24 @@ export default function CierreCajaPage() {
 
   const historialFiltrado = useMemo(() => {
     let lista = data?.historialCierres || [];
-    
+
     if (filtroPeriodoHistorial === "CUSTOM") {
       if (fechaInicioHistorial && fechaFinHistorial) {
-         const inicio = new Date(fechaInicioHistorial).getTime();
-         const fin = new Date(fechaFinHistorial).getTime() + 86399000;
-         lista = lista.filter((c: any) => {
-            const time = new Date(c.fechaCierre).getTime();
-            return time >= inicio && time <= fin;
-         });
+        const inicio = new Date(fechaInicioHistorial).getTime();
+        const fin = new Date(fechaFinHistorial).getTime() + 86399000;
+        lista = lista.filter((c: any) => {
+          const time = new Date(c.fechaCierre).getTime();
+          return time >= inicio && time <= fin;
+        });
       }
     } else if (filtroPeriodoHistorial === "ESTE_MES") {
-         const ahora = new Date();
-         const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1).getTime();
-         lista = lista.filter((c: any) => new Date(c.fechaCierre).getTime() >= inicioMes);
+      const ahora = new Date();
+      const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1).getTime();
+      lista = lista.filter((c: any) => new Date(c.fechaCierre).getTime() >= inicioMes);
     }
-    
+
     if (filtroResponsableHistorial !== "TODOS") {
-       lista = lista.filter((c: any) => c.realizadoPor?.nombre === filtroResponsableHistorial);
+      lista = lista.filter((c: any) => c.realizadoPor?.nombre === filtroResponsableHistorial);
     }
 
     return lista;
@@ -167,12 +166,12 @@ export default function CierreCajaPage() {
     const inicio = (paginaActualHistorial - 1) * ELEMENTOS_POR_PAGINA;
     return historialFiltrado.slice(inicio, inicio + ELEMENTOS_POR_PAGINA);
   }, [historialFiltrado, paginaActualHistorial]);
-  
+
   const totalPaginasHistorial = Math.ceil(historialFiltrado.length / ELEMENTOS_POR_PAGINA) || 1;
 
   return (
     <div className="w-full min-h-screen p-4 md:p-8 bg-[#FAFAFA] animate-in fade-in duration-300">
-      
+
       <ModalConfirmacion
         isOpen={!!modalAnularCierreId}
         onClose={() => setModalAnularCierreId(null)}
@@ -217,7 +216,7 @@ export default function CierreCajaPage() {
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm w-max">
             {[
-              { id: "HOY", label: "Caja de Hoy", icon: <Wallet size={16}/> }, 
+              { id: "HOY", label: "Caja de Hoy", icon: <Wallet size={16}/> },
               { id: "HISTORIAL", label: "Historial de Cierres", icon: <History size={16}/> }
             ].map((opt) => (
               <button
@@ -234,8 +233,8 @@ export default function CierreCajaPage() {
 
           {vista === "HOY" && (
             data?.yaCerroHoy ? (
-              <button 
-                onClick={() => data?.historialCierres?.[0]?.id && anularCierre(data.historialCierres[0].id)} 
+              <button
+                onClick={() => data?.historialCierres?.[0]?.id && anularCierre(data.historialCierres[0].id)}
                 className="px-6 py-3 text-emerald-700 bg-emerald-100 hover:bg-red-100 hover:text-red-700 text-xs font-extrabold rounded-2xl transition-all shadow-md flex items-center justify-center gap-2 group min-w-[160px]"
                 title="Anular Cierre de Hoy"
               >
@@ -243,8 +242,8 @@ export default function CierreCajaPage() {
                 <span className="hidden group-hover:flex items-center gap-2"><Trash2 size={16} strokeWidth={2.5} /> Anular Cierre</span>
               </button>
             ) : (
-              <button 
-                onClick={() => setShowModalCierre(true)} 
+              <button
+                onClick={() => setShowModalCierre(true)}
                 className="px-6 py-3 text-white text-xs font-extrabold rounded-2xl transition-all shadow-md flex items-center gap-2 bg-[#111827] hover:bg-black"
               >
                 <Lock size={16} strokeWidth={2.5} /> Ejecutar Cierre
@@ -259,7 +258,7 @@ export default function CierreCajaPage() {
           <Loader2 className="animate-spin text-indigo-600" size={48} /> {vista === "HOY" ? "Auditando registros..." : "Cargando historial..."}
         </div>
       ) : vista === "HISTORIAL" ? (
-        
+
         <div className="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="px-8 py-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -271,26 +270,26 @@ export default function CierreCajaPage() {
                 <p className="text-sm font-medium text-slate-500">Registro inmutable de cortes de caja pasados.</p>
               </div>
             </div>
-            
+
             <div className="flex flex-wrap items-center gap-3">
-               <CustomSelect 
-                 options={responsablesOptions} 
-                 value={filtroResponsableHistorial} 
-                 onChange={(v: string) => { setFiltroResponsableHistorial(v); setPaginaActualHistorial(1); }} 
-                 className="w-full lg:w-64 min-w-[260px]"
-               />
-               <CustomSelect 
-                 options={periodoOptions} 
-                 value={filtroPeriodoHistorial} 
-                 onChange={(v: string) => { setFiltroPeriodoHistorial(v); setPaginaActualHistorial(1); }} 
-               />
-               {filtroPeriodoHistorial === "CUSTOM" && (
-                 <div className="flex items-center gap-2">
-                   <input type="date" value={fechaInicioHistorial} onChange={(e) => {setFechaInicioHistorial(e.target.value); setPaginaActualHistorial(1);}} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-600" />
-                   <span className="text-slate-400 font-bold">-</span>
-                   <input type="date" value={fechaFinHistorial} onChange={(e) => {setFechaFinHistorial(e.target.value); setPaginaActualHistorial(1);}} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-600" />
-                 </div>
-               )}
+              <CustomSelect
+                options={responsablesOptions}
+                value={filtroResponsableHistorial}
+                onChange={(v: string) => { setFiltroResponsableHistorial(v); setPaginaActualHistorial(1); }}
+                className="w-full lg:w-64 min-w-[260px]"
+              />
+              <CustomSelect
+                options={periodoOptions}
+                value={filtroPeriodoHistorial}
+                onChange={(v: string) => { setFiltroPeriodoHistorial(v); setPaginaActualHistorial(1); }}
+              />
+              {filtroPeriodoHistorial === "CUSTOM" && (
+                <div className="flex items-center gap-2">
+                  <input type="date" value={fechaInicioHistorial} onChange={(e) => {setFechaInicioHistorial(e.target.value); setPaginaActualHistorial(1);}} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-600" />
+                  <span className="text-slate-400 font-bold">-</span>
+                  <input type="date" value={fechaFinHistorial} onChange={(e) => {setFechaFinHistorial(e.target.value); setPaginaActualHistorial(1);}} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-600" />
+                </div>
+              )}
             </div>
           </div>
           <div className="overflow-x-auto w-full">
@@ -340,8 +339,8 @@ export default function CierreCajaPage() {
                         )}
                       </td>
                       <td className="px-8 py-5 text-center whitespace-nowrap">
-                        <button 
-                          onClick={() => anularCierre(c.id)} 
+                        <button
+                          onClick={() => anularCierre(c.id)}
                           className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                           title="Anular Cierre"
                         >
@@ -368,7 +367,7 @@ export default function CierreCajaPage() {
       ) : (
 
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          
+
           {data?.yaCerroHoy && (
             <div className="w-full bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-emerald-800 shadow-sm">
               <div className="flex items-center gap-4">
@@ -378,7 +377,7 @@ export default function CierreCajaPage() {
                   <p className="text-xs font-medium opacity-80">El dinero físico fue auditado. Los nuevos movimientos que registres entrarán en la caja de mañana.</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => data?.historialCierres?.[0]?.id && anularCierre(data.historialCierres[0].id)}
                 className="shrink-0 px-4 py-2 bg-white border border-emerald-200 hover:border-red-200 hover:bg-red-50 hover:text-red-600 text-emerald-700 text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2"
               >
@@ -396,29 +395,25 @@ export default function CierreCajaPage() {
           <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm relative overflow-hidden">
             <h3 className="text-xl font-extrabold text-[#111827] mb-6 flex items-center gap-3 relative z-10">
               <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl"><Activity size={24} /></div>
-              Flujo de Caja por Método
+              Ingresos por Método de Pago
             </h3>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 relative z-10">
+
+            {/* SECCIÓN CORREGIDA: Cuadrícula estricta de 3 columnas fijas con min-w-0 para limpiar la consola del navegador */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10 w-full min-w-0">
               {(data?.desglosesCaja || []).map((box: any, index: number) => (
-                <div key={index} className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 hover:border-indigo-100 hover:bg-white hover:shadow-lg hover:shadow-indigo-50 transition-all duration-300 group flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-6">
-                    <h4 className="text-sm font-extrabold text-slate-800 truncate uppercase tracking-wider group-hover:text-indigo-600 transition-colors">{formatearMetodo(box.nombre)}</h4>
-                    <div className="w-10 h-10 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 transition-colors">
-                      <Wallet size={18} />
+                <div key={index} className="p-4 bg-slate-50/60 rounded-2xl border border-slate-100 hover:border-emerald-100 hover:bg-white hover:shadow-lg hover:shadow-emerald-50 transition-all duration-300 group flex flex-col justify-between min-w-0">
+                  <div className="flex items-center justify-between mb-1 min-w-0">
+                    <h4 className="text-xs font-black text-slate-700 truncate uppercase tracking-wider group-hover:text-emerald-600 transition-colors">{formatearMetodo(box.nombre)}</h4>
+                    <div className="w-8 h-8 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0">
+                      <Wallet size={16} />
                     </div>
                   </div>
                   
-                  <div className="flex flex-col gap-3">
-                    <div className="flex justify-between items-center text-xs font-bold bg-white border border-slate-100 p-2.5 rounded-xl">
-                      <span className="text-slate-500">Ingresos</span><span className="text-emerald-600">{formatMoney(box.ingresosUSD)}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs font-bold bg-white border border-slate-100 p-2.5 rounded-xl">
-                      <span className="text-slate-500">Egresos</span><span className="text-red-500">-{formatMoney(box.gastosUSD)}</span>
-                    </div>
-                    <div className="mt-3 pt-4 border-t border-slate-200 flex justify-between items-end">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">En Caja</span>
-                      <span className="text-2xl font-extrabold text-[#111827]">{formatMoney(box.netoUSD)}</span>
+                  <div className="flex flex-col gap-2 mt-2 w-full min-w-0">
+                    <div className="bg-emerald-50/40 border border-emerald-100/60 p-2.5 rounded-xl flex flex-col w-full min-w-0">
+                      <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">Total Ingresado</span>
+                      <span className="text-xl font-extrabold text-emerald-600 truncate">{formatMoney(box.ingresosUSD)}</span>
+                      <span className="text-[11px] font-bold text-emerald-700/80 mt-0.5 truncate">{formatMoney(box.ingresosUSD * (tasaBCV || 1), true)}</span>
                     </div>
                   </div>
                 </div>
@@ -426,7 +421,7 @@ export default function CierreCajaPage() {
               {(data?.desglosesCaja || []).length === 0 && (
                 <div className="col-span-full py-12 flex flex-col items-center justify-center text-slate-400 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
                   <Wallet size={40} className="mb-3 text-slate-300" />
-                  <p className="text-base font-bold text-slate-500">Caja vacía. No hay movimientos hoy.</p>
+                  <p className="text-base font-bold text-slate-500">Caja vacía. No hay ingresos registrados hoy.</p>
                 </div>
               )}
             </div>
@@ -489,7 +484,11 @@ export default function CierreCajaPage() {
                             </td>
                             <td className="px-8 py-5 whitespace-nowrap">
                               {p.estadoPago === 'PAGADO' ? (
-                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-black rounded-xl border border-emerald-200"><CheckCircle size={14} /> Pagado / Cerrado</span>
+                                p.metodoUsado === "NO_ESPECIFICADO" ? (
+                                  <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 text-xs font-black rounded-xl border border-amber-200" title="Orden cerrada pero sin método registrado"><AlertTriangle size={14} /> Audit. Método</span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-black rounded-xl border border-emerald-200"><CheckCircle size={14} /> Pagado / Cerrado</span>
+                                )
                               ) : (
                                 <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 text-xs font-black rounded-xl border border-amber-200"><AlertTriangle size={14} /> Por Cobrar</span>
                               )}
@@ -561,8 +560,8 @@ function CustomSelect({ value, onChange, options, className }: { value: string, 
 
   return (
     <div className="relative" ref={ref}>
-      <button 
-        type="button" 
+      <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-600 flex items-center justify-between transition-all hover:bg-slate-100 ${className || 'w-full lg:w-48 min-w-[200px]'}`}
       >

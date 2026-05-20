@@ -386,10 +386,11 @@ export default function CierreCajaPage() {
             </div>
           )}
 
+          {/* TOTALES SUPERIORES COMPACTADOS (p-5 y mb-3 para optimizar espacio) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard title="Dinero Líquido Real" usd={data?.resumen?.totalEnCajaUSD} bs={data?.resumen?.totalEnCajaBS} icon={<Landmark size={24} />} color="text-emerald-600" bgColor="bg-emerald-50" />
-            <StatCard title="Por Cobrar (Pendiente)" usd={data?.resumen?.cuentasPorCobrarUSD} bs={data?.resumen?.cuentasPorCobrarBS} icon={<AlertCircle size={24} />} color="text-amber-600" bgColor="bg-amber-50" />
-            <StatCard title="Flujo de Pacientes" usd={data?.resumen?.pacientesAtendidos} icon={<Users size={24} />} color="text-indigo-600" bgColor="bg-indigo-50" isCount subtitle="Atenciones hoy" />
+            <StatCard title="Dinero Líquido Real" usd={data?.resumen?.totalEnCajaUSD} bs={data?.resumen?.totalEnCajaBS} icon={<Landmark size={20} />} color="text-emerald-600" bgColor="bg-emerald-50" />
+            <StatCard title="Por Cobrar (Pendiente)" usd={data?.resumen?.cuentasPorCobrarUSD} bs={data?.resumen?.cuentasPorCobrarBS} icon={<AlertCircle size={20} />} color="text-amber-600" bgColor="bg-amber-50" />
+            <StatCard title="Flujo de Pacientes" usd={data?.resumen?.pacientesAtendidos} icon={<Users size={20} />} color="text-indigo-600" bgColor="bg-indigo-50" isCount subtitle="Atenciones hoy" />
           </div>
 
           <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm relative overflow-hidden">
@@ -398,22 +399,26 @@ export default function CierreCajaPage() {
               Ingresos por Método de Pago
             </h3>
 
-            {/* SECCIÓN CORREGIDA: Cuadrícula estricta de 3 columnas fijas con min-w-0 para limpiar la consola del navegador */}
+            {/* SECCIÓN METODOS DE PAGO: Grid de 3 columnas fijas con fuentes más grandes */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10 w-full min-w-0">
               {(data?.desglosesCaja || []).map((box: any, index: number) => (
-                <div key={index} className="p-4 bg-slate-50/60 rounded-2xl border border-slate-100 hover:border-emerald-100 hover:bg-white hover:shadow-lg hover:shadow-emerald-50 transition-all duration-300 group flex flex-col justify-between min-w-0">
+                <div key={index} className="p-5 bg-slate-50/60 rounded-3xl border border-slate-100 hover:border-emerald-100 hover:bg-white hover:shadow-lg hover:shadow-emerald-50 transition-all duration-300 group flex flex-col justify-between min-w-0">
                   <div className="flex items-center justify-between mb-1 min-w-0">
-                    <h4 className="text-xs font-black text-slate-700 truncate uppercase tracking-wider group-hover:text-emerald-600 transition-colors">{formatearMetodo(box.nombre)}</h4>
+                    {/* Agrandado de text-xs a text-sm font-black */}
+                    <h4 className="text-sm font-black text-slate-700 truncate uppercase tracking-wider group-hover:text-emerald-600 transition-colors">{formatearMetodo(box.nombre)}</h4>
                     <div className="w-8 h-8 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0">
                       <Wallet size={16} />
                     </div>
                   </div>
                   
                   <div className="flex flex-col gap-2 mt-2 w-full min-w-0">
-                    <div className="bg-emerald-50/40 border border-emerald-100/60 p-2.5 rounded-xl flex flex-col w-full min-w-0">
-                      <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">Total Ingresado</span>
-                      <span className="text-xl font-extrabold text-emerald-600 truncate">{formatMoney(box.ingresosUSD)}</span>
-                      <span className="text-[11px] font-bold text-emerald-700/80 mt-0.5 truncate">{formatMoney(box.ingresosUSD * (tasaBCV || 1), true)}</span>
+                    <div className="bg-emerald-50/40 border border-emerald-100/60 p-3 rounded-2xl flex flex-col w-full min-w-0">
+                      {/* Agrandado de text-[9px] a text-xs */}
+                      <span className="text-xs font-black text-emerald-600 uppercase tracking-widest mb-1">Total Ingresado</span>
+                      {/* Agrandado de text-xl a text-2xl */}
+                      <span className="text-2xl font-extrabold text-emerald-600 truncate">{formatMoney(box.ingresosUSD)}</span>
+                      {/* Agrandado de text-xs a text-sm */}
+                      <span className="text-sm font-bold text-emerald-700/80 mt-0.5 truncate">{formatMoney(box.ingresosUSD * (tasaBCV || 1), true)}</span>
                     </div>
                   </div>
                 </div>
@@ -523,18 +528,21 @@ export default function CierreCajaPage() {
   );
 }
 
+// COMPONENTE DE TARJETA SUPERIOR CORREGIDO Y COMPACTADO
 function StatCard({ title, usd, bs, icon, color, bgColor, isCount, subtitle }: any) {
   return (
-    <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+    // p-5 en lugar de p-8 para reducir el espacio en blanco vertical y horizontal
+    <div className="bg-white p-5 rounded-[24px] border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
       <div>
-        <div className={`w-14 h-14 rounded-2xl ${bgColor} ${color} flex items-center justify-center mb-6`}>{icon}</div>
-        <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest">{title}</p>
-        <h3 className="text-3xl font-extrabold text-[#111827] mt-2">
+        {/* mb-3 e h-10 en lugar de mb-6 e h-14 para que el icono sea compacto */}
+        <div className={`w-10 h-10 rounded-xl ${bgColor} ${color} flex items-center justify-center mb-3`}>{icon}</div>
+        <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">{title}</p>
+        <h3 className="text-2xl md:text-3xl font-extrabold text-[#111827] mt-1">
           {isCount ? usd : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(usd || 0)}
         </h3>
       </div>
-      <div className="mt-4 pt-4 border-t border-slate-100">
-        <p className="text-sm font-bold text-slate-500">
+      <div className="mt-2 pt-2 border-t border-slate-100">
+        <p className="text-xs font-bold text-slate-500">
           {isCount ? subtitle : new Intl.NumberFormat('es-VE', { style: 'currency', currency: 'VES' }).format(bs || 0).replace('VES', 'Bs.')}
         </p>
       </div>

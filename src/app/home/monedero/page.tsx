@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { 
   Wallet, TrendingUp, TrendingDown, DollarSign, Filter, BarChart3, PlusCircle, 
   CreditCard, PieChart as PieIcon, LineChart as LineChartIcon, Loader2, 
-  ArrowDownCircle, ArrowUpCircle, Search, Landmark, ChevronLeft, ChevronRight
+  ArrowDownCircle, ArrowUpCircle, Search, Landmark, ChevronLeft, ChevronRight, Trash2
 } from "lucide-react";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { toast } from "react-toastify";
 import ModalRegistrarGasto from "../../components/monedero/ModalRegistrarGasto";
+import ModalConfirmacion from "../../components/ui/ModalConfirmacion";
 import useTasaBCV from "../../hooks/useTasaBcv"; 
 
 const PALETA_GASTOS = ['#EF4444', '#F59E0B', '#8B5CF6', '#F43F5E', '#D946EF'];
@@ -33,6 +34,8 @@ export default function MonederoPage() {
   const [stats, setStats] = useState<any>(null);
   const [cargando, setCargando] = useState(true);
   const [showModalGasto, setShowModalGasto] = useState(false);
+  const [gastoAEliminar, setGastoAEliminar] = useState<string | null>(null);
+  const [cargandoEliminar, setCargandoEliminar] = useState(false);
 
   // Estados para búsqueda y paginación
   const [busquedaGasto, setBusquedaGasto] = useState("");
@@ -59,6 +62,35 @@ export default function MonederoPage() {
       toast.error("Error al cargar las finanzas");
     } finally {
       setCargando(false);
+    }
+  };
+
+  const handleEliminarGasto = async (claveMaestra?: string) => {
+    if (!claveMaestra) return toast.warning("Debe ingresar la clave maestra.");
+    if (!gastoAEliminar) return;
+
+    setCargandoEliminar(true);
+    const id = gastoAEliminar.replace('gas-', '');
+
+    try {
+      const res = await fetch(`/api/gastos/${id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ claveMaestra }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Error al eliminar");
+      }
+
+      toast.success("Gasto eliminado exitosamente.");
+      setGastoAEliminar(null);
+      fetchMonedero();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setCargandoEliminar(false);
     }
   };
 
@@ -125,6 +157,19 @@ export default function MonederoPage() {
           onSuccess={() => { setShowModalGasto(false); fetchMonedero(); }}
         />
       )}
+
+      <ModalConfirmacion
+        isOpen={!!gastoAEliminar}
+        onClose={() => setGastoAEliminar(null)}
+        onConfirm={handleEliminarGasto}
+        titulo="Eliminar Gasto"
+        mensaje="Esta acción borrará este gasto de forma permanente. Necesitas la clave maestra para confirmar."
+        textoConfirmar={cargandoEliminar ? "Eliminando..." : "Eliminar Gasto"}
+        textoCancelar="Cancelar"
+        colorBoton="red"
+        requiereInput={true}
+        placeholderInput="Ingrese la CLAVE MAESTRA"
+      />
 
       {/* CABECERA */}
       <div className="mb-6 flex flex-col 2xl:flex-row 2xl:items-center 2xl:justify-between gap-4 pt-2">
@@ -308,12 +353,13 @@ export default function MonederoPage() {
                     <th className="px-8 py-5">Método de Salida</th>
                     <th className="px-8 py-5 text-right">Equivalente (BS)</th>
                     <th className="px-8 py-5 text-right">Monto (USD)</th>
+                    <th className="px-8 py-5 text-center">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {gastosPaginados.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-8 py-16 text-center text-slate-400 font-bold text-base">
+                      <td colSpan={6} className="px-8 py-16 text-center text-slate-400 font-bold text-base">
                         No se encontraron registros de egresos en este rango.
                       </td>
                     </tr>
@@ -345,6 +391,20 @@ export default function MonederoPage() {
                         </td>
                         <td className="px-8 py-5 text-right whitespace-nowrap">
                           <span className="text-lg font-black text-red-500">-{formatMoney(g.montoUSD)}</span>
+                        </td>
+                        <td className="px-8 py-5 text-center">
+                          <div className="relative group/del flex flex-col items-center justify-center">
+                            <button
+                              onClick={() => setGastoAEliminar(g.id)}
+                              className="flex items-center justify-center w-10 h-10 bg-slate-100 text-slate-400 hover:bg-red-500 hover:text-white hover:shadow-[0_4px_12px_rgba(239,68,68,0.3)] rounded-xl transition-all duration-300 hover:-translate-y-0.5"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                            <div className="absolute -top-10 opacity-0 group-hover/del:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/del:-translate-y-1">
+                              Eliminar Gasto
+                              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
+                            </div>
+                          </div>
                         </td>
                       </tr>
                     ))

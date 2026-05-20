@@ -1,9 +1,10 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { Plus, Edit2, Ban, CheckCircle2, Search, TestTubes, DollarSign, ClipboardList, ChevronDown, ChevronUp, Activity, FlaskConical, Tags, Filter, SlidersHorizontal, Check, Trash2, Package } from "lucide-react";
+import { Plus, Edit2, Ban, CheckCircle2, Search, TestTubes, DollarSign, ClipboardList, ChevronDown, ChevronUp, Activity, FlaskConical, Tags, Filter, SlidersHorizontal, Check, Trash2, Package, Briefcase } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalPrueba from "../../components/pruebas/ModalPrueba";
 import ModalPruebaIndividual from "../../components/pruebas/ModalPruebaIndividual";
+import ModalServicioExtra from "../../components/pruebas/ModalServicioExtra";
 import ModalConfirmacion from "../../components/ui/ModalConfirmacion";
 import useTasaBCV from "../../hooks/useTasaBcv";
 
@@ -12,6 +13,14 @@ export default function PruebasPage() {
   const [busqueda, setBusqueda] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("Todas");
   const [filtroEstado, setFiltroEstado] = useState("Todos");
+  
+  const [activeTab, setActiveTab] = useState<"pruebas" | "servicios">("pruebas");
+
+  const [servicios, setServicios] = useState<any[]>([]);
+  const [cargandoServicios, setCargandoServicios] = useState(true);
+  const [isModalServicioOpen, setIsModalServicioOpen] = useState(false);
+  const [servicioEditando, setServicioEditando] = useState<any>(null);
+  const [servicioAEliminar, setServicioAEliminar] = useState<string | null>(null);
   
   const [openDropdownCategoria, setOpenDropdownCategoria] = useState(false);
   const [openDropdownEstado, setOpenDropdownEstado] = useState(false);
@@ -44,8 +53,21 @@ export default function PruebasPage() {
     }
   };
 
+  const fetchServicios = async () => {
+    try {
+      const res = await fetch("/api/servicios-extra?todos=true");
+      const data = await res.json();
+      setServicios(data);
+    } catch (error) {
+      toast.error("Error al cargar servicios extra");
+    } finally {
+      setCargandoServicios(false);
+    }
+  };
+
   useEffect(() => {
     fetchExamenes();
+    fetchServicios();
   }, []);
 
   useEffect(() => {
@@ -133,6 +155,44 @@ export default function PruebasPage() {
     }
   };
 
+  const handleSaveServicio = async (formData: any) => {
+    const isEdit = !!servicioEditando;
+    const url = isEdit ? `/api/servicios-extra/${servicioEditando.id}` : "/api/servicios-extra";
+    const method = isEdit ? "PUT" : "POST";
+    
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Ocurrió un error inesperado");
+      
+      toast.success(isEdit ? "Servicio actualizado" : "Servicio registrado");
+      setIsModalServicioOpen(false);
+      fetchServicios();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const toggleEstadoServicio = async (id: string, estadoActual: boolean) => {
+    try {
+      const res = await fetch(`/api/servicios-extra/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activo: !estadoActual }),
+      });
+      if (res.ok) {
+        toast.info(!estadoActual ? "Servicio activado" : "Servicio inhabilitado");
+        fetchServicios();
+      }
+    } catch (error) {
+      toast.error("Error al cambiar estado");
+    }
+  };
+
   const handleDeleteSubcategoria = async (claveInput?: string) => {
     if (!subcategoriaAEliminar) return;
     if (!claveInput) {
@@ -157,6 +217,30 @@ export default function PruebasPage() {
     }
   };
 
+  const handleDeleteServicio = async (claveInput?: string) => {
+    if (!servicioAEliminar) return;
+    if (!claveInput) {
+      toast.warning("Debe ingresar la clave maestra para eliminar.");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/servicios-extra/${servicioAEliminar}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ claveMaestra: claveInput }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al eliminar");
+      
+      toast.success("Servicio eliminado permanentemente");
+      fetchServicios();
+    } catch (error: any) {
+      toast.error(error.message); 
+    } finally {
+      setServicioAEliminar(null);
+    }
+  };
+
   const abrirModalNuevo = () => {
     setPruebaEditando(null);
     setIsModalOpen(true);
@@ -165,6 +249,16 @@ export default function PruebasPage() {
   const abrirModalEditar = (examen: any) => {
     setPruebaEditando(examen);
     setIsModalOpen(true);
+  };
+
+  const abrirModalNuevoServicio = () => {
+    setServicioEditando(null);
+    setIsModalServicioOpen(true);
+  };
+
+  const abrirModalEditarServicio = (servicio: any) => {
+    setServicioEditando(servicio);
+    setIsModalServicioOpen(true);
   };
 
   const abrirModalEditarItem = (item: any) => {
@@ -212,8 +306,27 @@ export default function PruebasPage() {
             </span>
           </div>
         </div>
-        <button onClick={abrirModalNuevo} className="bg-[#0071E3] text-white px-5 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-[0_4px_12px_rgba(0,113,227,0.25)] hover:bg-[#0077ED] transition-all active:scale-95 shrink-0">
-          <Plus size={20} strokeWidth={2.5} /> Nueva Subcategoría
+        <button onClick={activeTab === 'pruebas' ? abrirModalNuevo : abrirModalNuevoServicio} className="bg-[#0071E3] text-white px-5 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-[0_4px_12px_rgba(0,113,227,0.25)] hover:bg-[#0077ED] transition-all active:scale-95 shrink-0">
+          <Plus size={20} strokeWidth={2.5} /> {activeTab === 'pruebas' ? 'Nueva Subcategoría' : 'Nuevo Servicio'}
+        </button>
+      </div>
+
+      <div className="flex bg-[#F5F5F7] p-1.5 rounded-xl border border-slate-200/60 w-max mb-6">
+        <button
+          onClick={() => setActiveTab("pruebas")}
+          className={`px-6 py-2.5 text-sm font-bold rounded-lg transition-all flex items-center gap-2 ${
+            activeTab === "pruebas" ? "bg-white text-[#0071E3] shadow-sm" : "text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <TestTubes size={16} /> Pruebas y Perfiles
+        </button>
+        <button
+          onClick={() => setActiveTab("servicios")}
+          className={`px-6 py-2.5 text-sm font-bold rounded-lg transition-all flex items-center gap-2 ${
+            activeTab === "servicios" ? "bg-white text-[#0071E3] shadow-sm" : "text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <Briefcase size={16} /> Servicios Extra
         </button>
       </div>
 
@@ -266,6 +379,7 @@ export default function PruebasPage() {
         </div>
       </div>
 
+      {activeTab === "pruebas" ? (
       <div className="flex-1 overflow-y-auto pr-2 pb-10 space-y-8 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full z-10 relative">
         {cargando ? (
           <div className="h-full flex items-center justify-center text-slate-400 font-bold">Cargando catálogo...</div>
@@ -467,16 +581,80 @@ export default function PruebasPage() {
           ))
         )}
       </div>
+      ) : (
+      <div className="flex-1 overflow-y-auto pr-2 pb-10 space-y-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full z-10 relative">
+        {cargandoServicios ? (
+          <div className="h-full flex items-center justify-center text-slate-400 font-bold">Cargando servicios...</div>
+        ) : servicios.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-slate-400 font-medium opacity-60">
+            <Briefcase size={48} strokeWidth={1.5} className="mb-4" />
+            <p>No hay servicios extra registrados.</p>
+          </div>
+        ) : (
+          servicios.map((s) => (
+            <div key={s.id} className={`flex items-center justify-between p-6 rounded-[24px] border shadow-sm transition-all duration-300 ${s.activo ? 'bg-white border-slate-200/80 hover:border-[#0071E3]/30' : 'bg-red-50/50 border-red-200/60'}`}>
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${s.activo ? 'bg-[#0071E3]/10 text-[#0071E3]' : 'bg-red-100 text-red-400'}`}>
+                  <Briefcase size={24} strokeWidth={2.5} />
+                </div>
+                <div className="flex flex-col">
+                  <h3 className={`font-black text-xl tracking-tight ${s.activo ? 'text-[#1D1D1F]' : 'text-red-900/60 line-through'}`}>
+                    {s.nombre}
+                  </h3>
+                  {!s.activo && <span className="text-[11px] font-bold text-red-400 flex items-center gap-1 mt-0.5"><Ban size={14} /> Inhabilitado</span>}
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <span className={`font-black text-2xl ${s.activo ? 'text-[#1D1D1F]' : 'text-slate-400'}`}>
+                  ${s.precioUSD?.toFixed(2)}
+                </span>
+                <div className="h-8 w-px bg-slate-200 mx-1"></div>
+                <div className="flex gap-2">
+                  <div className="relative group/btn flex flex-col items-center">
+                    <button onClick={() => abrirModalEditarServicio(s)} className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 hover:-translate-y-0.5 ${s.activo ? 'bg-blue-50 text-[#0071E3] hover:bg-[#0071E3] hover:text-white hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)]' : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}>
+                      <Edit2 size={18} strokeWidth={2.5} />
+                    </button>
+                  </div>
+                  <div className="relative group/btn flex flex-col items-center">
+                    <button onClick={() => toggleEstadoServicio(s.id, s.activo)} className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 hover:-translate-y-0.5 ${s.activo ? 'bg-red-50 text-red-500 hover:bg-red-500 hover:text-white hover:shadow-[0_4px_12px_rgba(239,68,68,0.3)]' : 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white hover:shadow-[0_4px_12px_rgba(22,163,74,0.3)]'}`}>
+                      {s.activo ? <Ban size={18} strokeWidth={2.5} /> : <CheckCircle2 size={18} strokeWidth={2.5} />}
+                    </button>
+                  </div>
+                  <div className="relative group/btn flex flex-col items-center">
+                    <button onClick={() => { setServicioAEliminar(s.id); setIsModalConfirmOpen(true); }} className="flex items-center justify-center w-10 h-10 bg-slate-100 text-slate-400 hover:bg-red-500 hover:text-white hover:shadow-[0_4px_12px_rgba(239,68,68,0.3)] rounded-xl transition-all duration-300 hover:-translate-y-0.5">
+                      <Trash2 size={18} strokeWidth={2.5} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+      )}
 
       <ModalPrueba isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSavePrueba} pruebaEditar={pruebaEditando} categoriasExistentes={categoriasExistentes} />
       <ModalPruebaIndividual isOpen={isModalItemOpen} onClose={() => setIsModalItemOpen(false)} onSave={handleSavePruebaIndividual} itemEditar={itemEditando} />
+      <ModalServicioExtra isOpen={isModalServicioOpen} onClose={() => setIsModalServicioOpen(false)} onSave={handleSaveServicio} itemEditar={servicioEditando} />
       
       <ModalConfirmacion 
-        isOpen={isModalConfirmOpen}
+        isOpen={isModalConfirmOpen && activeTab === 'pruebas'}
         onClose={() => setIsModalConfirmOpen(false)}
         onConfirm={handleDeleteSubcategoria}
         titulo="Eliminar Estructura"
         mensaje="Esta acción borrará permanentemente la subcategoría y todas sus pruebas asociadas. Ingrese la clave maestra para continuar."
+        textoConfirmar="Eliminar"
+        colorBoton="red"
+        requiereInput={true}
+        placeholderInput="Clave maestra..."
+      />
+
+      <ModalConfirmacion 
+        isOpen={isModalConfirmOpen && activeTab === 'servicios'}
+        onClose={() => {setIsModalConfirmOpen(false); setServicioAEliminar(null);}}
+        onConfirm={handleDeleteServicio}
+        titulo="Eliminar Servicio Extra"
+        mensaje="Esta acción borrará permanentemente este servicio extra. Ingrese la clave maestra para continuar."
         textoConfirmar="Eliminar"
         colorBoton="red"
         requiereInput={true}

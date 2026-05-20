@@ -53,6 +53,7 @@ export async function POST(req: Request) {
           where: { detalleOrdenId: res.detalleOrdenId },
           update: {
             observaciones: res.observaciones || null,
+            valoresReferencia: res.valoresReferencia || null,
             usuarioId: debeFirmarEste ? validadorId : (currentRes?.usuarioId || usuarioSesion.id),
             firmado: debeFirmarEste ? true : (currentRes?.firmado || false),
             fechaProcesado: debeFirmarEste ? new Date() : (currentRes?.fechaProcesado || new Date()),
@@ -69,6 +70,7 @@ export async function POST(req: Request) {
             usuarioId: debeFirmarEste ? validadorId : usuarioSesion.id,
             firmado: debeFirmarEste,
             observaciones: res.observaciones || null,
+            valoresReferencia: res.valoresReferencia || null,
             fechaProcesado: new Date(),
             valores: {
               create: res.valores.map((v: any) => ({

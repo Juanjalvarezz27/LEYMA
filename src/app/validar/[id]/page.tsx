@@ -55,7 +55,7 @@ export default async function ValidarPage({ params }: { params: any }) {
               />
             </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black font-title tracking-tight leading-none text-primario">
+          <h1 className="text-2xl sm:text-3xl font-black font-title tracking-tight leading-none">
             LEYMA C.A.
           </h1>
           <p className="text-[11px] sm:text-xs font-bold tracking-[0.25em] uppercase text-texto-secundario mt-1.5">

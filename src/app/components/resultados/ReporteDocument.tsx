@@ -347,7 +347,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                               <Text style={isPaquete ? pdfStyles.rowDescSub : pdfStyles.rowDesc}>{det.prueba.nombre}</Text>
                               <Text style={pdfStyles.rowRes}></Text>
                               <Text style={pdfStyles.rowUni}>{det.prueba.unidades || ''}</Text>
-                              <Text style={pdfStyles.rowRef}>{det.prueba.valoresReferencia || ''}</Text>
+                              <Text style={pdfStyles.rowRef}>{det.resultado?.valoresReferencia || det.prueba.valoresReferencia || ''}</Text>
                             </View>
                             
                             {Array(det.cantidad).fill(0).map((_, i) => {
@@ -367,7 +367,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                             <Text style={isPaquete ? pdfStyles.rowDescSub : pdfStyles.rowDesc}>{det.prueba.nombre}</Text>
                             <Text style={pdfStyles.rowRes}>{listaValores[0]?.valorIngresado || "-"}</Text>
                             <Text style={pdfStyles.rowUni}>{det.prueba.unidades || ''}</Text>
-                            <Text style={pdfStyles.rowRef}>{det.prueba.valoresReferencia || ''}</Text>
+                            <Text style={pdfStyles.rowRef}>{det.resultado?.valoresReferencia || det.prueba.valoresReferencia || ''}</Text>
                           </View>
                         )}
                         

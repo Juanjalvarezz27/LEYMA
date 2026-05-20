@@ -24,6 +24,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
   const [valores, setValores] = useState<Record<string, string[]>>({});
   const [observaciones, setObservaciones] = useState<Record<string, string>>({});
   const [obsExpandidas, setObsExpandidas] = useState<Record<string, boolean>>({});
+  const [valoresReferenciaCustom, setValoresReferenciaCustom] = useState<Record<string, string>>({});
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -50,6 +51,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
       const initialObs: Record<string, string> = {};
       const initialExp: Record<string, boolean> = {};
       const initialSel: Record<string, boolean> = {};
+      const initialValRefCustom: Record<string, string> = {};
 
       orden.detalles.forEach((d: any) => {
         initialValores[d.id] = Array(d.cantidad).fill("");
@@ -57,6 +59,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
         if (d.resultado) {
           initialObs[d.id] = d.resultado.observaciones || "";
           if (d.resultado.observaciones) initialExp[d.id] = true;
+          if (d.resultado.valoresReferencia) initialValRefCustom[d.id] = d.resultado.valoresReferencia;
 
           if (d.resultado.valores && d.resultado.valores.length > 0) {
             d.resultado.valores.forEach((valObj: any, index: number) => {
@@ -71,6 +74,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
       setObservaciones(initialObs);
       setObsExpandidas(initialExp);
       setSeleccionados(initialSel);
+      setValoresReferenciaCustom(initialValRefCustom);
     }
   }, [orden]);
 
@@ -140,17 +144,23 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
           break;
         }
       }
+      
+      if (!d.prueba.valoresReferencia && !valoresReferenciaCustom[d.id]?.trim()) {
+        faltantes = true;
+      }
+      
       if (faltantes) break;
     }
 
     if (faltantes) {
-      toast.error(accion === "FIRMAR" ? "Asegúrese de haber transcrito primero los resultados de los exámenes seleccionados." : "Debe llenar todos los campos pendientes antes de guardar.");
+      toast.error(accion === "FIRMAR" ? "Asegúrese de haber transcrito todos los resultados y valores de referencia pendientes de los exámenes seleccionados." : "Debe llenar todos los resultados y valores de referencia pendientes antes de guardar.");
       return;
     }
 
     const resultadosArray = examenesPendientes.map((d: any) => ({
       detalleOrdenId: d.id,
       observaciones: observaciones[d.id] || "",
+      valoresReferencia: valoresReferenciaCustom[d.id] || null,
       marcadoParaFirma: accion === "FIRMAR" ? !!seleccionados[d.id] : false, 
       valores: (valores[d.id] || Array(d.cantidad).fill("")).map((valText: string) => ({
         pruebaId: d.prueba.id,
@@ -292,7 +302,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                       <div className="w-[40%]">Parametro</div>
                       <div className="w-[20%] text-center">Resultados</div>
                       <div className="w-[20%] text-center">Unidades</div>
-                      <div className="w-[20%] text-right">Valores de Referencia</div>
+                      <div className="w-[20%] text-center">Valores de Referencia</div>
                     </div>
 
                     <div className="space-y-1">
@@ -350,8 +360,21 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                               {det.prueba.unidades || "-"}
                             </div>
 
-                            <div className="w-[20%] text-[13px] text-slate-500 font-medium text-right whitespace-pre-wrap leading-tight">
-                              {det.prueba.valoresReferencia || "-"}
+                            <div className="w-[20%] text-[13px] text-slate-500 font-medium text-center whitespace-pre-wrap leading-tight">
+                              {det.prueba.valoresReferencia ? (
+                                det.prueba.valoresReferencia
+                              ) : (
+                                <textarea
+                                  disabled={estaFirmado}
+                                  value={valoresReferenciaCustom[det.id] || ""}
+                                  onChange={(e) => setValoresReferenciaCustom(prev => ({...prev, [det.id]: e.target.value}))}
+                                  placeholder="Indique valores ref..."
+                                  rows={2}
+                                  className={`w-full text-center text-[13px] font-medium bg-white border rounded-lg p-2 outline-none transition-all shadow-sm focus:ring-2 focus:ring-[#0071E3]/20 resize-none placeholder:text-slate-400 placeholder:text-xs placeholder:font-normal leading-tight ${
+                                    estaFirmado ? 'border-green-200 text-green-700 bg-green-50/50 cursor-not-allowed' : valoresReferenciaCustom[det.id]?.trim() ? 'border-[#0071E3] text-[#0071E3]' : 'border-dashed border-orange-300 text-[#1D1D1F] focus:border-orange-500 bg-orange-50/30'
+                                  }`}
+                                />
+                              )}
                             </div>
                           </div>
 

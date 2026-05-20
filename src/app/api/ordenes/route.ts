@@ -19,11 +19,14 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user || !(session.user as any).id) {
+    if (!session || !session.user?.email) {
       return NextResponse.json({ error: "No autorizado. Inicie sesión." }, { status: 401 });
     }
 
-    const usuarioId = parseId((session.user as any).id);
+    const usuarioSesion = await prisma.usuario.findUnique({ where: { correo: session.user.email } });
+    if (!usuarioSesion) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+
+    const usuarioId = usuarioSesion.id;
     const body = await req.json();
 
     if (!body.pacienteId) {

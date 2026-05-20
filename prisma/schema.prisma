@@ -158,6 +158,7 @@ model ResultadoPrueba {
   firmado        Boolean        @default(false) // <-- NUEVO: Si está guardado por asistente es false, si tiene PIN es true
   fechaProcesado DateTime       @default(now())
   valores        ValorResultado[]
+  valoresReferencia String?     @db.Text
 }
 
 model ValorResultado {

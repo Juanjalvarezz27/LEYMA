@@ -261,8 +261,8 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                   </div>
 
                   <div className="w-[20%] flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase">Referencia</label>
-                    <input type="text" value={p.valoresReferencia} onChange={(e) => actualizarPrueba(index, 'valoresReferencia', e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20" placeholder="4.5 - 10.0" />
+                    <label className="text-[10px] font-bold text-slate-400 uppercase">Referencia (Opcional)</label>
+                    <input type="text" value={p.valoresReferencia} onChange={(e) => actualizarPrueba(index, 'valoresReferencia', e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20" placeholder="Dejar vacío p/ manual" title="Si se deja vacío, la bioanalista lo llenará manualmente al transcribir" />
                   </div>
 
                   <div className="w-[15%] flex flex-col gap-1.5">

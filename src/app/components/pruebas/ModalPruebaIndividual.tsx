@@ -75,8 +75,8 @@ export default function ModalPruebaIndividual({ isOpen, onClose, onSave, itemEdi
               <input type="text" value={formData.unidades} onChange={(e) => setFormData({ ...formData, unidades: e.target.value })} className="w-full px-4 py-3 bg-[#F5F5F7] rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#0071E3]/20 focus:outline-none" />
             </div>
             <div className="w-1/2 flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Valores Referencia</label>
-              <input type="text" value={formData.valoresReferencia} onChange={(e) => setFormData({ ...formData, valoresReferencia: e.target.value })} className="w-full px-4 py-3 bg-[#F5F5F7] rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#0071E3]/20 focus:outline-none" />
+              <label className="text-[10px] font-bold text-slate-400 uppercase">Valores Ref. (Opcional)</label>
+              <input type="text" value={formData.valoresReferencia} onChange={(e) => setFormData({ ...formData, valoresReferencia: e.target.value })} className="w-full px-4 py-3 bg-[#F5F5F7] rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#0071E3]/20 focus:outline-none" placeholder="Dejar vacío p/ llenado manual" title="Si se deja vacío, la bioanalista lo llenará manualmente al transcribir" />
             </div>
           </div>
 

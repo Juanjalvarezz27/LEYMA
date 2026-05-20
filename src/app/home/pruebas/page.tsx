@@ -290,8 +290,8 @@ export default function PruebasPage() {
   }, {} as Record<string, any[]>);
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex justify-between items-end mb-8">
+    <div className="h-full flex flex-col pb-10 overflow-y-auto pr-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+      <div className="flex justify-between items-end mb-8 shrink-0">
         <div>
           <h1 className="font-title text-4xl font-bold text-[#1D1D1F] tracking-tight flex items-center gap-3">
             <ClipboardList className="text-[#0071E3]" size={36} strokeWidth={2.5} />
@@ -380,7 +380,7 @@ export default function PruebasPage() {
       </div>
 
       {activeTab === "pruebas" ? (
-      <div className="flex-1 overflow-y-auto pr-2 pb-10 space-y-8 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full z-10 relative">
+      <div className="space-y-8 z-10 relative">
         {cargando ? (
           <div className="h-full flex items-center justify-center text-slate-400 font-bold">Cargando catálogo...</div>
         ) : pruebasFiltradas.length === 0 ? (
@@ -582,7 +582,7 @@ export default function PruebasPage() {
         )}
       </div>
       ) : (
-      <div className="flex-1 overflow-y-auto pr-2 pb-10 space-y-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full z-10 relative">
+      <div className="space-y-4 z-10 relative">
         {cargandoServicios ? (
           <div className="h-full flex items-center justify-center text-slate-400 font-bold">Cargando servicios...</div>
         ) : servicios.length === 0 ? (

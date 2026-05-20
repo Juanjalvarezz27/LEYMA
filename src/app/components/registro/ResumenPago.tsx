@@ -351,7 +351,19 @@ export default function ResumenPago({
               <Save size={18} strokeWidth={2.5} /> Guardar Borrador
             </button>
             <button
-              onClick={() => onFinalizar({ subtotalUSD, totalFinalUSD, totalFinalBS, pagos, descuentoGeneral, tipoDescGral, estado: "CERRADA", restanteUSD })}
+              onClick={() => {
+                if (totalFinalUSD > 0) {
+                  if (pagos.length === 0) {
+                    toast.warning("Debe agregar al menos un pago y seleccionar su método.");
+                    return;
+                  }
+                  if (pagos.some(p => !p.metodoId)) {
+                    toast.warning("Debe seleccionar un método de pago válido para procesar el cierre.");
+                    return;
+                  }
+                }
+                onFinalizar({ subtotalUSD, totalFinalUSD, totalFinalBS, pagos, descuentoGeneral, tipoDescGral, estado: "CERRADA", restanteUSD });
+              }}
               className="w-full sm:w-1/2 lg:w-56 py-3 bg-[#0071E3] hover:bg-[#0077ED] text-white font-black rounded-xl shadow-[0_0_25px_rgba(0,113,227,0.3)] transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
             >
               <CheckCircle size={18} strokeWidth={2.5} /> Cerrar y Procesar

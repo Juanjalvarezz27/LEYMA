@@ -21,7 +21,6 @@ export default function DescargarPDFButton({ ordenId, nombrePaciente }: Descarga
     setDescargado(false);
 
     try {
-      // 1. Obtener los datos completos de la orden desde la API
       const res = await fetch(`/api/resultados/pdf-data/${ordenId}`);
       
       if (!res.ok) {
@@ -31,7 +30,6 @@ export default function DescargarPDFButton({ ordenId, nombrePaciente }: Descarga
 
       const orden = await res.json();
 
-      // 2. Generar la fecha de impresión
       const ahora = new Date();
       const fechaImpresa = ahora.toLocaleDateString('es-VE', { 
         year: 'numeric', month: '2-digit', day: '2-digit' 
@@ -39,7 +37,6 @@ export default function DescargarPDFButton({ ordenId, nombrePaciente }: Descarga
         hour: '2-digit', minute: '2-digit', hour12: true 
       });
 
-      // 3. Generar el QR de validación
       const urlValidacion = `${window.location.origin}/validar/${ordenId}`;
       const qrCodeUrl = await QRCodeNode.toDataURL(urlValidacion, {
         margin: 1,
@@ -47,7 +44,6 @@ export default function DescargarPDFButton({ ordenId, nombrePaciente }: Descarga
         color: { dark: "#000000", light: "#FFFFFF" }
       });
 
-      // 4. Generar el blob del PDF y descargarlo
       const blob = await pdf(
         <ReporteDocument orden={orden} fechaImpresa={fechaImpresa} qrCodeUrl={qrCodeUrl} />
       ).toBlob();
@@ -81,8 +77,8 @@ export default function DescargarPDFButton({ ordenId, nombrePaciente }: Descarga
           rounded-2xl transition-all duration-300 
           disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
           ${descargado 
-            ? 'bg-emerald-500 text-white shadow-[0_4px_20px_rgba(16,185,129,0.3)]' 
-            : 'bg-[#1D1D1F] text-white hover:bg-black hover:shadow-[0_8px_30px_rgba(0,0,0,0.2)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-[0_2px_10px_rgba(0,0,0,0.2)]'
+            ? 'bg-primario text-white shadow-[0_4px_20px_rgba(0,113,227,0.3)]' 
+            : 'bg-primario text-white hover:bg-[#005bb5] hover:shadow-apple-hover hover:-translate-y-0.5 active:translate-y-0 active:shadow-apple'
           }
         `}
       >
@@ -117,7 +113,7 @@ export default function DescargarPDFButton({ ordenId, nombrePaciente }: Descarga
       {descargado && (
         <button
           onClick={() => { setDescargado(false); descargarPDF(); }}
-          className="text-xs font-bold text-[#0071E3] hover:text-[#0077ED] transition-colors underline underline-offset-2"
+          className="text-xs font-bold text-primario hover:text-[#005bb5] transition-colors underline underline-offset-2"
         >
           Descargar de nuevo
         </button>
@@ -131,3 +127,4 @@ export default function DescargarPDFButton({ ordenId, nombrePaciente }: Descarga
     </div>
   );
 }
+

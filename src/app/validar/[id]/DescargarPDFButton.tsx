@@ -13,10 +13,12 @@ interface DescargarPDFButtonProps {
 export default function DescargarPDFButton({ ordenId, nombrePaciente }: DescargarPDFButtonProps) {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
+  const [descargado, setDescargado] = useState(false);
 
   const descargarPDF = async () => {
     setCargando(true);
     setError("");
+    setDescargado(false);
 
     try {
       // 1. Obtener los datos completos de la orden desde la API
@@ -58,6 +60,7 @@ export default function DescargarPDFButton({ ordenId, nombrePaciente }: Descarga
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+      setDescargado(true);
 
     } catch (err: any) {
       console.error("Error al descargar PDF:", err);
@@ -68,34 +71,62 @@ export default function DescargarPDFButton({ ordenId, nombrePaciente }: Descarga
   };
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-center gap-3 mt-4">
       <button
         onClick={descargarPDF}
         disabled={cargando}
-        className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-[#1D1D1F] text-white text-base font-black uppercase tracking-wider rounded-xl hover:bg-black transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        className={`
+          w-full flex items-center justify-center gap-3 px-6 py-4 
+          text-[14px] sm:text-[15px] font-black uppercase tracking-wider 
+          rounded-2xl transition-all duration-300 
+          disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
+          ${descargado 
+            ? 'bg-emerald-500 text-white shadow-[0_4px_20px_rgba(16,185,129,0.3)]' 
+            : 'bg-[#1D1D1F] text-white hover:bg-black hover:shadow-[0_8px_30px_rgba(0,0,0,0.2)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-[0_2px_10px_rgba(0,0,0,0.2)]'
+          }
+        `}
       >
         {cargando ? (
           <>
-            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+            <svg className="animate-spin h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            Generando PDF...
+            <span>Generando PDF...</span>
+          </>
+        ) : descargado ? (
+          <>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+            <span>¡Descargado Exitosamente!</span>
           </>
         ) : (
           <>
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            Descargar Resultados en PDF
+            <span>Descargar Resultados en PDF</span>
           </>
         )}
       </button>
 
+      {descargado && (
+        <button
+          onClick={() => { setDescargado(false); descargarPDF(); }}
+          className="text-xs font-bold text-[#0071E3] hover:text-[#0077ED] transition-colors underline underline-offset-2"
+        >
+          Descargar de nuevo
+        </button>
+      )}
+
       {error && (
-        <p className="text-sm font-medium text-red-600 text-center">{error}</p>
+        <div className="w-full bg-red-50 border border-red-200/60 rounded-xl p-3 text-center">
+          <p className="text-sm font-medium text-red-600">{error}</p>
+        </div>
       )}
     </div>
   );

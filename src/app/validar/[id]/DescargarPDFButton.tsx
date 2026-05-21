@@ -8,82 +8,76 @@ interface DescargarPDFButtonProps {
 }
 
 export default function DescargarPDFButton({ ordenId, nombrePaciente }: DescargarPDFButtonProps) {
-  const [cargando, setCargando] = useState(false);
-  const [compartiendo, setCompartiendo] = useState(false);
-  const [error, setError] = useState("");
+  const [mensaje, setMensaje] = useState<{ texto: string; ok: boolean } | null>(null);
 
   const pdfUrl = `/api/resultados/pdf/${ordenId}`;
-  const nombreArchivo = `Resultados_${nombrePaciente.replace(/\s+/g, "_")}_#${ordenId}.pdf`;
+  const linkValidacion = typeof window !== "undefined"
+    ? `${window.location.origin}/validar/${ordenId}`
+    : `/validar/${ordenId}`;
 
-  // Abre el PDF en el visor nativo del navegador
-  const verPDF = async () => {
-    setCargando(true);
-    setError("");
-    try {
-      const check = await fetch(`/api/resultados/pdf-data/${ordenId}`);
-      if (!check.ok) {
-        const data = await check.json();
-        throw new Error(data.error || "No se pudo obtener los resultados");
-      }
-      window.open(pdfUrl, "_blank");
-    } catch (err: any) {
-      setError(err.message || "Ocurrió un error al abrir el PDF");
-    } finally {
-      setCargando(false);
-    }
+  // -----------------------------------------------------------------
+  // VER PDF
+  // Sin ningún await antes de window.open — si hay await, Android y
+  // algunos navegadores bloquean la apertura como "popup no autorizado"
+  // y la pantalla queda cargando indefinidamente.
+  // -----------------------------------------------------------------
+  const verPDF = () => {
+    setMensaje(null);
+
+    // Navegar en la misma pestaña — NUNCA es bloqueado por ningún navegador.
+    // (window.open a nueva pestaña puede ser bloqueado por iOS Safari, WebView, etc.)
+    // El botón "atrás" del browser regresa a esta página.
+    window.location.href = pdfUrl;
   };
 
-  // Menú nativo de compartir del teléfono (WhatsApp, correo, AirDrop, etc.)
-  // En desktop sin soporte: copia el enlace al portapapeles
-  const compartir = async () => {
-    setCompartiendo(true);
-    setError("");
-    try {
-      const urlCompleta = `${window.location.origin}${pdfUrl}`;
+  // -----------------------------------------------------------------
+  // COMPARTIR
+  // navigator.share() debe llamarse SIN await previo en Android.
+  // No intentamos compartir el archivo PDF (requiere fetch async),
+  // compartimos el link de validación que el receptor puede abrir.
+  // -----------------------------------------------------------------
+  const compartir = () => {
+    setMensaje(null);
+    const link = typeof window !== "undefined"
+      ? `${window.location.origin}/validar/${ordenId}`
+      : linkValidacion;
 
-      // Intentar compartir el archivo PDF directamente
-      if (navigator.share && navigator.canShare) {
-        try {
-          const response = await fetch(pdfUrl);
-          const blob = await response.blob();
-          const file = new File([blob], nombreArchivo, { type: "application/pdf" });
-
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              title: `Resultados - ${nombrePaciente}`,
-              text: "Resultados del Laboratorio LEYMA C.A.",
-              files: [file],
-            });
-            return;
+    // Caso 1: Web Share API disponible (iOS Safari, Android Chrome, etc.)
+    if (typeof navigator !== "undefined" && navigator.share) {
+      // IMPORTANTE: llamada síncrona. No hay await antes de esto.
+      navigator
+        .share({
+          title: `Resultados — ${nombrePaciente}`,
+          text: `Laboratorio LEYMA C.A. — Resultados de ${nombrePaciente} listos para ver.`,
+          url: link,
+        })
+        .catch((err: any) => {
+          // "AbortError" = el usuario cerró el menú sin compartir — no es un error real
+          if (err?.name !== "AbortError") {
+            copiarAlPortapapeles(link);
           }
-        } catch {
-          // Si falla compartir el archivo, caer al compartir por enlace
-        }
-      }
-
-      // Fallback 1: compartir solo el enlace (funciona en más dispositivos)
-      if (navigator.share) {
-        await navigator.share({
-          title: `Resultados - ${nombrePaciente}`,
-          text: "Laboratorio LEYMA C.A. — Mis resultados están disponibles.",
-          url: `${window.location.origin}/validar/${ordenId}`,
         });
-        return;
-      }
+      return;
+    }
 
-      // Fallback 2 (desktop): copiar enlace al portapapeles
-      await navigator.clipboard.writeText(urlCompleta);
-      setError("✅ Enlace copiado al portapapeles");
-    } catch (err: any) {
-      if (err?.name !== "AbortError") {
-        setError(err.message || "No se pudo compartir");
-      }
-    } finally {
-      setCompartiendo(false);
+    // Caso 2: Sin Web Share API (desktop Chrome/Firefox)
+    copiarAlPortapapeles(link);
+  };
+
+  const copiarAlPortapapeles = (texto: string) => {
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard
+        .writeText(texto)
+        .then(() => setMensaje({ texto: "✅ Enlace copiado al portapapeles", ok: true }))
+        .catch(() => setMensaje({ texto: `Copia este enlace: ${texto}`, ok: false }));
+    } else {
+      // Fallback final para browsers muy antiguos
+      setMensaje({ texto: `Copia este enlace: ${texto}`, ok: false });
     }
   };
 
-  const iconoDoc = (
+  // ---------- ÍCONOS ----------
+  const IconDoc = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
       fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
       strokeLinejoin="round" className="shrink-0">
@@ -94,7 +88,7 @@ export default function DescargarPDFButton({ ordenId, nombrePaciente }: Descarga
     </svg>
   );
 
-  const iconoCompartir = (
+  const IconShare = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
       fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
       strokeLinejoin="round" className="shrink-0">
@@ -106,53 +100,47 @@ export default function DescargarPDFButton({ ordenId, nombrePaciente }: Descarga
     </svg>
   );
 
-  const iconoSpin = (
-    <svg className="animate-spin h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-    </svg>
-  );
-
   return (
     <div className="flex flex-col items-center gap-3 mt-4">
 
       {/* BOTÓN PRINCIPAL: Ver PDF */}
       <button
         onClick={verPDF}
-        disabled={cargando || compartiendo}
-        className="w-full flex items-center justify-center gap-3 px-6 py-4 
-          text-[14px] sm:text-[15px] font-black uppercase tracking-wider 
+        className="w-full flex items-center justify-center gap-3 px-6 py-4
+          text-[14px] sm:text-[15px] font-black uppercase tracking-wider
           rounded-2xl transition-all duration-300 bg-primario text-white
-          hover:bg-[#005bb5] hover:shadow-apple-hover hover:-translate-y-0.5 
-          active:translate-y-0 active:shadow-apple
-          disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          hover:bg-[#005bb5] hover:shadow-apple-hover hover:-translate-y-0.5
+          active:translate-y-0 active:shadow-apple"
       >
-        {cargando ? <>{iconoSpin}<span>Cargando PDF...</span></> : <>{iconoDoc}<span>Ver Resultados en PDF</span></>}
+        <IconDoc />
+        <span>Ver Resultados en PDF</span>
       </button>
 
       {/* BOTÓN SECUNDARIO: Compartir */}
       <button
         onClick={compartir}
-        disabled={cargando || compartiendo}
         className="w-full flex items-center justify-center gap-3 px-6 py-3.5
           text-[13px] sm:text-[14px] font-black uppercase tracking-wider
           rounded-2xl transition-all duration-300
           bg-superficie border-2 border-borde text-texto-principal
           hover:border-primario hover:text-primario hover:-translate-y-0.5
-          active:translate-y-0
-          disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          active:translate-y-0"
       >
-        {compartiendo ? <>{iconoSpin}<span>Preparando...</span></> : <>{iconoCompartir}<span>Compartir PDF</span></>}
+        <IconShare />
+        <span>Compartir</span>
       </button>
 
-      {error && (
+      {/* MENSAJE DE FEEDBACK */}
+      {mensaje && (
         <div className={`w-full rounded-xl p-3 text-center border ${
-          error.startsWith("✅")
+          mensaje.ok
             ? "bg-green-50 border-green-200/60"
-            : "bg-red-50 border-red-200/60"
+            : "bg-slate-50 border-slate-200/60"
         }`}>
-          <p className={`text-sm font-medium ${error.startsWith("✅") ? "text-green-700" : "text-red-600"}`}>
-            {error}
+          <p className={`text-sm font-medium break-all ${
+            mensaje.ok ? "text-green-700" : "text-slate-600"
+          }`}>
+            {mensaje.texto}
           </p>
         </div>
       )}

@@ -128,7 +128,7 @@ export async function GET(request: Request, { params }: { params: any }) {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${nombreArchivo}"`,
+        "Content-Disposition": `inline; filename="${nombreArchivo}"`,
         "Content-Length": buffer.length.toString(),
         // Evitar que browsers intermediarios cacheen PDFs personales
         "Cache-Control": "no-store",

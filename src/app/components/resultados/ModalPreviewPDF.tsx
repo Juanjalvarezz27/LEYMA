@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { PDFViewer, pdf } from '@react-pdf/renderer';
 import QRCodeNode from "qrcode";
 import ReporteDocument from "./ReporteDocument";
+import { descargarBlob } from "../../../lib/descargarBlob";
 
 interface ModalPreviewPDFProps {
   orden: any;
@@ -46,14 +47,8 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
     const toastId = toast.loading("Generando PDF en alta calidad...");
     try {
       const blob = await pdf(<ReporteDocument orden={orden} fechaImpresa={fechaImpresa} qrCodeUrl={qrCodeUrl} />).toBlob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Resultados_${orden.paciente.nombreCompleto.replace(/\s+/g, '_')}_#${orden.id}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      const nombreArchivo = `Resultados_${orden.paciente.nombreCompleto.replace(/\s+/g, '_')}_#${orden.id}.pdf`;
+      await descargarBlob(blob, nombreArchivo);
       toast.update(toastId, { render: "¡PDF descargado exitosamente!", type: "success", isLoading: false, autoClose: 3000 });
     } catch (error) {
       toast.update(toastId, { render: "Error al generar el PDF", type: "error", isLoading: false, autoClose: 3000 });

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { pdf } from "@react-pdf/renderer";
 import QRCodeNode from "qrcode";
 import ReporteDocument from "../../components/resultados/ReporteDocument";
+import { descargarBlob } from "../../../lib/descargarBlob";
 
 interface DescargarPDFButtonProps {
   ordenId: number;
@@ -48,14 +49,8 @@ export default function DescargarPDFButton({ ordenId, nombrePaciente }: Descarga
         <ReporteDocument orden={orden} fechaImpresa={fechaImpresa} qrCodeUrl={qrCodeUrl} />
       ).toBlob();
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Resultados_${nombrePaciente.replace(/\s+/g, '_')}_#${ordenId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      const nombreArchivo = `Resultados_${nombrePaciente.replace(/\s+/g, '_')}_#${ordenId}.pdf`;
+      await descargarBlob(blob, nombreArchivo);
       setDescargado(true);
 
     } catch (err: any) {

@@ -7,40 +7,27 @@ interface DescargarPDFButtonProps {
   nombrePaciente: string;
 }
 
-export default function DescargarPDFButton({
-  ordenId,
-  nombrePaciente,
-}: DescargarPDFButtonProps) {
+export default function DescargarPDFButton({ ordenId }: DescargarPDFButtonProps) {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
-  const [descargado, setDescargado] = useState(false);
 
-  const descargarPDF = async () => {
+  const verPDF = async () => {
     setCargando(true);
     setError("");
-    setDescargado(false);
 
     try {
-      // Verificar que el PDF se puede generar antes de abrir la URL
+      // Verificar que los resultados existen antes de abrir
       const check = await fetch(`/api/resultados/pdf-data/${ordenId}`);
       if (!check.ok) {
         const data = await check.json();
         throw new Error(data.error || "No se pudo obtener los resultados");
       }
 
-      // La URL del servidor genera y sirve el PDF directamente.
-      // El navegador (móvil o escritorio) lo descarga de forma nativa.
-      const pdfUrl = `/api/resultados/pdf/${ordenId}`;
-
-      // window.open funciona en todos los navegadores móviles:
-      // - Android Chrome: inicia descarga directamente
-      // - iOS Safari: abre el visor de PDF nativo con opción de guardar
-      window.open(pdfUrl, "_blank");
-
-      setDescargado(true);
+      // Abrir el PDF directamente en el navegador.
+      // El browser lo muestra en su visor nativo (funciona en iOS, Android, Chrome, Safari).
+      window.open(`/api/resultados/pdf/${ordenId}`, "_blank");
     } catch (err: any) {
-      console.error("Error al descargar PDF:", err);
-      setError(err.message || "Ocurrió un error al generar el PDF");
+      setError(err.message || "Ocurrió un error al abrir el PDF");
     } finally {
       setCargando(false);
     }
@@ -49,96 +36,35 @@ export default function DescargarPDFButton({
   return (
     <div className="flex flex-col items-center gap-3 mt-4">
       <button
-        onClick={descargarPDF}
+        onClick={verPDF}
         disabled={cargando}
-        className={`
-          w-full flex items-center justify-center gap-3 px-6 py-4 
+        className="w-full flex items-center justify-center gap-3 px-6 py-4 
           text-[14px] sm:text-[15px] font-black uppercase tracking-wider 
-          rounded-2xl transition-all duration-300 
-          disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
-          ${
-            descargado
-              ? "bg-primario text-white shadow-[0_4px_20px_rgba(0,113,227,0.3)]"
-              : "bg-primario text-white hover:bg-[#005bb5] hover:shadow-apple-hover hover:-translate-y-0.5 active:translate-y-0 active:shadow-apple"
-          }
-        `}
+          rounded-2xl transition-all duration-300 bg-primario text-white
+          hover:bg-[#005bb5] hover:shadow-apple-hover hover:-translate-y-0.5 
+          active:translate-y-0 active:shadow-apple
+          disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
       >
         {cargando ? (
           <>
-            <svg
-              className="animate-spin h-5 w-5 shrink-0"
-              viewBox="0 0 24 24"
-              fill="none"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-              />
+            <svg className="animate-spin h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            <span>Generando PDF...</span>
-          </>
-        ) : descargado ? (
-          <>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="shrink-0"
-            >
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-            <span>¡PDF Listo!</span>
+            <span>Cargando PDF...</span>
           </>
         ) : (
           <>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="shrink-0"
-            >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
             </svg>
-            <span>Descargar Resultados en PDF</span>
+            <span>Ver Resultados en PDF</span>
           </>
         )}
       </button>
-
-      {descargado && (
-        <button
-          onClick={() => {
-            setDescargado(false);
-            descargarPDF();
-          }}
-          className="text-xs font-bold text-primario hover:text-[#005bb5] transition-colors underline underline-offset-2"
-        >
-          Descargar de nuevo
-        </button>
-      )}
 
       {error && (
         <div className="w-full bg-red-50 border border-red-200/60 rounded-xl p-3 text-center">

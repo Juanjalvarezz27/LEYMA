@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Printer, Download, MessageCircle } from "lucide-react";
+import { X, Printer, MessageCircle } from "lucide-react";
 import { toast } from "react-toastify";
 import { PDFViewer, pdf } from "@react-pdf/renderer";
 import QRCodeNode from "qrcode";
@@ -12,9 +12,6 @@ interface ModalPreviewPDFProps {
   onClose: () => void;
 }
 
-// ---------------------------------------------------------------------------
-// COMPONENTE PRINCIPAL (MODAL VISOR)
-// ---------------------------------------------------------------------------
 export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [fechaImpresa, setFechaImpresa] = useState("");
@@ -24,17 +21,9 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
     setIsMounted(true);
     const ahora = new Date();
     setFechaImpresa(
-      ahora.toLocaleDateString("es-VE", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }) +
-        " " +
-        ahora.toLocaleTimeString("es-VE", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        })
+      ahora.toLocaleDateString("es-VE", { year: "numeric", month: "2-digit", day: "2-digit" }) +
+      " " +
+      ahora.toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit", hour12: true })
     );
 
     const generarQR = async () => {
@@ -54,22 +43,17 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
     if (orden?.id) generarQR();
   }, [orden]);
 
-  // Descarga usando la ruta del servidor: funciona en todos los navegadores
-  const handleDownload = () => {
-    const pdfUrl = `/api/resultados/pdf/${orden.id}`;
-    window.open(pdfUrl, "_blank");
+  // Abre el PDF del servidor en nueva pestaña — el navegador lo muestra nativamente
+  const handleVerPDF = () => {
+    window.open(`/api/resultados/pdf/${orden.id}`, "_blank");
   };
 
-  // Impresión: genera blob localmente para el iframe de impresión
-  const handlePrintBlob = async () => {
+  // Impresión: usa blob local solo para el iframe (solo desktop)
+  const handlePrint = async () => {
     const toastId = toast.loading("Preparando impresión...");
     try {
       const blob = await pdf(
-        <ReporteDocument
-          orden={orden}
-          fechaImpresa={fechaImpresa}
-          qrCodeUrl={qrCodeUrl}
-        />
+        <ReporteDocument orden={orden} fechaImpresa={fechaImpresa} qrCodeUrl={qrCodeUrl} />
       ).toBlob();
       const url = URL.createObjectURL(blob);
       const iframe = document.createElement("iframe");
@@ -79,23 +63,17 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
       iframe.onload = () => {
         iframe.contentWindow?.print();
         toast.dismiss(toastId);
-        // Revocar después de 30s para dar tiempo al diálogo de impresión
         setTimeout(() => {
           URL.revokeObjectURL(url);
           document.body.removeChild(iframe);
         }, 30_000);
       };
-    } catch (error) {
-      toast.update(toastId, {
-        render: "Error al preparar impresión",
-        type: "error",
-        isLoading: false,
-        autoClose: 3000,
-      });
+    } catch {
+      toast.update(toastId, { render: "Error al preparar impresión", type: "error", isLoading: false, autoClose: 3000 });
     }
   };
 
-  const enviarWhatsAppConLink = () => {
+  const enviarWhatsApp = () => {
     if (!orden.paciente.telefono) {
       toast.warning("El paciente no tiene número de teléfono registrado.");
       return;
@@ -104,37 +82,37 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
     if (cleaned.startsWith("0")) cleaned = "58" + cleaned.substring(1);
     else if (!cleaned.startsWith("58")) cleaned = "58" + cleaned;
 
-    const linkValidacion = `${window.location.origin}/validar/${orden.id}`;
+    const link = `${window.location.origin}/validar/${orden.id}`;
+    const mensaje =
+      `*Laboratorio LEYMA C.A.*\nHola ${orden.paciente.nombreCompleto},\n\n` +
+      `Tus resultados ya están listos.\n\n` +
+      `📄 *Ver tu informe en PDF:*\n${link}\n\n` +
+      `¡Cualquier consulta estamos a tu orden. Feliz día!`;
 
-    let mensaje = `*Laboratorio LEYMA C.A.*\nHola ${orden.paciente.nombreCompleto},\n\n`;
-    mensaje += `Tus resultados ya están listos y procesados.\n\n`;
-    mensaje += `📄 *Descarga tu informe oficial en PDF aquí:*\n${linkValidacion}\n\n`;
-    mensaje += `¡Cualquier consulta estamos a tu orden. Feliz día!`;
-
-    const url = `https://wa.me/${cleaned}?text=${encodeURIComponent(mensaje)}`;
-    window.open(url, "_blank");
+    window.open(`https://wa.me/${cleaned}?text=${encodeURIComponent(mensaje)}`, "_blank");
   };
 
   if (!isMounted) return null;
 
   return (
     <div className="fixed inset-0 z-[200] flex flex-col items-center p-4 sm:p-8 bg-[#1D1D1F]/95">
+      {/* BARRA DE HERRAMIENTAS */}
       <div className="w-full max-w-[850px] flex justify-between items-center bg-[#2D2D2F] p-4 rounded-2xl mb-6 shrink-0 shadow-lg border border-white/10">
         <div className="flex gap-3">
           <button
-            onClick={handlePrintBlob}
+            onClick={handlePrint}
             className="flex items-center gap-2 bg-white text-[#1D1D1F] hover:bg-slate-200 px-4 py-2 rounded-xl text-sm font-bold transition-colors"
           >
             <Printer size={18} /> Imprimir
           </button>
           <button
-            onClick={handleDownload}
+            onClick={handleVerPDF}
             className="flex items-center gap-2 bg-[#0071E3] text-white hover:bg-[#0077ED] px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm"
           >
-            <Download size={18} /> Descargar
+            <X size={18} className="rotate-45" /> Abrir PDF
           </button>
           <button
-            onClick={enviarWhatsAppConLink}
+            onClick={enviarWhatsApp}
             className="flex items-center gap-2 bg-emerald-500 text-white hover:bg-emerald-600 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm"
           >
             <MessageCircle size={18} /> Enviar WS
@@ -148,13 +126,10 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
         </button>
       </div>
 
+      {/* VISOR PDF (solo funciona bien en desktop/Chrome) */}
       <div className="w-full max-w-[850px] flex-1 bg-white rounded-xl overflow-hidden shadow-2xl">
         <PDFViewer width="100%" height="100%" showToolbar={false}>
-          <ReporteDocument
-            orden={orden}
-            fechaImpresa={fechaImpresa}
-            qrCodeUrl={qrCodeUrl}
-          />
+          <ReporteDocument orden={orden} fechaImpresa={fechaImpresa} qrCodeUrl={qrCodeUrl} />
         </PDFViewer>
       </div>
     </div>

@@ -28,7 +28,8 @@ export async function PUT(
         nombre: body.nombre.toUpperCase(),
         precioUSD: parseFloat(body.precioUSD),
         unidades: body.unidades || null,
-        valoresReferencia: body.valoresReferencia || null
+        valoresReferencia: body.valoresReferencia || null,
+        opcionesPredefinidas: body.opcionesPredefinidas || null
       }
     });
 

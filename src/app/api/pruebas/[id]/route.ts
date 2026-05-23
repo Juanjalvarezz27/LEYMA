@@ -102,6 +102,7 @@ export async function PUT(
             precioUSD: body.esPaquete ? null : parsePrecioSeguro(p.precioUSD),
             unidades: p.unidades, 
             valoresReferencia: p.valoresReferencia,
+            opcionesPredefinidas: p.opcionesPredefinidas || null,
             activa: true,
             ordenVisual: p.ordenVisual 
           })),
@@ -115,6 +116,7 @@ export async function PUT(
               precioUSD: body.esPaquete ? null : parsePrecioSeguro(p.precioUSD),
               unidades: p.unidades, 
               valoresReferencia: p.valoresReferencia,
+              opcionesPredefinidas: p.opcionesPredefinidas || null,
               ordenVisual: p.ordenVisual 
             }
           }))

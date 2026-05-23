@@ -66,6 +66,7 @@ model Prueba {
   
   unidades           String?            
   valoresReferencia  String?            
+  opcionesPredefinidas String?
   activa             Boolean            @default(true) 
   ordenVisual        Int                @default(0)
   

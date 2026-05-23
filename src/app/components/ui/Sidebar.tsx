@@ -94,7 +94,7 @@ export default function Sidebar() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-1 space-y-1 px-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="flex-1 overflow-y-auto py-1 space-y-1 px-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300/80 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400 [&::-webkit-scrollbar-thumb]:rounded-full">
         
           
           {menuItems.map((item) => {

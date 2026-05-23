@@ -41,11 +41,13 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
         nombre: p.nombre,
         precioUSD: p.precioUSD ? p.precioUSD.toString() : "",
         unidades: p.unidades || "",
-        valoresReferencia: p.valoresReferencia || ""
+        valoresReferencia: p.valoresReferencia || "",
+        opcionesPredefinidas: p.opcionesPredefinidas ? p.opcionesPredefinidas.split(',').filter(Boolean) : [],
+        mostrarOpciones: !!p.opcionesPredefinidas
       })));
     } else {
       setFormData({ categoria: "", subcategoria: "", esPaquete: false, precioPaqueteUSD: "" });
-      setPruebas([{ id: "", codigo: "", nombre: "", precioUSD: "", unidades: "", valoresReferencia: "" }]);
+      setPruebas([{ id: "", codigo: "", nombre: "", precioUSD: "", unidades: "", valoresReferencia: "", opcionesPredefinidas: [], mostrarOpciones: false }]);
     }
     setGuardando(false);
   }, [pruebaEditar, isOpen]);
@@ -53,7 +55,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
   if (!isOpen) return null;
 
   const agregarFila = () => {
-    setPruebas([...pruebas, { id: "", codigo: "", nombre: "", precioUSD: "", unidades: "", valoresReferencia: "" }]);
+    setPruebas([...pruebas, { id: "", codigo: "", nombre: "", precioUSD: "", unidades: "", valoresReferencia: "", opcionesPredefinidas: [], mostrarOpciones: false }]);
   };
 
   const eliminarFila = (index: number) => {
@@ -66,9 +68,31 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
     setPruebas(nuevas);
   };
 
-  const actualizarPrueba = (index: number, campo: string, valor: string) => {
+  const actualizarPrueba = (index: number, campo: string, valor: any) => {
     const nuevas = [...pruebas];
     nuevas[index][campo] = valor;
+    setPruebas(nuevas);
+  };
+
+  const toggleMostrar = (index: number, campo: string) => {
+    const nuevas = [...pruebas];
+    nuevas[index][campo] = !nuevas[index][campo];
+    setPruebas(nuevas);
+  };
+
+  const addTag = (index: number, campo: string, valor: string) => {
+    const trimmed = valor.trim();
+    if (!trimmed) return;
+    const nuevas = [...pruebas];
+    if (!nuevas[index][campo].includes(trimmed)) {
+      nuevas[index][campo] = [...nuevas[index][campo], trimmed];
+      setPruebas(nuevas);
+    }
+  };
+
+  const removeTag = (index: number, campo: string, tagIndex: number) => {
+    const nuevas = [...pruebas];
+    nuevas[index][campo] = nuevas[index][campo].filter((_: any, i: number) => i !== tagIndex);
     setPruebas(nuevas);
   };
 
@@ -103,7 +127,8 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
           // Convertimos el precio individual a Float (si aplica)
           precioUSD: !formData.esPaquete ? parseFloat(p.precioUSD) : null,
           unidades: p.unidades,
-          valoresReferencia: p.valoresReferencia
+          valoresReferencia: p.valoresReferencia || null,
+          opcionesPredefinidas: p.opcionesPredefinidas.length > 0 ? p.opcionesPredefinidas.join(',') : null
         }))
       };
 
@@ -246,43 +271,86 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {pruebas.map((p, index) => (
-                <div key={index} className="flex gap-4 items-center bg-[#F5F5F7]/60 border border-slate-200/80 p-5 rounded-2xl shadow-sm hover:border-[#0071E3]/30 transition-colors">
+                <div key={index} className="flex flex-col bg-[#F5F5F7]/60 border border-slate-200/80 p-5 rounded-2xl shadow-sm hover:border-[#0071E3]/30 transition-colors">
                   
-                  <div className={`${formData.esPaquete ? 'w-[20%]' : 'w-[12%]'} flex flex-col gap-1.5`}>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase">Código</label>
-                    <input type="text" required value={p.codigo} onChange={(e) => actualizarPrueba(index, 'codigo', e.target.value.toUpperCase())} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20" placeholder="HE-01" />
+                  <div className="grid grid-cols-12 gap-4 items-end w-full">
+                    <div className="col-span-2 xl:col-span-1 flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase">Código</label>
+                      <input type="text" required value={p.codigo} onChange={(e) => actualizarPrueba(index, 'codigo', e.target.value.toUpperCase())} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20" placeholder="HE-01" />
+                    </div>
+
+                    <div className={`${formData.esPaquete ? 'col-span-5' : 'col-span-4'} flex flex-col gap-1.5`}>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase">Nombre</label>
+                      <input type="text" required value={p.nombre} onChange={(e) => actualizarPrueba(index, 'nombre', e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20" placeholder="Ej. GLOBULOS BLANCOS" />
+                    </div>
+
+                    <div className="col-span-3 flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase">Valores Referencia</label>
+                      <input type="text" value={p.valoresReferencia} onChange={(e) => actualizarPrueba(index, 'valoresReferencia', e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20" placeholder="Vacío para manual" />
+                    </div>
+
+                    <div className={`${formData.esPaquete ? 'col-span-2' : 'col-span-1'} flex flex-col gap-1.5`}>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase">Unidades</label>
+                      <input type="text" value={p.unidades} onChange={(e) => actualizarPrueba(index, 'unidades', e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20" placeholder="mm3" />
+                    </div>
+
+                    {!formData.esPaquete && (
+                      <div className="col-span-2 flex flex-col gap-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase">Precio ($)</label>
+                        <input type="number" step="0.01" required value={p.precioUSD} onChange={(e) => actualizarPrueba(index, 'precioUSD', e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-black text-[#0071E3] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20" placeholder="0.00" />
+                      </div>
+                    )}
+
+                    <div className="col-span-1 flex justify-end">
+                      <button type="button" onClick={() => eliminarFila(index)} className="p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-red-500 hover:bg-red-50 transition-colors shadow-sm">
+                        <Trash2 size={20} strokeWidth={2.5} />
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex-1 flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase">Nombre de la Prueba</label>
-                    <input type="text" required value={p.nombre} onChange={(e) => actualizarPrueba(index, 'nombre', e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20" placeholder="Ej. GLOBULOS BLANCOS" />
+                  {/* Toggles */}
+                  <div className="flex gap-3 pt-4 mt-4 border-t border-slate-200/50">
+                    <button type="button" onClick={() => toggleMostrar(index, 'mostrarOpciones')} className={`text-[11px] font-bold px-4 py-2 rounded-xl transition-all ${p.mostrarOpciones ? 'bg-purple-100 text-purple-700 shadow-inner' : 'bg-white border border-slate-200 text-slate-500 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200'}`}>
+                      {p.opcionesPredefinidas.length > 0 ? `✓ Opciones Cerradas (${p.opcionesPredefinidas.length})` : '+ Opciones Cerradas para Resultados'}
+                    </button>
                   </div>
 
-                  <div className="w-[20%] flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase">Referencia (Opcional)</label>
-                    <input type="text" value={p.valoresReferencia} onChange={(e) => actualizarPrueba(index, 'valoresReferencia', e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20" placeholder="Dejar vacío p/ manual" title="Si se deja vacío, la bioanalista lo llenará manualmente al transcribir" />
-                  </div>
-
-                  <div className="w-[15%] flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase">Unidades</label>
-                    <input type="text" value={p.unidades} onChange={(e) => actualizarPrueba(index, 'unidades', e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20" placeholder="mm3" />
-                  </div>
-
-                  {/* PRECIO INDIVIDUAL (Se oculta si es paquete) */}
-                  {!formData.esPaquete && (
-                    <div className="w-[15%] flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase">Precio ($)</label>
-                      <input type="number" step="0.01" required value={p.precioUSD} onChange={(e) => actualizarPrueba(index, 'precioUSD', e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-black text-[#0071E3] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20" placeholder="0.00" />
+                  {/* Paneles */}
+                  {p.mostrarOpciones && (
+                    <div className="bg-purple-50/50 p-5 rounded-2xl border border-purple-100 mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <label className="text-[11px] font-black text-purple-600 uppercase tracking-widest mb-3 block">Configurar Opciones Predefinidas</label>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {p.opcionesPredefinidas.map((opc: string, idx: number) => (
+                          <span key={idx} className="flex items-center gap-2 bg-purple-100 text-purple-700 pl-3 pr-1 py-1 rounded-lg text-sm font-bold border border-purple-200 shadow-sm">
+                            {opc}
+                            <button type="button" onClick={() => removeTag(index, 'opcionesPredefinidas', idx)} className="p-1 hover:bg-purple-200 rounded-md transition-colors"><X size={14}/></button>
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text" 
+                          placeholder="Escribe una opción (Ej. Positivo) y presiona Enter..." 
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(index, 'opcionesPredefinidas', e.currentTarget.value); e.currentTarget.value = ''; } }}
+                          className="flex-1 px-4 py-2.5 bg-white border border-purple-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-400 placeholder:text-purple-300 shadow-sm"
+                        />
+                        <button type="button" onClick={(e) => { 
+                            const input = e.currentTarget.previousElementSibling as HTMLInputElement; 
+                            addTag(index, 'opcionesPredefinidas', input.value); 
+                            input.value = ''; 
+                          }} 
+                          className="px-4 py-2.5 bg-purple-500 text-white font-bold rounded-xl hover:bg-purple-600 shadow-sm transition-colors"
+                        >
+                          Añadir
+                        </button>
+                      </div>
                     </div>
                   )}
 
-                  <div className="flex justify-end mt-5">
-                    <button type="button" onClick={() => eliminarFila(index)} className="p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-red-500 hover:bg-red-50 transition-colors shadow-sm">
-                      <Trash2 size={20} strokeWidth={2.5} />
-                    </button>
-                  </div>
+
+
                 </div>
               ))}
             </div>

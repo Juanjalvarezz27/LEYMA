@@ -25,13 +25,27 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
   const [observaciones, setObservaciones] = useState<Record<string, string>>({});
   const [obsExpandidas, setObsExpandidas] = useState<Record<string, boolean>>({});
   const [valoresReferenciaCustom, setValoresReferenciaCustom] = useState<Record<string, string>>({});
+  const [openSelect, setOpenSelect] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Element;
+      if (dropdownRef.current && !dropdownRef.current.contains(target as Node)) {
         setDropdownOpen(false);
+      }
+
+      try {
+        if (target && target.classList && target.classList.contains('overflow-y-auto')) {
+          const rect = target.getBoundingClientRect();
+          if (event.clientX >= rect.right - 25) return;
+        }
+        if (target && target.closest && !target.closest('.custom-select-container')) {
+          setOpenSelect(null);
+        }
+      } catch (err) {
+        setOpenSelect(null);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -77,6 +91,18 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
       setValoresReferenciaCustom(initialValRefCustom);
     }
   }, [orden]);
+
+  // Autoscroll para el menú desplegable cuando se abre
+  useEffect(() => {
+    if (openSelect) {
+      setTimeout(() => {
+        const menu = document.getElementById(`dropdown-menu-${openSelect}`);
+        if (menu) {
+          menu.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 50);
+    }
+  }, [openSelect]);
 
   const handleValorChange = (detalleId: string, index: number, valorInput: string) => {
     setValores(prev => {
@@ -265,7 +291,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
         </div>
 
         {/* BODY */}
-        <div className="flex-1 overflow-y-auto p-6 lg:p-8 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+        <div className="flex-1 overflow-y-auto p-6 lg:p-8 pb-40 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
 
           {!orden.resultadosCompletados && (
             <div className="bg-white border-l-4 border-l-orange-500 border-y border-r border-slate-200 rounded-r-2xl p-5 flex gap-4 mb-8 shadow-sm">
@@ -279,7 +305,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
             </div>
           )}
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200">
             {Object.entries(groupedDetalles).map(([catNombre, subcategorias]) => (
               <div key={catNombre} className="mb-2">
 
@@ -290,7 +316,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                 </div>
 
                 {Object.entries(subcategorias as any).map(([subCatNombre, detalles]: [string, any]) => (
-                  <div key={subCatNombre} className="px-8 py-5">
+                  <div key={subCatNombre} className={`px-8 py-5 relative ${openSelect ? 'z-50' : 'z-10'}`}>
 
                     <div className="mb-4 border-b-2 border-[#1D1D1F] pb-2">
                       <h4 className="text-sm font-black text-slate-600 uppercase tracking-widest">
@@ -310,7 +336,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                         const estaFirmado = det.resultado?.firmado;
                         
                         return (
-                        <div key={det.id} className={`flex flex-col group rounded-xl p-2 border transition-colors ${estaFirmado ? 'bg-green-50/30 border-green-100' : 'hover:bg-slate-50 border-transparent hover:border-slate-200'}`}>
+                        <div key={det.id} className={`flex flex-col group rounded-xl p-2 border transition-colors ${estaFirmado ? 'bg-green-50/30 border-green-100' : 'hover:bg-slate-50 border-transparent hover:border-slate-200'} ${openSelect?.startsWith(`${det.id}-`) ? 'relative z-50' : 'relative z-10'}`}>
 
                           <div className="flex items-center">
                             
@@ -341,19 +367,65 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                             </div>
 
                             <div className="w-[20%] px-2 flex flex-col gap-1.5">
-                              {Array(det.cantidad).fill(0).map((_, i) => (
-                                <input
-                                  key={i}
-                                  type="text"
-                                  disabled={estaFirmado}
-                                  value={valores[det.id]?.[i] || ""}
-                                  onChange={(e) => handleValorChange(det.id, i, e.target.value)}
-                                  className={`w-full text-center text-[14px] font-black bg-white border rounded-lg py-1.5 outline-none transition-all shadow-sm focus:ring-2 focus:ring-[#0071E3]/20 ${
-                                    estaFirmado ? 'border-green-200 text-green-700 bg-green-50/50 cursor-not-allowed' : valores[det.id]?.[i]?.trim() ? 'border-[#0071E3] text-[#0071E3]' : 'border-slate-300 text-[#1D1D1F] focus:border-[#0071E3]'
-                                  }`}
-                                  placeholder={det.cantidad > 1 ? `Resultado ${i + 1}` : "-"}
-                                />
-                              ))}
+                              {Array(det.cantidad).fill(0).map((_, i) => {
+                                const tieneOpciones = !!det.prueba.opcionesPredefinidas;
+                                const opcionesArray = tieneOpciones ? det.prueba.opcionesPredefinidas.split(',').map((o: string) => o.trim()).filter(Boolean) : [];
+
+                                const isSelectOpen = openSelect === `${det.id}-${i}`;
+                                const selectedValue = valores[det.id]?.[i] || "";
+
+                                return tieneOpciones && opcionesArray.length > 0 ? (
+                                  <div key={i} className={`relative w-full custom-select-container ${isSelectOpen ? 'z-50' : 'z-10'}`}>
+                                    <button
+                                      type="button"
+                                      disabled={estaFirmado}
+                                      onClick={() => setOpenSelect(isSelectOpen ? null : `${det.id}-${i}`)}
+                                      className={`w-full flex items-center justify-between text-[14px] font-black bg-white border rounded-lg px-3 py-1.5 outline-none transition-all shadow-sm focus:ring-2 focus:ring-[#0071E3]/20 ${
+                                        estaFirmado ? 'border-green-200 text-green-700 bg-green-50/50 cursor-not-allowed' : selectedValue.trim() ? 'border-[#0071E3] text-[#0071E3]' : 'border-slate-300 text-[#1D1D1F] hover:border-[#0071E3]'
+                                      }`}
+                                    >
+                                      <span className="truncate flex-1 text-center">{selectedValue || "- Seleccione -"}</span>
+                                      <ChevronDown size={14} className={`text-slate-400 transition-transform ${isSelectOpen ? "rotate-180" : ""}`} />
+                                    </button>
+                                    
+                                    {isSelectOpen && (
+                                      <div id={`dropdown-menu-${det.id}-${i}`} className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden py-1 z-50">
+                                        <div className="max-h-40 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200">
+                                          <button
+                                            type="button"
+                                            onClick={() => { handleValorChange(det.id, i, ""); setOpenSelect(null); }}
+                                            className={`w-full text-center px-2 py-2 text-[13px] font-bold transition-colors ${!selectedValue ? "bg-[#0071E3]/10 text-[#0071E3]" : "text-slate-500 hover:bg-slate-50"}`}
+                                          >
+                                            - Seleccione -
+                                          </button>
+                                          {opcionesArray.map((opc: string) => (
+                                            <button
+                                              key={opc}
+                                              type="button"
+                                              onClick={() => { handleValorChange(det.id, i, opc); setOpenSelect(null); }}
+                                              className={`w-full text-center px-2 py-2 text-[13px] font-bold transition-colors ${selectedValue === opc ? "bg-[#0071E3]/10 text-[#0071E3]" : "text-slate-700 hover:bg-slate-50"}`}
+                                            >
+                                              {opc}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <input
+                                    key={i}
+                                    type="text"
+                                    disabled={estaFirmado}
+                                    value={valores[det.id]?.[i] || ""}
+                                    onChange={(e) => handleValorChange(det.id, i, e.target.value)}
+                                    className={`w-full text-center text-[14px] font-black bg-white border rounded-lg py-1.5 outline-none transition-all shadow-sm focus:ring-2 focus:ring-[#0071E3]/20 ${
+                                      estaFirmado ? 'border-green-200 text-green-700 bg-green-50/50 cursor-not-allowed' : valores[det.id]?.[i]?.trim() ? 'border-[#0071E3] text-[#0071E3]' : 'border-slate-300 text-[#1D1D1F] focus:border-[#0071E3]'
+                                    }`}
+                                    placeholder={det.cantidad > 1 ? `Resultado ${i + 1}` : "-"}
+                                  />
+                                );
+                              })}
                             </div>
 
                             <div className="w-[20%] text-sm text-slate-600 font-medium text-center">

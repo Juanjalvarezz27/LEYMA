@@ -11,27 +11,60 @@ interface ModalPruebaIndividualProps {
 }
 
 export default function ModalPruebaIndividual({ isOpen, onClose, onSave, itemEditar }: ModalPruebaIndividualProps) {
-  const [formData, setFormData] = useState({ 
-    codigo: "", nombre: "", precioUSD: "", unidades: "", valoresReferencia: "" 
+  const [formData, setFormData] = useState<{
+    codigo: string, nombre: string, precioUSD: string, unidades: string, valoresReferencia: string,
+    opcionesPredefinidas: string[], mostrarOpciones: boolean
+  }>({ 
+    codigo: "", nombre: "", precioUSD: "", unidades: "", valoresReferencia: "",
+    opcionesPredefinidas: [], mostrarOpciones: false
   });
 
   useEffect(() => {
     if (itemEditar) {
+      const opcs = itemEditar.opcionesPredefinidas ? itemEditar.opcionesPredefinidas.split(',').filter(Boolean) : [];
       setFormData({
         codigo: itemEditar.codigo,
         nombre: itemEditar.nombre,
         precioUSD: itemEditar.precioUSD.toString(),
         unidades: itemEditar.unidades || "",
-        valoresReferencia: itemEditar.valoresReferencia || ""
+        valoresReferencia: itemEditar.valoresReferencia || "",
+        opcionesPredefinidas: opcs,
+        mostrarOpciones: opcs.length > 0
       });
     }
   }, [itemEditar, isOpen]);
 
   if (!isOpen || !itemEditar) return null;
 
+  const toggleMostrar = (campo: 'mostrarOpciones') => {
+    setFormData(prev => ({ ...prev, [campo]: !prev[campo] }));
+  };
+
+  const addTag = (campo: 'opcionesPredefinidas', valor: string) => {
+    const trimmed = valor.trim();
+    if (!trimmed) return;
+    setFormData(prev => {
+      if (!prev[campo].includes(trimmed)) {
+        return { ...prev, [campo]: [...prev[campo], trimmed] };
+      }
+      return prev;
+    });
+  };
+
+  const removeTag = (campo: 'opcionesPredefinidas', index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      [campo]: prev[campo].filter((_, i) => i !== index)
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    onSave({
+      ...formData,
+      valoresReferencia: formData.valoresReferencia || null,
+      opcionesPredefinidas: formData.opcionesPredefinidas.length > 0 ? formData.opcionesPredefinidas.join(',') : null
+    });
   };
 
   return (
@@ -71,14 +104,44 @@ export default function ModalPruebaIndividual({ isOpen, onClose, onSave, itemEdi
 
           <div className="flex gap-4">
             <div className="w-1/2 flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase">Valores Referencia</label>
+              <input type="text" value={formData.valoresReferencia} onChange={(e) => setFormData({ ...formData, valoresReferencia: e.target.value })} className="w-full px-4 py-3 bg-[#F5F5F7] rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#0071E3]/20 focus:outline-none" placeholder="Vacío p/ llenado manual" />
+            </div>
+            <div className="w-1/2 flex flex-col gap-1.5">
               <label className="text-[10px] font-bold text-slate-400 uppercase">Unidades</label>
               <input type="text" value={formData.unidades} onChange={(e) => setFormData({ ...formData, unidades: e.target.value })} className="w-full px-4 py-3 bg-[#F5F5F7] rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#0071E3]/20 focus:outline-none" />
             </div>
-            <div className="w-1/2 flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Valores Ref. (Opcional)</label>
-              <input type="text" value={formData.valoresReferencia} onChange={(e) => setFormData({ ...formData, valoresReferencia: e.target.value })} className="w-full px-4 py-3 bg-[#F5F5F7] rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#0071E3]/20 focus:outline-none" placeholder="Dejar vacío p/ llenado manual" title="Si se deja vacío, la bioanalista lo llenará manualmente al transcribir" />
-            </div>
           </div>
+
+          <div className="flex gap-3 pt-2 mt-2 border-t border-slate-100">
+            <button type="button" onClick={() => toggleMostrar('mostrarOpciones')} className={`flex-1 text-[11px] font-bold px-4 py-3 rounded-xl transition-all ${formData.mostrarOpciones ? 'bg-purple-100 text-purple-700 shadow-inner' : 'bg-[#F5F5F7] text-slate-500 hover:bg-purple-50 hover:text-purple-600'}`}>
+              {formData.opcionesPredefinidas.length > 0 ? `✓ Opciones Cerradas (${formData.opcionesPredefinidas.length})` : '+ Opciones Cerradas'}
+            </button>
+          </div>
+
+          {formData.mostrarOpciones && (
+            <div className="bg-purple-50/50 p-4 rounded-2xl border border-purple-100 mt-2 animate-in fade-in">
+              <label className="text-[11px] font-black text-purple-600 uppercase tracking-widest mb-3 block">Opciones Predefinidas</label>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {formData.opcionesPredefinidas.map((opc, idx) => (
+                  <span key={idx} className="flex items-center gap-2 bg-purple-100 text-purple-700 pl-3 pr-1 py-1 rounded-lg text-sm font-bold border border-purple-200">
+                    {opc}
+                    <button type="button" onClick={() => removeTag('opcionesPredefinidas', idx)} className="p-1 hover:bg-purple-200 rounded-md"><X size={14}/></button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input 
+                  type="text" placeholder="Escribe y presiona Enter..." 
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag('opcionesPredefinidas', e.currentTarget.value); e.currentTarget.value = ''; } }}
+                  className="flex-1 px-4 py-2.5 bg-white border border-purple-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                />
+                <button type="button" onClick={(e) => { const input = e.currentTarget.previousElementSibling as HTMLInputElement; addTag('opcionesPredefinidas', input.value); input.value = ''; }} className="px-4 py-2 bg-purple-500 text-white font-bold rounded-xl hover:bg-purple-600">Añadir</button>
+              </div>
+            </div>
+          )}
+
+
 
           <div className="pt-4 flex gap-3">
             <button type="button" onClick={onClose} className="flex-1 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors">Cancelar</button>

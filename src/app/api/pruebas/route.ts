@@ -49,10 +49,10 @@ export async function POST(req: Request) {
           create: body.pruebas.map((p: any, index: number) => ({
             codigo: p.codigo.toUpperCase(),
             nombre: p.nombre.toUpperCase(),
-            // Si es paquete, las pruebas hijas no tienen precio propio
             precioUSD: body.esPaquete ? null : parseFloat(p.precioUSD),
             unidades: p.unidades || null,
             valoresReferencia: p.valoresReferencia || null,
+            opcionesPredefinidas: p.opcionesPredefinidas || null,
             activa: true,
             ordenVisual: index + 1
           }))

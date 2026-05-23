@@ -19,7 +19,8 @@ import {
   LogOut, 
   ChevronLeft, 
   ChevronRight,
-  UserCog // <-- NUEVO ÍCONO
+  UserCog, // <-- NUEVO ÍCONO
+  ClipboardList // <-- ÍCONO DE PRESUPUESTO
 } from "lucide-react";
 import ModalConfirmacion from "./ModalConfirmacion";
 
@@ -40,14 +41,15 @@ export default function Sidebar() {
     { nombre: "Pruebas", ruta: "/home/pruebas", icono: TestTubes },
     { nombre: "Pacientes", ruta: "/home/pacientes", icono: Users },
     { nombre: "Constancias", ruta: "/home/constancias", icono: Award },
+    { nombre: "Presupuestos", ruta: "/home/presupuestos", icono: ClipboardList }, // <-- NUEVA RUTA DE PRESUPUESTOS
     { nombre: "Estadísticas", ruta: "/home/estadisticas", icono: BarChart3 },
     { nombre: "Monedero", ruta: "/home/monedero", icono: Wallet },
     { nombre: "Cierre de Caja", ruta: "/home/cierre", icono: Calculator },
-    { nombre: "Mi Perfil", ruta: "/home/perfil", icono: UserCog }, // <-- NUEVA RUTA
+    { nombre: "Mi Perfil", ruta: "/home/perfil", icono: UserCog },
   ];
 
   const rutasPermitidasUsuario = [
-    "/home", "/home/registro", "/home/diaria", "/home/resultados", "/home/pacientes", "/home/constancias", "/home/cierre"
+    "/home", "/home/registro", "/home/diaria", "/home/resultados", "/home/pacientes", "/home/constancias", "/home/presupuestos", "/home/cierre"
   ];
 
   const menuItems = rolUsuario === "ADMIN" 

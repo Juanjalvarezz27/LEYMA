@@ -9,6 +9,20 @@ import { toast } from "react-toastify";
 import ModalCargarResultados from "../../components/resultados/ModalCargarResultados";
 import ModalPreviewPDF from "../../components/resultados/ModalPreviewPDF";
 
+const obtenerFechaCaracas = (fecha: string | Date = new Date()) => {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Caracas',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  const parts = formatter.formatToParts(new Date(fecha));
+  const year = parts.find(p => p.type === 'year')?.value;
+  const month = parts.find(p => p.type === 'month')?.value;
+  const day = parts.find(p => p.type === 'day')?.value;
+  return `${year}-${month}-${day}`;
+};
+
 export default function ResultadosPage() {
   const [ordenes, setOrdenes] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -16,7 +30,7 @@ export default function ResultadosPage() {
   // ESTADOS DE FILTROS
   const [busqueda, setBusqueda] = useState("");
   const [tabActiva, setTabActiva] = useState<"PENDIENTES" | "POR_VALIDAR" | "COMPLETADOS">("PENDIENTES");
-  const [fechaFiltro, setFechaFiltro] = useState<string>(new Date().toISOString().split('T')[0]); 
+  const [fechaFiltro, setFechaFiltro] = useState<string>(obtenerFechaCaracas()); 
 
   // ESTADOS DE PAGINACIÓN
   const [paginaActual, setPaginaActual] = useState(1);
@@ -64,7 +78,7 @@ export default function ResultadosPage() {
     if (tabActiva === "COMPLETADOS" && !todoFirmado) return false;
 
     if (fechaFiltro) {
-      const fechaOrden = new Date(orden.fechaCreacion).toISOString().split('T')[0];
+      const fechaOrden = obtenerFechaCaracas(orden.fechaCreacion);
       if (fechaOrden !== fechaFiltro) return false;
     }
 

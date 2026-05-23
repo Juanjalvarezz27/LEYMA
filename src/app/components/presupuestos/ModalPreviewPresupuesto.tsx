@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import { X, Printer, Download } from "lucide-react";
 import { toast } from "react-toastify";
 import { PDFViewer, pdf } from "@react-pdf/renderer";
+import { MessageCircle } from "lucide-react";
 import PresupuestoDocument from "./PresupuestoDocument";
 
 interface ModalPreviewPresupuestoProps {
-  paciente: { nombre: string, cedula: string };
+  paciente: { nombre: string, cedula: string, telefono?: string };
   pruebas: any[];
   tasaBCV: number;
   descuento: number;
@@ -85,6 +86,61 @@ export default function ModalPreviewPresupuesto({
     }
   };
 
+  const enviarWhatsApp = () => {
+    let numeroStr = paciente.telefono || "";
+    
+    // Si no ingresó número en el formulario, se lo pedimos por un prompt
+    if (!numeroStr || numeroStr.trim() === "") {
+      const inputTelefono = window.prompt("Ingrese el número de teléfono del paciente (Ej. 04121234567):");
+      if (!inputTelefono) {
+        toast.warning("Envío cancelado: Se requiere un número de teléfono.");
+        return;
+      }
+      numeroStr = inputTelefono;
+    }
+
+    // Limpiamos todo lo que no sea número
+    let cleaned = numeroStr.replace(/\D/g, "");
+    
+    // Si empieza con 0 (ej. 0412), lo cambiamos a 58 (ej. 58412)
+    if (cleaned.startsWith("0")) {
+      cleaned = "58" + cleaned.substring(1);
+    } 
+    // Si no empieza con 58 (y no era 0), le agregamos el 58 al principio
+    else if (!cleaned.startsWith("58")) {
+      cleaned = "58" + cleaned;
+    }
+
+    // Agrupamos la info necesaria para recrear el PDF
+    const data = {
+      paciente,
+      pruebas: pruebas.map(p => ({ 
+        nombre: p.nombre, 
+        precioUSD: p.precioUSD, 
+        cantidad: p.cantidad || 1 
+      })),
+      tasaBCV,
+      descuento,
+      subtotal,
+      total
+    };
+    
+    // Convertimos a base64 manejando acentos correctamente
+    const jsonStr = JSON.stringify(data);
+    const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
+    
+    const url = `${window.location.origin}/cotizacion?d=${base64}`;
+    
+    let text = `*Laboratorio LEYMA C.A.*\nHola ${paciente.nombre || 'estimado paciente'},\n\n`;
+    text += `Adjunto le enviamos el presupuesto solicitado.\n\n`;
+    text += `*Total a pagar:* $${total.toFixed(2)} / Bs ${(total * tasaBCV).toFixed(2)}\n\n`;
+    text += `📄 *Ver cotización y descargar PDF aquí:*\n${url}\n\n`;
+    text += `¡Cualquier consulta estamos a su orden!`;
+    
+    // Abrimos wa.me apuntando DIRECTO al número formateado
+    window.open(`https://wa.me/${cleaned}?text=${encodeURIComponent(text)}`, "_blank");
+  };
+
   if (!isMounted) return null;
 
   return (
@@ -102,6 +158,12 @@ export default function ModalPreviewPresupuesto({
             className="flex items-center gap-2 bg-[#0071E3] text-white hover:bg-[#0077ED] px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm"
           >
             <Download size={18} /> Descargar
+          </button>
+          <button
+            onClick={enviarWhatsApp}
+            className="flex items-center gap-2 bg-emerald-500 text-white hover:bg-emerald-600 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm"
+          >
+            <MessageCircle size={18} /> Enviar WS
           </button>
         </div>
         <button

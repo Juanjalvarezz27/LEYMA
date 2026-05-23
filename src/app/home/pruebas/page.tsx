@@ -271,6 +271,7 @@ export default function PruebasPage() {
   };
 
   const categoriasExistentes = Array.from(new Set(examenes.map(e => e.categoria.nombre)));
+  const subcategoriasExistentes = Array.from(new Set(examenes.map(e => e.nombre)));
   
   const pruebasFiltradas = examenes.filter((p) => {
     const matchBusqueda = p.nombre.toLowerCase().includes(busqueda.toLowerCase()) || 
@@ -633,7 +634,7 @@ export default function PruebasPage() {
       </div>
       )}
 
-      <ModalPrueba isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSavePrueba} pruebaEditar={pruebaEditando} categoriasExistentes={categoriasExistentes} />
+      <ModalPrueba isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSavePrueba} pruebaEditar={pruebaEditando} categoriasExistentes={categoriasExistentes} subcategoriasExistentes={subcategoriasExistentes} />
       <ModalPruebaIndividual isOpen={isModalItemOpen} onClose={() => setIsModalItemOpen(false)} onSave={handleSavePruebaIndividual} itemEditar={itemEditando} />
       <ModalServicioExtra isOpen={isModalServicioOpen} onClose={() => setIsModalServicioOpen(false)} onSave={handleSaveServicio} itemEditar={servicioEditando} />
       

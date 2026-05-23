@@ -16,7 +16,7 @@ export default function PresupuestosPage() {
   const [pruebasSeleccionadas, setPruebasSeleccionadas] = useState<any[]>([]);
   
   // Datos del Paciente (Opcional)
-  const [paciente, setPaciente] = useState({ nombre: "", cedula: "" });
+  const [paciente, setPaciente] = useState({ nombre: "", cedula: "", telefono: "" });
   
   // Descuentos
   const [porcentajeDescuento, setPorcentajeDescuento] = useState<number>(0);
@@ -86,7 +86,7 @@ export default function PresupuestosPage() {
 
   const limpiar = () => {
     setPruebasSeleccionadas([]);
-    setPaciente({ nombre: "", cedula: "" });
+    setPaciente({ nombre: "", cedula: "", telefono: "" });
     setPorcentajeDescuento(0);
   };
 
@@ -113,7 +113,7 @@ export default function PresupuestosPage() {
               <h2 className="text-xl font-bold text-[#1D1D1F]">Datos del Paciente (Opcional)</h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nombre Completo</label>
                 <div className="relative">
@@ -135,6 +135,16 @@ export default function PresupuestosPage() {
                   onChange={(e) => setPaciente({ ...paciente, cedula: e.target.value })}
                   className="w-full px-4 py-3 bg-[#F5F5F7] border border-slate-200/60 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3]"
                   placeholder="V-12345678"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Teléfono</label>
+                <input
+                  type="text"
+                  value={paciente.telefono}
+                  onChange={(e) => setPaciente({ ...paciente, telefono: e.target.value })}
+                  className="w-full px-4 py-3 bg-[#F5F5F7] border border-slate-200/60 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3]"
+                  placeholder="04121234567"
                 />
               </div>
             </div>

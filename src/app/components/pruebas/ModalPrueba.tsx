@@ -3,7 +3,7 @@ import { X, Plus, Trash2, ChevronDown, Loader2, Package, LayoutList } from "luci
 import { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
 
-export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, categoriasExistentes }: any) {
+export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, categoriasExistentes, subcategoriasExistentes }: any) {
   const [formData, setFormData] = useState({ 
     categoria: "", 
     subcategoria: "", 
@@ -13,14 +13,19 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
   const [pruebas, setPruebas] = useState<any[]>([]);
   
   const [openDropdownCategoria, setOpenDropdownCategoria] = useState(false);
+  const [openDropdownSubcategoria, setOpenDropdownSubcategoria] = useState(false);
   const [guardando, setGuardando] = useState(false);
   
   const dropdownCategoriaRef = useRef<HTMLDivElement>(null);
+  const dropdownSubcategoriaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownCategoriaRef.current && !dropdownCategoriaRef.current.contains(event.target as Node)) {
         setOpenDropdownCategoria(false);
+      }
+      if (dropdownSubcategoriaRef.current && !dropdownSubcategoriaRef.current.contains(event.target as Node)) {
+        setOpenDropdownSubcategoria(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -143,6 +148,10 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
     c.toLowerCase().includes(formData.categoria.toLowerCase())
   ) || [];
 
+  const subcategoriasFiltradas = subcategoriasExistentes?.filter((s: string) => 
+    s.toLowerCase().includes(formData.subcategoria.toLowerCase())
+  ) || [];
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/20">
       <div className="bg-white w-full max-w-[1100px] max-h-[90vh] flex flex-col rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] overflow-hidden animate-in zoom-in-95 duration-100">
@@ -159,10 +168,11 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-8 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col relative z-50 min-h-0">
           
-          {/* SECTOR DE MODALIDAD */}
-          <div className="flex gap-4 mb-2">
+          <div className="p-8 pb-4 space-y-8 shrink-0 relative z-50">
+            {/* SECTOR DE MODALIDAD */}
+            <div className="flex gap-4 mb-2">
             <button
               type="button"
               onClick={() => setFormData({ ...formData, esPaquete: false })}
@@ -200,7 +210,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-6 bg-[#F5F5F7] p-6 rounded-2xl border border-slate-200/60 relative">
+          <div className="grid grid-cols-3 gap-6 bg-[#F5F5F7] p-6 rounded-2xl border border-slate-200/60 relative z-50">
             <div className="absolute top-0 left-0 w-1.5 h-full bg-[#0071E3] rounded-l-2xl"></div>
             
             <div className="flex flex-col gap-1.5 pl-2 relative" ref={dropdownCategoriaRef}>
@@ -234,15 +244,35 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
               )}
             </div>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 relative" ref={dropdownSubcategoriaRef}>
               <label className="text-[11px] font-black text-[#0071E3] uppercase tracking-widest">Subcategoría (Título)</label>
-              <input 
-                type="text" required
-                value={formData.subcategoria} 
-                onChange={(e) => setFormData({ ...formData, subcategoria: e.target.value })} 
-                className="w-full px-4 py-3.5 bg-white border border-slate-200/80 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20" 
-                placeholder="Ej. Hematología Completa" 
-              />
+              <div className="relative">
+                <input 
+                  type="text" required
+                  value={formData.subcategoria} 
+                  onFocus={() => setOpenDropdownSubcategoria(true)}
+                  onChange={(e) => {
+                    setFormData({ ...formData, subcategoria: e.target.value });
+                    setOpenDropdownSubcategoria(true);
+                  }} 
+                  className="w-full px-4 py-3.5 bg-white border border-slate-200/80 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20" 
+                  placeholder="Ej. Hematología Completa" 
+                />
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+              </div>
+              {openDropdownSubcategoria && (
+                <div className="absolute top-[100%] left-0 right-0 mt-2 bg-white border border-slate-200/80 rounded-2xl shadow-xl overflow-y-auto max-h-[220px] py-1.5 z-50">
+                  {subcategoriasFiltradas.length > 0 ? (
+                    subcategoriasFiltradas.map((sub: string) => (
+                      <button key={sub} type="button" onClick={() => { setFormData({ ...formData, subcategoria: sub }); setOpenDropdownSubcategoria(false); }} className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 hover:bg-[#0071E3]/5 hover:text-[#0071E3] transition-colors">
+                        {sub}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-3 text-sm font-medium text-slate-400 italic">Se creará como nueva subcategoría</div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* PRECIO DEL PAQUETE (Solo se muestra si es paquete) */}
@@ -258,8 +288,9 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
               />
             </div>
           </div>
+          </div>
 
-          <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto px-8 pb-8 space-y-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 relative z-10">
             <div className="flex justify-between items-center">
               <div>
                 <h4 className="text-[14px] font-black text-[#1D1D1F] uppercase tracking-widest">
@@ -357,7 +388,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
           </div>
         </form>
 
-        <div className="p-6 bg-white border-t border-slate-100 flex gap-4 shrink-0 rounded-b-[32px]">
+        <div className="p-6 bg-white border-t border-slate-100 flex gap-4 shrink-0 rounded-b-[32px] relative z-40">
           <button type="button" onClick={onClose} disabled={guardando} className="flex-1 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-colors disabled:opacity-50">Cancelar</button>
           <button type="submit" onClick={handleSubmit} disabled={guardando} className="flex-1 py-4 bg-[#0071E3] text-white font-bold rounded-2xl shadow-lg hover:bg-[#0077ED] transition-colors disabled:opacity-70 flex items-center justify-center gap-2">
             {guardando && <Loader2 className="animate-spin" size={20} strokeWidth={3} />}

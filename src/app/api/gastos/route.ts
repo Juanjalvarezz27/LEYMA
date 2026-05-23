@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]/route";
 
 // ESTO ES VITAL: Obliga a Next.js a calcular esto en tiempo real siempre, sin caché.
 export const dynamic = 'force-dynamic'; 
@@ -185,6 +187,16 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    const usuarioSesion = await prisma.usuario.findUnique({ where: { correo: session.user.email } });
+    if (!usuarioSesion) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+
     const body = await req.json();
     const { concepto, metodoId, montoUSD, montoBS, referencia } = body;
 
@@ -193,20 +205,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Faltan datos obligatorios" }, { status: 400 });
     }
 
-    // Buscamos cualquier usuario Administrador para asignarle el registro del gasto
-    // (Si tienes un sistema de login, aquí usarías el usuario en sesión)
-    const usuarioAdmin = await prisma.usuario.findFirst({
-      where: { rol: { nombre: "ADMIN" } }
-    });
-
-    if (!usuarioAdmin) {
-      return NextResponse.json({ error: "No hay usuarios registrados para asginar el gasto" }, { status: 400 });
-    }
-
-    // Guardamos el gasto en la BD
+    // Guardamos el gasto en la BD usando el usuario de la sesión
     const nuevoGasto = await prisma.gasto.create({
       data: {
-        usuarioId: usuarioAdmin.id,
+        usuarioId: usuarioSesion.id,
         concepto,
         metodoId: parseInt(metodoId),
         montoUSD: parseFloat(montoUSD),

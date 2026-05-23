@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getCaracasTodayBounds, getCaracasBoundsForDate } from "../../../lib/dateUtils";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]/route";
 
 export const dynamic = 'force-dynamic';
 const prisma = new PrismaClient();
@@ -112,6 +114,16 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    const usuarioSesion = await prisma.usuario.findUnique({ where: { correo: session.user.email } });
+    if (!usuarioSesion) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+
     const body = await req.json();
     const { totalCalculadoUSD, totalCalculadoBS, totalDeclaradoUSD, totalDeclaradoBS, observaciones, tasaBCV, desglose } = body;
     
@@ -126,9 +138,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "El turno de hoy ya fue cerrado." }, { status: 400 });
     }
 
-    const admin = await prisma.usuario.findFirst({ where: { rol: { nombre: "ADMIN" } } });
-    if (!admin) return NextResponse.json({ error: "No hay admin" }, { status: 400 });
-
     const ultimoCierre = await prisma.cierreCaja.findFirst({ orderBy: { fechaCierre: 'desc' } });
     const fechaApertura = ultimoCierre ? ultimoCierre.fechaCierre : fechaInicio;
 
@@ -137,7 +146,7 @@ export async function POST(req: Request) {
 
     const nuevoCierre = await prisma.cierreCaja.create({
       data: {
-        usuarioId: admin.id,
+        usuarioId: usuarioSesion.id,
         fechaApertura,
         totalCalculadoUSD: parseFloat(totalCalculadoUSD),
         totalCalculadoBS: parseFloat(totalCalculadoBS),

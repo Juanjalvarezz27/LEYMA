@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { 
   Activity, Users, Microscope, Calendar, BarChart3, 
-  UserCheck, Layers, ClipboardList, PieChart as PieIcon, BarChart2, TrendingUp, Filter, CheckCircle2
+  UserCheck, Layers, ClipboardList, PieChart as PieIcon, BarChart2, TrendingUp, Filter, CheckCircle2,
+  UserPlus
 } from "lucide-react";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -152,6 +153,7 @@ export default function EstadisticasPage() {
         <>
           {/* GRIDS DE DATOS BLINDADOS */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+
             <div className="bg-white p-6 rounded-[24px] border border-slate-200/80 shadow-sm flex items-center gap-5">
               <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#0071E3] flex items-center justify-center shrink-0">
                 <Users size={26} strokeWidth={2.5} />
@@ -229,7 +231,7 @@ export default function EstadisticasPage() {
             <div className="bg-white p-6 rounded-[24px] border border-slate-200/80 shadow-sm flex flex-col">
               <div className="mb-6">
                 <h3 className="text-lg font-black text-[#1D1D1F] flex items-center gap-2">
-                  <Microscope size={20} className="text-[#10B981]" /> Carga Técnica de Pruebas
+                  <Microscope size={20} className="text-[#8E44AD]" /> Carga Técnica de Pruebas
                 </h3>
                 <p className="text-xs text-slate-500 font-medium mt-1">Volumen de exámenes procesados diariamente.</p>
               </div>
@@ -239,15 +241,15 @@ export default function EstadisticasPage() {
                   <AreaChart data={stats?.graficoTendencia || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorPruebas" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.2}/>
-                        <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#8E44AD" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#8E44AD" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                     <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{fill: '#64748B', fontSize: 11, fontWeight: 600}} dy={10} />
                     <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748B', fontSize: 11, fontWeight: 600}} />
                     <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }} />
-                    <Area type="monotone" dataKey="Pruebas" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#colorPruebas)" />
+                    <Area type="monotone" dataKey="Pruebas" stroke="#8E44AD" strokeWidth={3} fillOpacity={1} fill="url(#colorPruebas)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -302,6 +304,62 @@ export default function EstadisticasPage() {
                     <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748B', fontSize: 11, fontWeight: 600}} />
                     <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} cursor={{fill: 'transparent'}} />
                     <Bar dataKey="value" name="Pacientes" fill="#FF9500" radius={[8, 8, 0, 0]} barSize={35} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* SECCIÓN FIDELIZACIÓN Y ADMINISTRATIVA */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+            <div className="bg-white p-6 rounded-[24px] border border-slate-200/80 shadow-sm flex flex-col">
+              <h3 className="text-lg font-black text-[#1D1D1F] flex items-center gap-2 mb-1">
+                <CheckCircle2 size={20} className="text-[#0071E3]" /> Validación de Resultados (QC)
+              </h3>
+              <p className="text-xs text-slate-500 font-medium mb-6">Proporción de pruebas firmadas vs pendientes de revisión técnica.</p>
+              
+              <div className="flex-1 relative flex items-center justify-center w-full" style={{ minHeight: 220 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={stats?.graficoControlCalidad || []}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={65}
+                      outerRadius={85}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {(stats?.graficoControlCalidad || []).map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={PALETA_COLORES[index % PALETA_COLORES.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
+                    <Legend verticalAlign="bottom" height={36} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-[24px] border border-slate-200/80 shadow-sm flex flex-col">
+              <h3 className="text-lg font-black text-[#1D1D1F] flex items-center gap-2 mb-1">
+                <Activity size={20} className="text-[#8E44AD]" /> Estado de las Órdenes
+              </h3>
+              <p className="text-xs text-slate-500 font-medium mb-6">Clasificación de órdenes por su fase actual.</p>
+              
+              <div className="flex-1 w-full" style={{ minHeight: 220 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats?.graficoEstados || []} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
+                    <XAxis type="number" axisLine={false} tickLine={false} tick={{fill: '#64748B', fontSize: 11, fontWeight: 600}} />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fill: '#1D1D1F', fontSize: 11, fontWeight: 700}} width={100} />
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} cursor={{fill: 'transparent'}} />
+                    <Bar dataKey="value" name="Órdenes" fill="#8E44AD" radius={[0, 8, 8, 0]} barSize={25}>
+                      {(stats?.graficoEstados || []).map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={PALETA_COLORES[index % PALETA_COLORES.length]} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>

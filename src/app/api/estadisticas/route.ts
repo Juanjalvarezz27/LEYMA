@@ -48,8 +48,10 @@ export async function GET(req: Request) {
       },
       include: {
         paciente: true,
+        estado: true,
         detalles: {
           include: {
+            resultado: true,
             prueba: {
               include: {
                 subcategoria: {
@@ -70,6 +72,10 @@ export async function GET(req: Request) {
     let totalPruebasProcesadas = 0;
     const pacientesUnicosSet = new Set<string>();
 
+    let pruebasValidadas = 0;
+    let pruebasEnRevision = 0;
+    let pruebasPendientes = 0;
+
     const distribucionSexo = { M: 0, F: 0 };
     const distribucionEdad = {
       "Bebés (0-2)": 0,
@@ -81,6 +87,8 @@ export async function GET(req: Request) {
     const conteoCategorias: Record<string, number> = {};
     const conteoPruebas: Record<string, number> = {};
     const conteoTendencia: Record<string, { ordenes: number; pruebas: number }> = {};
+    
+    const conteoEstados: Record<string, number> = {};
 
     const diasDelPeriodo: string[] = [];
     let temporalDate = new Date(fechaInicio);
@@ -107,6 +115,9 @@ export async function GET(req: Request) {
         conteoTendencia[fechaKey].ordenes += 1;
       }
 
+      const estadoNombre = orden.estado?.nombre || "Desconocido";
+      conteoEstados[estadoNombre] = (conteoEstados[estadoNombre] || 0) + 1;
+
       if (orden.paciente.sexo === "M" || orden.paciente.sexo === "F") {
         distribucionSexo[orden.paciente.sexo] += 1;
       }
@@ -130,6 +141,14 @@ export async function GET(req: Request) {
 
       orden.detalles.forEach((detalle) => {
         totalPruebasProcesadas += detalle.cantidad;
+
+        if (!detalle.resultado) {
+          pruebasPendientes += detalle.cantidad;
+        } else if (detalle.resultado.firmado) {
+          pruebasValidadas += detalle.cantidad;
+        } else {
+          pruebasEnRevision += detalle.cantidad;
+        }
 
         if (conteoTendencia[fechaKey]) {
           conteoTendencia[fechaKey].pruebas += detalle.cantidad;
@@ -159,6 +178,7 @@ export async function GET(req: Request) {
 
     const graficoEdad = Object.entries(distribucionEdad).map(([name, value]) => ({ name, value }));
     const graficoCategorias = Object.entries(conteoCategorias).map(([name, value]) => ({ name, value }));
+    const graficoEstados = Object.entries(conteoEstados).map(([name, value]) => ({ name, value }));
 
     const topPruebas = Object.entries(conteoPruebas)
       .map(([nombre, cantidad]) => ({ nombre, cantidad }))
@@ -172,6 +192,12 @@ export async function GET(req: Request) {
 
     // NUEVO KPI: Tasa de Procesamiento (Órdenes Completadas / Total)
     const tasaProcesamiento = totalOrdenes > 0 ? Math.round((ordenesCompletadas / totalOrdenes) * 100) : 0;
+    
+    const graficoControlCalidad = [
+      { name: "Validadas (QC)", value: pruebasValidadas },
+      { name: "En Revisión", value: pruebasEnRevision },
+      { name: "Pendientes", value: pruebasPendientes }
+    ];
 
     return NextResponse.json({
       kpis: {
@@ -185,7 +211,9 @@ export async function GET(req: Request) {
       graficoEdad,
       graficoCategorias,
       topPruebas,
-      topCategorias
+      topCategorias,
+      graficoEstados,
+      graficoControlCalidad
     });
 
   } catch (error) {

@@ -23,7 +23,21 @@ export default function DescargarCotizacionButton({ dataB64, nombrePaciente }: D
     try {
       // Decode data
       const jsonStr = decodeURIComponent(escape(atob(dataB64)));
-      const datosCotizacion = JSON.parse(jsonStr);
+      const raw = JSON.parse(jsonStr);
+      let datosCotizacion;
+      
+      if (raw.p && raw.e) {
+        datosCotizacion = {
+          paciente: { nombre: raw.p.n, cedula: raw.p.c, telefono: raw.p.t },
+          pruebas: raw.e.map((x: any) => ({ nombre: x[0], precioUSD: x[1], cantidad: x[2] })),
+          tasaBCV: raw.b,
+          descuento: raw.d,
+          subtotal: raw.s,
+          total: raw.t
+        };
+      } else {
+        datosCotizacion = raw;
+      }
       
       const { paciente, pruebas, tasaBCV, descuento, subtotal, total } = datosCotizacion;
 

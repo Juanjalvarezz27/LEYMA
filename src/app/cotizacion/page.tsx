@@ -11,7 +11,21 @@ export default async function CotizacionPage({ searchParams }: { searchParams: a
   let datosCotizacion;
   try {
     const jsonStr = decodeURIComponent(escape(atob(dataB64)));
-    datosCotizacion = JSON.parse(jsonStr);
+    const raw = JSON.parse(jsonStr);
+    
+    // Soporte para formato comprimido (nuevo) y formato extenso (viejo)
+    if (raw.p && raw.e) {
+      datosCotizacion = {
+        paciente: { nombre: raw.p.n, cedula: raw.p.c, telefono: raw.p.t },
+        pruebas: raw.e.map((x: any) => ({ nombre: x[0], precioUSD: x[1], cantidad: x[2] })),
+        tasaBCV: raw.b,
+        descuento: raw.d,
+        subtotal: raw.s,
+        total: raw.t
+      };
+    } else {
+      datosCotizacion = raw;
+    }
   } catch (error) {
     console.error("Error decoding cotizacion data", error);
     return notFound();

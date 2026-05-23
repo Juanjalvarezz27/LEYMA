@@ -111,18 +111,14 @@ export default function ModalPreviewPresupuesto({
       cleaned = "58" + cleaned;
     }
 
-    // Agrupamos la info necesaria para recrear el PDF
+    // Agrupamos la info en una estructura minimizada para que el Base64 sea muy corto
     const data = {
-      paciente,
-      pruebas: pruebas.map(p => ({ 
-        nombre: p.nombre, 
-        precioUSD: p.precioUSD, 
-        cantidad: p.cantidad || 1 
-      })),
-      tasaBCV,
-      descuento,
-      subtotal,
-      total
+      p: { n: paciente.nombre, c: paciente.cedula, t: paciente.telefono },
+      e: pruebas.map(pr => [pr.nombre, pr.precioUSD, pr.cantidad || 1]),
+      b: tasaBCV,
+      d: descuento,
+      s: subtotal,
+      t: total
     };
     
     // Convertimos a base64 manejando acentos correctamente

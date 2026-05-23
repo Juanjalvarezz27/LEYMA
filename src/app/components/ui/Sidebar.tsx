@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -20,7 +20,9 @@ import {
   ChevronLeft, 
   ChevronRight,
   UserCog, // <-- NUEVO ÍCONO
-  ClipboardList // <-- ÍCONO DE PRESUPUESTO
+  ClipboardList, // <-- ÍCONO DE PRESUPUESTO
+  Settings,
+  ChevronDown
 } from "lucide-react";
 import ModalConfirmacion from "./ModalConfirmacion";
 
@@ -29,19 +31,22 @@ export default function Sidebar() {
   const { data: session } = useSession();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
 
   const rolUsuario = (session?.user as any)?.rol || "USUARIO";
 
-  // AGREGAMOS "Mi Perfil" AL MENÚ MAESTRO
-  const menuMaestro = [
+  const rutasPrincipales = [
     { nombre: "Inicio", ruta: "/home", icono: Home }, 
     { nombre: "Registro", ruta: "/home/registro", icono: FileSignature },
     { nombre: "Lista Diaria", ruta: "/home/diaria", icono: CalendarDays },
     { nombre: "Resultados", ruta: "/home/resultados", icono: Microscope },
-    { nombre: "Pruebas", ruta: "/home/pruebas", icono: TestTubes },
     { nombre: "Pacientes", ruta: "/home/pacientes", icono: Users },
+    { nombre: "Presupuestos", ruta: "/home/presupuestos", icono: ClipboardList },
     { nombre: "Constancias", ruta: "/home/constancias", icono: Award },
-    { nombre: "Presupuestos", ruta: "/home/presupuestos", icono: ClipboardList }, // <-- NUEVA RUTA DE PRESUPUESTOS
+  ];
+
+  const rutasConfiguracion = [
+    { nombre: "Pruebas", ruta: "/home/pruebas", icono: TestTubes },
     { nombre: "Estadísticas", ruta: "/home/estadisticas", icono: BarChart3 },
     { nombre: "Monedero", ruta: "/home/monedero", icono: Wallet },
     { nombre: "Cierre de Caja", ruta: "/home/cierre", icono: Calculator },
@@ -52,9 +57,23 @@ export default function Sidebar() {
     "/home", "/home/registro", "/home/diaria", "/home/resultados", "/home/pacientes", "/home/constancias", "/home/presupuestos", "/home/cierre"
   ];
 
-  const menuItems = rolUsuario === "ADMIN" 
-    ? menuMaestro 
-    : menuMaestro.filter(item => rutasPermitidasUsuario.includes(item.ruta));
+  const menuPrincipal = rolUsuario === "ADMIN" 
+    ? rutasPrincipales 
+    : rutasPrincipales.filter(item => rutasPermitidasUsuario.includes(item.ruta));
+
+  const menuConfiguracion = rolUsuario === "ADMIN"
+    ? rutasConfiguracion
+    : rutasConfiguracion.filter(item => rutasPermitidasUsuario.includes(item.ruta));
+
+  // Abrir configuración automáticamente si estamos en una de sus rutas
+  // Solo dependemos de pathname para no forzar cierres al hacer clic
+  useEffect(() => {
+    if (rutasConfiguracion.some(item => pathname.startsWith(item.ruta))) {
+      setIsConfigOpen(true);
+    } else {
+      setIsConfigOpen(false);
+    }
+  }, [pathname]);
 
   return (
     <>
@@ -94,10 +113,10 @@ export default function Sidebar() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-1 space-y-1 px-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300/80 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400 [&::-webkit-scrollbar-thumb]:rounded-full">
+        <div className="flex-1 overflow-y-auto py-3 space-y-1 px-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300/80 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400 [&::-webkit-scrollbar-thumb]:rounded-full">
         
-          
-          {menuItems.map((item) => {
+          {/* RUTAS PRINCIPALES */}
+          {menuPrincipal.map((item) => {
             const isActive = item.ruta === "/home" 
               ? pathname === "/home" 
               : pathname.startsWith(item.ruta);
@@ -114,25 +133,92 @@ export default function Sidebar() {
                 } ${
                   isActive 
                     ? "bg-[#0071E3]/10 text-[#0071E3]" 
-                    : "text-[#86868B] hover:bg-slate-100/80"
+                    : "text-slate-700 hover:bg-slate-100/80 font-semibold"
                 }`}
               >
                 <div className="flex items-center justify-center shrink-0 w-6">
                   <Icon 
                     size={20} 
-                    strokeWidth={isActive ? 2.5 : 2} 
-                    className={`transition-colors ${isActive ? "text-[#0071E3]" : "text-[#86868B] group-hover:text-[#1D1D1F]"}`} 
+                    strokeWidth={isActive ? 2.5 : 2.5} 
+                    className={`transition-colors ${isActive ? "text-[#0071E3]" : "text-slate-500 group-hover:text-[#1D1D1F]"}`} 
                   />
                 </div>
                 
-                <span className={`text-[15px] font-medium transition-all duration-300 overflow-hidden ${
+                <span className={`text-[15px] transition-all duration-300 overflow-hidden ${
                   isCollapsed ? "w-0 opacity-0 ml-0" : "w-auto opacity-100 ml-3"
-                } ${isActive ? "font-semibold" : "group-hover:text-[#1D1D1F]"}`}>
+                } ${isActive ? "font-bold" : "group-hover:text-[#1D1D1F]"}`}>
                   {item.nombre}
                 </span>
               </Link>
             );
           })}
+
+          {/* MENÚ DESPLEGABLE DE CONFIGURACIÓN */}
+          {menuConfiguracion.length > 0 && (
+            <div className="pt-2 mt-2 border-t border-slate-200/50">
+              <button
+                onClick={() => {
+                  if (isCollapsed) setIsCollapsed(false);
+                  setIsConfigOpen(!isConfigOpen);
+                }}
+                title={isCollapsed ? "Configuración" : ""}
+                className={`w-full flex items-center justify-between rounded-2xl transition-all duration-300 group overflow-hidden whitespace-nowrap ${
+                  isCollapsed ? "justify-center px-0 py-3" : "px-4 py-3"
+                } text-slate-700 hover:bg-slate-100/80 hover:text-[#1D1D1F] font-semibold`}
+              >
+                <div className="flex items-center">
+                  <div className="flex items-center justify-center shrink-0 w-6">
+                    <Settings 
+                      size={20} 
+                      strokeWidth={2.5} 
+                      className={`transition-colors ${isConfigOpen ? "text-[#1D1D1F]" : "text-slate-600 group-hover:text-[#1D1D1F]"}`} 
+                    />
+                  </div>
+                  <span className={`text-[15px] transition-all duration-300 overflow-hidden ${
+                    isCollapsed ? "w-0 opacity-0 ml-0" : "w-auto opacity-100 ml-3"
+                  }`}>
+                    Configuración
+                  </span>
+                </div>
+                {!isCollapsed && (
+                  <ChevronDown size={16} strokeWidth={2.5} className={`transition-transform duration-300 text-slate-500 ${isConfigOpen ? "rotate-180" : ""}`} />
+                )}
+              </button>
+
+              <div className={`overflow-hidden transition-all duration-300 ${
+                isConfigOpen && !isCollapsed ? "max-h-[500px] opacity-100 mt-1" : "max-h-0 opacity-0"
+              }`}>
+                <div className="flex flex-col space-y-1">
+                  {menuConfiguracion.map((item) => {
+                    const isActive = pathname.startsWith(item.ruta);
+                    const Icon = item.icono;
+                    return (
+                      <Link
+                        key={item.ruta}
+                        href={item.ruta}
+                        className={`flex items-center rounded-2xl transition-all duration-300 group overflow-hidden whitespace-nowrap pl-12 pr-4 py-3 ${
+                          isActive 
+                            ? "bg-[#0071E3]/10 text-[#0071E3]" 
+                            : "text-slate-600 hover:bg-slate-100/80"
+                        }`}
+                      >
+                        <div className="flex items-center justify-center shrink-0 w-6 mr-3">
+                          <Icon 
+                            size={20} 
+                            strokeWidth={isActive ? 2.5 : 2.5} 
+                            className={`transition-colors ${isActive ? "text-[#0071E3]" : "text-slate-500 group-hover:text-[#1D1D1F]"}`} 
+                          />
+                        </div>
+                        <span className={`text-[15px] ${isActive ? "font-bold" : "font-semibold group-hover:text-[#1D1D1F]"}`}>
+                          {item.nombre}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="p-4 border-t border-[#D2D2D7]/30">

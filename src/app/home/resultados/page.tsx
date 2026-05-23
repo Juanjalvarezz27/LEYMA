@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { 
   Microscope, Search, FileEdit, Clock, CheckCircle, FileText, 
-  Phone, MessageCircle, User, Calendar, ChevronLeft, ChevronRight, DollarSign, FileSignature 
+  Phone, MessageCircle, User, Calendar, ChevronLeft, ChevronRight, DollarSign, FileSignature, Lock 
 } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalCargarResultados from "../../components/resultados/ModalCargarResultados";
@@ -362,18 +362,32 @@ export default function ResultadosPage() {
                   <div className="p-5 pt-0 flex items-center gap-3">
                     
                     <button
-                      onClick={() => setOrdenSeleccionada(orden)}
-                      className={`flex-1 h-[46px] text-sm font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 hover:-translate-y-0.5 ${
-                        tabActiva === "PENDIENTES"
-                          ? 'bg-[#0071E3] text-white hover:bg-[#0077ED] shadow-sm hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)]'
+                      onClick={() => {
+                        if (!estaPagada) {
+                          toast.error("La orden debe estar pagada para gestionar los resultados.");
+                          return;
+                        }
+                        setOrdenSeleccionada(orden);
+                      }}
+                      className={`flex-1 h-[46px] text-sm font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
+                        !estaPagada
+                          ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                          : tabActiva === "PENDIENTES"
+                          ? 'bg-[#0071E3] text-white hover:bg-[#0077ED] shadow-sm hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] hover:-translate-y-0.5'
                           : tabActiva === "POR_VALIDAR"
-                          ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-sm hover:shadow-[0_4px_12px_rgba(59,130,246,0.3)]'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-sm hover:shadow-[0_4px_12px_rgba(59,130,246,0.3)] hover:-translate-y-0.5'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:-translate-y-0.5'
                       }`}
                     >
-                      {tabActiva === "PENDIENTES" && <><FileEdit size={16} /> Ingresar Resultados</>}
-                      {tabActiva === "POR_VALIDAR" && <><FileSignature size={16} /> Validar y Firmar</>}
-                      {tabActiva === "COMPLETADOS" && <><FileEdit size={16} /> Revisar / Editar</>}
+                      {!estaPagada ? (
+                        <><Lock size={16} /> Pago Requerido</>
+                      ) : (
+                        <>
+                          {tabActiva === "PENDIENTES" && <><FileEdit size={16} /> Ingresar Resultados</>}
+                          {tabActiva === "POR_VALIDAR" && <><FileSignature size={16} /> Validar y Firmar</>}
+                          {tabActiva === "COMPLETADOS" && <><FileEdit size={16} /> Revisar / Editar</>}
+                        </>
+                      )}
                     </button>
 
                     <div className="relative group/ws shrink-0 flex flex-col items-center justify-center">

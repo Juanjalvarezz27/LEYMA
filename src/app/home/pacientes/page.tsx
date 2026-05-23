@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { 
   Users, Search, History, Phone, Calendar, ChevronLeft, ChevronRight, 
-  Activity, FileText, CheckCircle, Clock, X, Eye, MessageCircle 
+  Activity, FileText, CheckCircle, Clock, X, Eye, MessageCircle, Lock 
 } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalPreviewPDF from "../../components/resultados/ModalPreviewPDF"; 
@@ -231,12 +231,20 @@ export default function PacientesPage() {
                           {orden.resultadosCompletados && (
                             <button
                               onClick={() => {
+                                if (!estaPagada) {
+                                  toast.error("La orden debe estar pagada para ver los resultados.");
+                                  return;
+                                }
                                 const ordenParaPDF = { ...orden, paciente: pacienteSeleccionado };
                                 setOrdenPDF(ordenParaPDF);
                               }}
-                              className="shrink-0 flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-100 text-[#0071E3] font-bold text-sm rounded-xl hover:bg-[#0071E3] hover:text-white transition-all shadow-sm"
+                              className={`shrink-0 flex items-center justify-center gap-2 px-5 py-2.5 font-bold text-sm rounded-xl transition-all shadow-sm ${
+                                !estaPagada 
+                                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                  : 'bg-slate-100 text-[#0071E3] hover:bg-[#0071E3] hover:text-white'
+                              }`}
                             >
-                              <FileText size={16} strokeWidth={2.5} /> Ver Resultados
+                              {!estaPagada ? <><Lock size={16} /> Pago Requerido</> : <><FileText size={16} strokeWidth={2.5} /> Ver Resultados</>}
                             </button>
                           )}
                         </div>

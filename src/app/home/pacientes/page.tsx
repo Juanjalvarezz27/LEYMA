@@ -156,6 +156,21 @@ export default function PacientesPage() {
 
             {/* Cuerpo del Modal: Lista de Órdenes */}
             <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300">
+              
+              {pacienteSeleccionado.observaciones && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 md:p-5 flex gap-4">
+                  <div className="text-amber-500 mt-0.5 shrink-0">
+                    <FileText size={24} strokeWidth={2.5} />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-[13px] font-black text-amber-800 uppercase tracking-widest mb-1.5">Observaciones del Paciente</h3>
+                    <p className="text-sm text-amber-700 font-medium leading-relaxed whitespace-pre-wrap">
+                      {pacienteSeleccionado.observaciones}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <h3 className="text-[13px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                 <History size={16} /> Historial de Visitas ({pacienteSeleccionado.ordenes.length})
               </h3>

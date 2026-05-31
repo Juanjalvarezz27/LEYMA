@@ -6,6 +6,7 @@ import { seedTiposDescuento } from './seeders/tipoDescuentoSeeder';
 import { seedUsuarios } from './seeders/usuarioSeeder';
 import { seedPruebas } from './seeders/pruebaSeeder';
 import { seedServiciosExtra } from './seeders/servicioExtraSeeder';
+import { seedCostos } from './seeders/costoSeeder';
 
 const prisma = new PrismaClient();
 
@@ -33,6 +34,9 @@ async function main() {
 
     await seedServiciosExtra(prisma);
     console.log('Servicios extra cargados correctamente.');
+
+    await seedCostos(prisma);
+    console.log('Estructura de costos base cargada correctamente.');
 
     console.log('Sistema inicializado con exito.');
   } catch (error) {

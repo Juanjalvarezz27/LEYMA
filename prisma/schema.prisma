@@ -63,6 +63,7 @@ model Prueba {
   nombre             String             
   
   precioUSD          Float?             
+  margenGanancia     Float?             // Opcional, para sugerencia de precios
   
   unidades           String?            
   valoresReferencia  String?            
@@ -75,6 +76,7 @@ model Prueba {
   
   detallesOrden      DetalleOrden[]     
   valoresResultados  ValorResultado[]
+  insumosAsociados   PruebaInsumo[]     // Relación con insumos
 }
 
 // --- MODELOS PRINCIPALES ---
@@ -237,4 +239,38 @@ model ServicioEnOrden {
   servicio           ServicioExtra @relation(fields: [servicioId], references: [id])
   cantidad           Int           @default(1)
   precioCongeladoUSD Float         // Precio al momento de crear la orden
+}
+
+// --- ESTRUCTURA DE COSTOS (Módulo Admin) ---
+
+model CostoFijo {
+  id              Int      @id @default(autoincrement())
+  nombre          String   @unique
+  montoMensualUSD Float
+  activo          Boolean  @default(true)
+}
+
+model ConfiguracionLaboratorio {
+  id                            Int   @id @default(autoincrement())
+  volumenPruebasMensualEstimado Int   @default(1000)
+}
+
+model Insumo {
+  id               Int            @id @default(autoincrement())
+  nombre           String         @unique
+  unidadMedida     String         // ej. "ml", "und", "kit"
+  costoUnitarioUSD Float
+  activo           Boolean        @default(true)
+  pruebasAsociadas PruebaInsumo[]
+}
+
+model PruebaInsumo {
+  id            String  @id @default(cuid())
+  pruebaId      String
+  prueba        Prueba  @relation(fields: [pruebaId], references: [id], onDelete: Cascade)
+  insumoId      Int
+  insumo        Insumo  @relation(fields: [insumoId], references: [id], onDelete: Cascade)
+  cantidadUsada Float
+
+  @@unique([pruebaId, insumoId])
 }

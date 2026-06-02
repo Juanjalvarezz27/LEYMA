@@ -27,12 +27,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "La cédula es obligatoria para adultos" }, { status: 400 });
     }
 
+    const fechaNacimiento = new Date(body.fechaNacimiento);
+    if (isNaN(fechaNacimiento.getTime())) {
+      return NextResponse.json({ error: "La fecha de nacimiento proporcionada es inválida." }, { status: 400 });
+    }
+
     const nuevoPaciente = await prisma.paciente.create({
       data: {
         // Si es bebe o la cedula esta vacia, guardamos NULL para no romper el Unique de la DB
         cedula: (body.esBebe || !cedulaLimpia) ? null : cedulaLimpia,
         nombreCompleto: body.nombreCompleto.toUpperCase(),
-        fechaNacimiento: new Date(body.fechaNacimiento),
+        fechaNacimiento: fechaNacimiento,
         esBebe: body.esBebe,
         sexo: body.sexo,
         telefono: body.telefono || null,
@@ -44,9 +49,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json(nuevoPaciente);
   } catch (error: any) {
+    console.error("ERROR POST /api/pacientes:", error);
     if (error.code === 'P2002') {
       return NextResponse.json({ error: "Esta cédula ya está registrada" }, { status: 400 });
     }
-    return NextResponse.json({ error: "Error interno al registrar paciente" }, { status: 500 });
+    return NextResponse.json({ error: "Error interno al registrar paciente", details: error.message }, { status: 500 });
   }
 }

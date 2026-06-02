@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import { 
   Wallet, TrendingUp, TrendingDown, DollarSign, Filter, BarChart3, PlusCircle, 
   CreditCard, PieChart as PieIcon, LineChart as LineChartIcon, Loader2, 
-  ArrowDownCircle, ArrowUpCircle, Search, Landmark, ChevronLeft, ChevronRight, Trash2
+  ArrowDownCircle, ArrowUpCircle, Search, Landmark, ChevronLeft, ChevronRight, Trash2, Tag, ChevronDown, ChevronUp
 } from "lucide-react";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -40,6 +40,9 @@ export default function MonederoPage() {
   // Estados para búsqueda y paginación
   const [busquedaGasto, setBusquedaGasto] = useState("");
   const [paginaActual, setPaginaActual] = useState(1);
+  const [busquedaDescuento, setBusquedaDescuento] = useState("");
+  const [paginaActualDescuento, setPaginaActualDescuento] = useState(1);
+  const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
   const ELEMENTOS_POR_PAGINA = 30;
 
   const fetchMonedero = async () => {
@@ -58,6 +61,7 @@ export default function MonederoPage() {
       const data = await res.json();
       setStats(data);
       setPaginaActual(1); // Reiniciar a la primera página cuando cambie el período global
+      setPaginaActualDescuento(1);
     } catch (error) {
       toast.error("Error al cargar las finanzas");
     } finally {
@@ -103,6 +107,10 @@ export default function MonederoPage() {
     setPaginaActual(1);
   }, [busquedaGasto]);
 
+  useEffect(() => {
+    setPaginaActualDescuento(1);
+  }, [busquedaDescuento]);
+
   const aplicarFiltroCustom = () => {
     if (!fechaInicio || !fechaFin) return toast.warning("Seleccione ambas fechas");
     fetchMonedero();
@@ -138,6 +146,51 @@ export default function MonederoPage() {
 
   // 3. Cantidad total de páginas
   const totalPaginas = Math.ceil(todosLosGastosFiltrados.length / ELEMENTOS_POR_PAGINA) || 1;
+
+  // Lógica para Descuentos (AGRUPADOS POR ORDEN)
+  const ordenesConDescuentosFiltradas = useMemo(() => {
+    const todosLosDescuentos = stats?.historialDescuentos || [];
+    
+    const agrupados: Record<string, any> = {};
+    let totalFiltrados = 0; // Para el total del resumen
+    todosLosDescuentos.forEach((d: any) => {
+        if (!agrupados[d.ordenId]) {
+            agrupados[d.ordenId] = {
+                ordenId: d.ordenId,
+                fecha: d.fecha,
+                paciente: d.paciente,
+                totalDescuentoUSD: 0,
+                totalDescuentoBS: 0,
+                descuentos: []
+            };
+        }
+        agrupados[d.ordenId].totalDescuentoUSD += d.montoUSD;
+        agrupados[d.ordenId].totalDescuentoBS += d.montoBS;
+        agrupados[d.ordenId].descuentos.push(d);
+    });
+
+    const listAgrupados = Object.values(agrupados).sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+
+    if (!busquedaDescuento) return listAgrupados;
+    
+    return listAgrupados.filter((o: any) => 
+      o.paciente?.toLowerCase().includes(busquedaDescuento.toLowerCase()) ||
+      o.ordenId?.toString().includes(busquedaDescuento) ||
+      o.descuentos.some((d: any) => d.motivo?.toLowerCase().includes(busquedaDescuento.toLowerCase()) || d.detalleNombre?.toLowerCase().includes(busquedaDescuento.toLowerCase()))
+    );
+  }, [stats, busquedaDescuento]);
+
+  const ordenesPaginadas = useMemo(() => {
+    const indiceInicio = (paginaActualDescuento - 1) * ELEMENTOS_POR_PAGINA;
+    const indiceFin = indiceInicio + ELEMENTOS_POR_PAGINA;
+    return ordenesConDescuentosFiltradas.slice(indiceInicio, indiceFin);
+  }, [ordenesConDescuentosFiltradas, paginaActualDescuento]);
+
+  const totalPaginasDescuento = Math.ceil(ordenesConDescuentosFiltradas.length / ELEMENTOS_POR_PAGINA) || 1;
+
+  const toggleOrder = (ordenId: string) => {
+    setExpandedOrders(prev => ({...prev, [ordenId]: !prev[ordenId]}));
+  };
 
   const ingresosUSD = stats?.kpis?.totalIngresosUSD ?? 0;
   const ingresosBS = stats?.kpis?.totalIngresosBS ?? 0;
@@ -263,7 +316,7 @@ export default function MonederoPage() {
               </div>
             </div>
             <div className="w-full" style={{ height: 240, minHeight: 240 }}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <BarChart data={stats?.graficoTendencia || []}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{fill: '#94A3B8', fontSize: 11}} dy={10} />
@@ -286,7 +339,7 @@ export default function MonederoPage() {
                 {(stats?.graficoIngresos || []).length === 0 ? (
                   <p className="text-sm font-bold text-slate-400">Sin ingresos.</p>
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <PieChart>
                       <Pie data={stats?.graficoIngresos || []} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={5} dataKey="value" stroke="none">
                         {(stats?.graficoIngresos || []).map((_: any, i: number) => <Cell key={i} fill={PALETA_INGRESOS[i % PALETA_INGRESOS.length]} />)}
@@ -307,7 +360,7 @@ export default function MonederoPage() {
                 {(stats?.graficoGastos || []).length === 0 ? (
                   <p className="text-sm font-bold text-slate-400">Sin salidas registradas.</p>
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <PieChart>
                       <Pie data={stats?.graficoGastos || []} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={5} dataKey="value" stroke="none">
                         {(stats?.graficoGastos || []).map((_: any, i: number) => <Cell key={i} fill={PALETA_GASTOS[i % PALETA_GASTOS.length]} />)}
@@ -447,6 +500,181 @@ export default function MonederoPage() {
               <div className="flex items-center gap-3">
                 <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Total Egresos:</span>
                 <span className="text-2xl font-black text-red-500">-{formatMoney(todosLosGastosFiltrados.reduce((acc: number, curr: any) => acc + curr.montoUSD, 0))}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* HISTORIAL GENERAL DE DESCUENTOS CON PAGINACIÓN */}
+          <div className="bg-white rounded-[24px] border border-slate-200/80 shadow-sm overflow-hidden mt-6">
+            <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-black text-[#1D1D1F] flex items-center gap-2">
+                  <Tag className="text-red-500" size={24} /> Auditoría de Descuentos
+                </h2>
+                <p className="text-sm font-medium text-slate-500 mt-1">Histórico de descuentos aplicados paginado de 30 en 30.</p>
+              </div>
+
+              {/* Barra de Búsqueda Local */}
+              <div className="relative w-full lg:w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <input 
+                  type="text"
+                  placeholder="Filtrar por paciente, motivo u orden..."
+                  value={busquedaDescuento}
+                  onChange={(e) => setBusquedaDescuento(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-[#1D1D1F] focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left border-collapse min-w-[700px]">
+                <thead>
+                  <tr className="bg-white text-xs uppercase tracking-widest text-slate-400 font-black border-b border-slate-100">
+                    <th className="px-8 py-5">Fecha y Orden</th>
+                    <th className="px-8 py-5">Paciente</th>
+                    <th className="px-8 py-5">Tipo / Detalle</th>
+                    <th className="px-8 py-5">Motivo</th>
+                    <th className="px-8 py-5 text-right">Equivalente (BS)</th>
+                    <th className="px-8 py-5 text-right">Monto (USD)</th>
+                  </tr>
+                </thead>
+                <tbody className="">
+                  {ordenesPaginadas.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-8 py-16 text-center text-slate-400 font-bold text-base">
+                        No se encontraron registros de descuentos en este rango.
+                      </td>
+                    </tr>
+                  ) : (
+                    ordenesPaginadas.map((orden: any) => (
+                      <Fragment key={orden.ordenId}>
+                        <tr 
+                          onClick={() => toggleOrder(orden.ordenId)}
+                          className={`border-b border-slate-50 transition-colors group cursor-pointer ${expandedOrders[orden.ordenId] ? 'bg-red-50/50' : 'hover:bg-slate-50'}`}
+                        >
+                          <td className="px-8 py-5">
+                            <div className="flex flex-col">
+                              <span className="text-base font-black text-slate-700">{new Date(orden.fecha).toLocaleDateString('es-VE')}</span>
+                              <span className="text-xs font-bold text-slate-400 uppercase tracking-tight">Orden #{orden.ordenId}</span>
+                            </div>
+                          </td>
+                          
+                          <td className="px-8 py-5 max-w-[200px] whitespace-normal break-words">
+                            <span className="text-base font-medium text-[#1D1D1F] block">
+                              {orden.paciente}
+                            </span>
+                          </td>
+                          
+                          <td className="px-8 py-5">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                              <span className="text-sm font-bold text-slate-600">
+                                {orden.descuentos.length} {orden.descuentos.length === 1 ? 'Descuento' : 'Descuentos'}
+                              </span>
+                            </div>
+                          </td>
+
+                          <td className="px-8 py-5">
+                            <button className="text-red-500 flex items-center gap-1 text-sm font-bold">
+                              <span className={`transition-transform duration-300 ${expandedOrders[orden.ordenId] ? 'rotate-180' : 'rotate-0'}`}>
+                                <ChevronDown size={16} />
+                              </span>
+                              {expandedOrders[orden.ordenId] ? 'Ocultar' : 'Ver Detalles'}
+                            </button>
+                          </td>
+
+                          <td className="px-8 py-5 text-right whitespace-nowrap">
+                            <span className="text-base font-bold text-slate-500">{formatMoney(orden.totalDescuentoBS, true)}</span>
+                          </td>
+                          <td className="px-8 py-5 text-right whitespace-nowrap">
+                            <span className="text-lg font-black text-red-500">-{formatMoney(orden.totalDescuentoUSD)}</span>
+                          </td>
+                        </tr>
+                        
+                        {/* Nested Accordeon - Single Row with ColSpan */}
+                        <tr className="border-0">
+                          <td colSpan={6} className="p-0 border-0">
+                            <div className={`grid transition-all duration-300 ease-in-out ${expandedOrders[orden.ordenId] ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                              <div className="overflow-hidden">
+                                <div className="bg-slate-50 border-l-4 border-l-red-500 shadow-inner">
+                                  <div className="p-6 flex flex-col gap-3">
+                                    {orden.descuentos.map((d: any) => {
+                                    const isPorcentaje = d.motivo?.toUpperCase().includes('PORCENTAJE') || d.motivo === '%';
+                                    
+                                    return (
+                                      <div key={d.id} className="flex flex-col lg:flex-row lg:items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm gap-4 hover:border-red-200 transition-colors">
+                                        <div className="flex items-center gap-4 lg:w-1/3">
+                                          <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                                            <Tag className="text-red-500" size={16} />
+                                          </div>
+                                          <div className="flex flex-col">
+                                            <span className="text-sm font-black text-slate-700">{d.tipo === 'GENERAL' ? 'Descuento General' : d.detalleNombre}</span>
+                                            <span className="text-xs font-bold text-slate-400">{d.motivo}</span>
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="flex items-center lg:justify-center lg:w-1/3">
+                                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-50 border border-red-100">
+                                            <span className="text-xs font-bold text-red-400 uppercase">Valor Aplicado:</span>
+                                            <span className="text-sm font-black text-red-600">{isPorcentaje ? `${d.valorOriginal}%` : `$${d.valorOriginal}`}</span>
+                                          </div>
+                                        </div>
+
+                                        <div className="flex flex-col items-start lg:items-end lg:w-1/3">
+                                          <span className="text-lg font-black text-red-500">-{formatMoney(d.montoUSD)}</span>
+                                          <span className="text-xs font-bold text-slate-400">{formatMoney(d.montoBS, true)}</span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      </Fragment>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* CONTROLADORES DE PAGINACIÓN */}
+            {totalPaginasDescuento > 1 && (
+              <div className="px-8 py-4 bg-white border-t border-slate-100 flex items-center justify-between">
+                <span className="text-sm font-bold text-slate-500">
+                  Página <span className="font-black text-[#1D1D1F]">{paginaActualDescuento}</span> de <span className="font-black text-[#1D1D1F]">{totalPaginasDescuento}</span>
+                </span>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPaginaActualDescuento(p => Math.max(p - 1, 1))}
+                    disabled={paginaActualDescuento === 1}
+                    className="p-2 border border-slate-200 rounded-xl bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white transition-colors"
+                  >
+                    <ChevronLeft size={18} strokeWidth={2.5} />
+                  </button>
+                  <button
+                    onClick={() => setPaginaActualDescuento(p => Math.min(p + 1, totalPaginasDescuento))}
+                    disabled={paginaActualDescuento === totalPaginasDescuento}
+                    className="p-2 border border-slate-200 rounded-xl bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white transition-colors"
+                  >
+                    <ChevronRight size={18} strokeWidth={2.5} />
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* Resumen al pie de la tabla de descuentos */}
+            <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+              <span className="text-sm font-bold text-slate-500 italic">
+                Mostrando del {(paginaActualDescuento - 1) * ELEMENTOS_POR_PAGINA + 1} al {Math.min(paginaActualDescuento * ELEMENTOS_POR_PAGINA, ordenesConDescuentosFiltradas.length)} de {ordenesConDescuentosFiltradas.length} órdenes.
+              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Total Descuentos:</span>
+                <span className="text-2xl font-black text-red-500">-{formatMoney(ordenesConDescuentosFiltradas.reduce((acc: number, curr: any) => acc + curr.totalDescuentoUSD, 0))}</span>
               </div>
             </div>
           </div>

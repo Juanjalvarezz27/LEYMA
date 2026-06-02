@@ -183,7 +183,21 @@ function RegistroContent() {
       return;
     }
     const [dia, mes, ano] = formData.fechaNacimiento.split('/');
-    const fechaISO = `${ano}-${mes}-${dia}T12:00:00Z`; 
+    
+    // Validación lógica de fecha (meses entre 1 y 12, días entre 1 y 31)
+    const mesNum = parseInt(mes, 10);
+    const diaNum = parseInt(dia, 10);
+    if (mesNum < 1 || mesNum > 12 || diaNum < 1 || diaNum > 31) {
+      toast.error("Fecha inválida: verifique que el mes o el día existan.");
+      return;
+    }
+
+    const fechaISO = `${ano}-${mes}-${dia}T12:00:00Z`;
+    const dateCheck = new Date(fechaISO);
+    if (isNaN(dateCheck.getTime())) {
+      toast.error("La fecha ingresada no existe en el calendario.");
+      return;
+    }
 
     setGuardandoPaciente(true);
     try {

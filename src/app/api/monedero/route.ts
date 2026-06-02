@@ -52,6 +52,13 @@ export async function GET(req: Request) {
         paciente: { select: { nombreCompleto: true } },
         pagos: {
           include: { metodo: true }
+        },
+        tipoDescuento: true,
+        detalles: {
+          include: {
+            tipoDescuento: true,
+            prueba: { select: { nombre: true } }
+          }
         }
       },
       orderBy: { fechaCreacion: 'desc' }
@@ -150,6 +157,61 @@ export async function GET(req: Request) {
 
     const historial = historialRaw.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
 
+    // HISTORIAL DESCUENTOS
+    const historialDescuentosRaw: any[] = [];
+    ingresos.forEach(orden => {
+      // Descuento general
+      if (orden.descuentoGeneral > 0) {
+        let montoDescuentoUSD = Number(orden.descuentoGeneral) || 0;
+        const motivo = orden.tipoDescuento?.nombre || 'Descuento General';
+        if (motivo.toUpperCase().includes('PORCENTAJE') || motivo.toUpperCase() === '%') {
+          const subtotal = Number(orden.subtotalUSD) || 0;
+          montoDescuentoUSD = (subtotal * montoDescuentoUSD) / 100;
+        }
+
+        historialDescuentosRaw.push({
+          id: `desc-gen-${orden.id}`,
+          ordenId: orden.id,
+          fecha: orden.fechaCreacion,
+          paciente: orden.paciente.nombreCompleto,
+          tipo: 'GENERAL',
+          motivo: motivo,
+          valorOriginal: orden.descuentoGeneral,
+          montoUSD: montoDescuentoUSD,
+          montoBS: montoDescuentoUSD * tasaBCV,
+        });
+      }
+      
+      // Descuentos por detalle
+      if (orden.detalles) {
+        orden.detalles.forEach(detalle => {
+          if (detalle.descuento > 0) {
+            let montoDescuentoUSD = Number(detalle.descuento) || 0;
+            const motivo = detalle.tipoDescuento?.nombre || `Descuento en Prueba`;
+            if (motivo.toUpperCase().includes('PORCENTAJE') || motivo.toUpperCase() === '%') {
+              const precioTotal = (Number(detalle.precioCongeladoUSD) || 0) * (Number(detalle.cantidad) || 1);
+              montoDescuentoUSD = (precioTotal * montoDescuentoUSD) / 100;
+            }
+
+            historialDescuentosRaw.push({
+              id: `desc-det-${detalle.id}`,
+              ordenId: orden.id,
+              fecha: orden.fechaCreacion,
+              paciente: orden.paciente.nombreCompleto,
+              tipo: 'PRUEBA',
+              motivo: motivo,
+              detalleNombre: detalle.prueba?.nombre || 'Prueba',
+              valorOriginal: detalle.descuento,
+              montoUSD: montoDescuentoUSD,
+              montoBS: montoDescuentoUSD * tasaBCV,
+            });
+          }
+        });
+      }
+    });
+
+    const historialDescuentos = historialDescuentosRaw.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
+
     return NextResponse.json({
       tasaBCV,
       kpis: { totalIngresosUSD, totalIngresosBS, totalGastosUSD, totalGastosBS, balanceNetoUSD, balanceNetoBS },
@@ -157,6 +219,7 @@ export async function GET(req: Request) {
       graficoGastos,
       graficoIngresos, 
       historial, // <-- Ahora es exclusivamente el histórico de los gastos del período
+      historialDescuentos, // <-- Historial de descuentos
       metodosPago 
     });
 

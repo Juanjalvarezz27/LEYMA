@@ -187,8 +187,8 @@ export default function TabInsumos() {
           </button>
         </div>
       ) : (
-        <form onSubmit={handleAgregar} className="bg-white border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-3xl p-6 md:p-8 mb-8 transform transition-all relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#0071E3] to-blue-400"></div>
+        <form onSubmit={handleAgregar} className="bg-white border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-3xl p-6 md:p-8 mb-8 transform transition-all relative z-20">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#0071E3] to-blue-400 rounded-t-3xl"></div>
           <h3 className="font-black text-slate-800 mb-6 text-lg">Registrar Nuevo Material</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="md:col-span-1">
@@ -215,7 +215,7 @@ export default function TabInsumos() {
               </div>
               
               {isDropdownOpen && (
-                <div className="absolute z-10 w-full mt-2 bg-white border border-slate-100 rounded-2xl shadow-xl py-2">
+                <div className="absolute z-50 w-full mt-2 bg-white border border-slate-100 rounded-2xl shadow-xl py-2">
                   {unidadesOptions.map(option => (
                     <div 
                       key={option.value}

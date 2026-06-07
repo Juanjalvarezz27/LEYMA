@@ -24,7 +24,7 @@ export async function GET() {
     });
 
     return NextResponse.json(ordenes);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al obtener pendientes:", error);
     return NextResponse.json({ error: "Error interno al cargar pendientes" }, { status: 500 });
   }

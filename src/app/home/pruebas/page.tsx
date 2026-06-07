@@ -46,8 +46,8 @@ export default function PruebasPage() {
       const res = await fetch("/api/pruebas");
       const data = await res.json();
       setExamenes(data);
-    } catch (error) {
-      toast.error("Error al cargar el catálogo de pruebas");
+    } catch (error: any) {
+      toast.error(error?.message || "Error al cargar el catálogo de pruebas");
     } finally {
       setCargando(false);
     }
@@ -58,8 +58,8 @@ export default function PruebasPage() {
       const res = await fetch("/api/servicios-extra?todos=true");
       const data = await res.json();
       setServicios(data);
-    } catch (error) {
-      toast.error("Error al cargar servicios extra");
+    } catch (error: any) {
+      toast.error(error?.message || "Error al cargar servicios extra");
     } finally {
       setCargandoServicios(false);
     }
@@ -134,8 +134,8 @@ export default function PruebasPage() {
         toast.info(estadoActual ? "Subcategoría inhabilitada" : "Subcategoría activada");
         fetchExamenes();
       }
-    } catch (error) {
-      toast.error("Error al cambiar estado");
+    } catch (error: any) {
+      toast.error(error?.message || "Error al cambiar estado");
     }
   };
 
@@ -150,8 +150,8 @@ export default function PruebasPage() {
         toast.info(estadoActual ? "Prueba individual inhabilitada" : "Prueba individual activada");
         fetchExamenes();
       }
-    } catch (error) {
-      toast.error("Error al cambiar estado de la prueba");
+    } catch (error: any) {
+      toast.error(error?.message || "Error al cambiar estado de la prueba");
     }
   };
 
@@ -188,8 +188,8 @@ export default function PruebasPage() {
         toast.info(!estadoActual ? "Servicio activado" : "Servicio inhabilitado");
         fetchServicios();
       }
-    } catch (error) {
-      toast.error("Error al cambiar estado");
+    } catch (error: any) {
+      toast.error(error?.message || "Error al cambiar estado");
     }
   };
 

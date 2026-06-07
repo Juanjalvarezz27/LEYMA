@@ -44,8 +44,8 @@ export default function TabInsumos() {
       const res = await fetch("/api/costos/insumos");
       const data = res.ok ? await res.json() : [];
       setInsumos(Array.isArray(data) ? data : []);
-    } catch (error) {
-      toast.error("Error al cargar insumos");
+    } catch (error: any) {
+      toast.error(error?.message || "Error al cargar insumos");
     } finally {
       setLoading(false);
     }
@@ -80,8 +80,8 @@ export default function TabInsumos() {
         fetchInsumos();
         setCurrentPage(1); // Go back to first page
       }
-    } catch (error) {
-      toast.error("Error al agregar");
+    } catch (error: any) {
+      toast.error(error?.message || "Error al agregar");
     }
   };
 
@@ -98,8 +98,8 @@ export default function TabInsumos() {
         toast.success("Insumo eliminado");
         fetchInsumos();
       }
-    } catch (error) {
-      toast.error("Error al eliminar");
+    } catch (error: any) {
+      toast.error(error?.message || "Error al eliminar");
     } finally {
       setIsDeleteModalOpen(false);
       setInsumoToDelete(null);
@@ -119,8 +119,8 @@ export default function TabInsumos() {
         setEditId(null);
         fetchInsumos();
       }
-    } catch (error) {
-      toast.error("Error al actualizar");
+    } catch (error: any) {
+      toast.error(error?.message || "Error al actualizar");
     }
   };
 

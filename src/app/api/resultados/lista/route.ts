@@ -43,7 +43,7 @@ export async function GET() {
     });
 
     return NextResponse.json(ordenes);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al obtener lista de resultados:", error);
     return NextResponse.json({ error: "Error interno al cargar la lista" }, { status: 500 });
   }

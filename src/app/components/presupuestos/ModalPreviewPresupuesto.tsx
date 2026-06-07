@@ -10,6 +10,7 @@ import PresupuestoDocument from "./PresupuestoDocument";
 interface ModalPreviewPresupuestoProps {
   paciente: { nombre: string, cedula: string, telefono?: string };
   pruebas: any[];
+  serviciosExtras?: any[];
   tasaBCV: number;
   descuento: number;
   subtotal: number;
@@ -20,6 +21,7 @@ interface ModalPreviewPresupuestoProps {
 export default function ModalPreviewPresupuesto({ 
   paciente, 
   pruebas, 
+  serviciosExtras = [],
   tasaBCV, 
   descuento, 
   subtotal, 
@@ -38,6 +40,7 @@ export default function ModalPreviewPresupuesto({
         <PresupuestoDocument 
           paciente={paciente} 
           pruebas={pruebas} 
+          serviciosExtras={serviciosExtras}
           tasaBCV={tasaBCV} 
           descuento={descuento} 
           subtotal={subtotal} 
@@ -62,6 +65,7 @@ export default function ModalPreviewPresupuesto({
         <PresupuestoDocument 
           paciente={paciente} 
           pruebas={pruebas} 
+          serviciosExtras={serviciosExtras}
           tasaBCV={tasaBCV} 
           descuento={descuento} 
           subtotal={subtotal} 
@@ -115,6 +119,7 @@ export default function ModalPreviewPresupuesto({
     const data = {
       p: { n: paciente.nombre, c: paciente.cedula, t: paciente.telefono },
       e: pruebas.map(pr => [pr.nombre, pr.precioUSD, pr.cantidad || 1]),
+      se: serviciosExtras.map(s => [s.nombre, s.precioUSD, s.cantidad || 1]),
       b: tasaBCV,
       d: descuento,
       s: subtotal,
@@ -175,6 +180,7 @@ export default function ModalPreviewPresupuesto({
           <PresupuestoDocument 
             paciente={paciente} 
             pruebas={pruebas} 
+            serviciosExtras={serviciosExtras}
             tasaBCV={tasaBCV} 
             descuento={descuento} 
             subtotal={subtotal} 

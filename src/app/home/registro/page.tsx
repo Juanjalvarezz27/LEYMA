@@ -23,6 +23,7 @@ function RegistroContent() {
   const [cedulaBusqueda, setCedulaBusqueda] = useState("");
   const [buscando, setBuscando] = useState(false);
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState<any>(null);
+  const [resultadosBusqueda, setResultadosBusqueda] = useState<any[]>([]);
   const [isCreandoNuevo, setIsCreandoNuevo] = useState(false);
   const [guardandoPaciente, setGuardandoPaciente] = useState(false);
   const [formData, setFormData] = useState({
@@ -79,8 +80,8 @@ function RegistroContent() {
         });
         
         setPruebasCatalogo(listaAplanada);
-      } catch (e) {
-        toast.error("Error al cargar el catálogo de pruebas");
+      } catch (e: any) {
+        toast.error(e?.message || "Error al cargar el catálogo de pruebas");
       }
     };
     fetchCatalogo();
@@ -95,7 +96,7 @@ function RegistroContent() {
           const data = await res.json();
           setServiciosCatalogo(data);
         }
-      } catch (e) {
+      } catch (e: any) {
         // Silencioso — los servicios son opcionales
       }
     };
@@ -139,8 +140,8 @@ function RegistroContent() {
           } else {
             toast.error(orden.error || "Error al obtener la orden");
           }
-        } catch (error) {
-          toast.error("No se pudo cargar la orden para editar");
+        } catch (error: any) {
+          toast.error(error?.message || "No se pudo cargar la orden para editar");
         }
       };
       cargarOrdenParaEdicion();
@@ -151,23 +152,47 @@ function RegistroContent() {
     if (e) e.preventDefault();
     if (!cedulaBusqueda.trim()) return;
     setBuscando(true);
+    setResultadosBusqueda([]);
     try {
-      const res = await fetch(`/api/pacientes?cedula=${cedulaBusqueda}`);
+      const res = await fetch(`/api/pacientes?q=${cedulaBusqueda}`);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Error al buscar paciente");
+      }
       const data = await res.json();
-      if (data) {
-        setPacienteSeleccionado(data);
-        setIsCreandoNuevo(false);
-        toast.success("Paciente encontrado");
+      
+      if (Array.isArray(data) && data.length > 0) {
+        if (data.length === 1) {
+          setPacienteSeleccionado(data[0]);
+          setIsCreandoNuevo(false);
+          toast.success("Paciente encontrado");
+        } else {
+          setResultadosBusqueda(data);
+          toast.info("Múltiples coincidencias. Seleccione un paciente de la lista.");
+        }
       } else {
         toast.info("Paciente no registrado. Complete los datos.");
-        setFormData({ ...formData, cedula: cedulaBusqueda, esBebe: false });
+        const isNumeric = /^\d+$/.test(cedulaBusqueda.trim());
+        setFormData({ 
+          ...formData, 
+          cedula: isNumeric ? cedulaBusqueda.trim() : "", 
+          nombreCompleto: !isNumeric ? cedulaBusqueda.toUpperCase() : "",
+          esBebe: false 
+        });
         setIsCreandoNuevo(true);
       }
-    } catch (error) {
-      toast.error("Error de conexión al buscar paciente");
+    } catch (error: any) {
+      toast.error(error?.message || "Error de conexión al buscar paciente");
     } finally {
       setBuscando(false);
     }
+  };
+
+  const seleccionarDeLista = (paciente: any) => {
+    setPacienteSeleccionado(paciente);
+    setResultadosBusqueda([]);
+    setIsCreandoNuevo(false);
+    toast.success("Paciente seleccionado");
   };
 
   const iniciarRegistroSinCedula = () => {
@@ -222,6 +247,7 @@ function RegistroContent() {
   const limpiarSeleccion = () => {
     setPacienteSeleccionado(null);
     setCedulaBusqueda("");
+    setResultadosBusqueda([]);
     setIsCreandoNuevo(false);
     setPruebasSeleccionadas([]);
     setServiciosSeleccionados([]);
@@ -344,6 +370,8 @@ function RegistroContent() {
             cedulaBusqueda={cedulaBusqueda} setCedulaBusqueda={setCedulaBusqueda}
             buscando={buscando} buscarPaciente={buscarPaciente}
             iniciarRegistroSinCedula={iniciarRegistroSinCedula}
+            resultadosBusqueda={resultadosBusqueda}
+            seleccionarDeLista={seleccionarDeLista}
           />
         )}
         {pacienteSeleccionado && (
@@ -363,18 +391,18 @@ function RegistroContent() {
       </section>
 
       {pacienteSeleccionado && (
-        <SeleccionPruebas
-          pruebasCatalogo={pruebasCatalogo} pruebasSeleccionadas={pruebasSeleccionadas}
-          setPruebasSeleccionadas={setPruebasSeleccionadas} tasaBCV={tasaBCV}
-        />
-      )}
-
-      {pacienteSeleccionado && (
         <ServiciosExtras
           catalogo={serviciosCatalogo}
           seleccionados={serviciosSeleccionados}
           onCambio={setServiciosSeleccionados}
           tasaBCV={tasaBCV}
+        />
+      )}
+
+      {pacienteSeleccionado && (
+        <SeleccionPruebas
+          pruebasCatalogo={pruebasCatalogo} pruebasSeleccionadas={pruebasSeleccionadas}
+          setPruebasSeleccionadas={setPruebasSeleccionadas} tasaBCV={tasaBCV}
         />
       )}
 

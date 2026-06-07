@@ -60,8 +60,8 @@ export default function CierreCajaPage() {
       if (!res.ok) throw new Error("Error de red");
       setData(await res.json());
       setPaginaActual(1);
-    } catch (error) {
-      toast.error("Error al cargar el arqueo");
+    } catch (error: any) {
+      toast.error(error?.message || "Error al cargar el arqueo");
     } finally {
       setCargando(false);
     }

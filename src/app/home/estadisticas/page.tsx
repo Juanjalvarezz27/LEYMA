@@ -14,10 +14,10 @@ import { toast } from "react-toastify";
 
 const PALETA_COLORES = ['#0071E3', '#10B981', '#FF9500', '#8E44AD', '#FF3B30'];
 
-type PeriodoType = "HOY" | "7DIAS" | "30DIAS" | "MES_ACTUAL" | "CUSTOM";
+type PeriodoType = "HOY" | "7DIAS" | "30DIAS" | "MES_ACTUAL" | "HISTORICO" | "CUSTOM";
 
 export default function EstadisticasPage() {
-  const [periodo, setPeriodo] = useState<PeriodoType>("7DIAS");
+  const [periodo, setPeriodo] = useState<PeriodoType>("HISTORICO");
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   
@@ -43,9 +43,9 @@ export default function EstadisticasPage() {
       if (!res.ok) throw new Error("Error de red");
       const data = await res.json();
       setStats(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error al cargar métricas:", error);
-      toast.error("Error al cargar las métricas");
+      toast.error(error?.message || "Error al cargar las métricas");
     } finally {
       setCargando(false);
     }
@@ -97,6 +97,7 @@ export default function EstadisticasPage() {
               { id: "7DIAS", label: "7 Días" },
               { id: "30DIAS", label: "30 Días" },
               { id: "MES_ACTUAL", label: "Este Mes" },
+              { id: "HISTORICO", label: "Histórico" },
               { id: "CUSTOM", label: "Personalizado" }
             ].map((opt) => (
               <button
@@ -314,31 +315,26 @@ export default function EstadisticasPage() {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
             <div className="bg-white p-6 rounded-[24px] border border-slate-200/80 shadow-sm flex flex-col">
               <h3 className="text-lg font-black text-[#1D1D1F] flex items-center gap-2 mb-1">
-                <CheckCircle2 size={20} className="text-[#0071E3]" /> Validación de Resultados (QC)
+                <TrendingUp size={20} className="text-[#10B981]" /> Top Categorías
               </h3>
-              <p className="text-xs text-slate-500 font-medium mb-6">Proporción de pruebas firmadas vs pendientes de revisión técnica.</p>
+              <p className="text-xs text-slate-500 font-medium mb-6">Áreas de procesamiento con mayor demanda.</p>
               
-              <div className="flex-1 relative flex items-center justify-center w-full" style={{ minHeight: 220 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={stats?.graficoControlCalidad || []}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={65}
-                      outerRadius={85}
-                      paddingAngle={5}
-                      dataKey="value"
-                      stroke="none"
-                    >
-                      {(stats?.graficoControlCalidad || []).map((entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={PALETA_COLORES[index % PALETA_COLORES.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
-                    <Legend verticalAlign="bottom" height={36} />
-                  </PieChart>
-                </ResponsiveContainer>
+              <div className="flex-1 flex flex-col justify-center gap-4">
+                {(stats?.topCategorias || []).map((cat: any, index: number) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-[#F5F5F7] rounded-xl border border-slate-200/40">
+                    <div className="flex items-center gap-3">
+                      <span className="w-6 h-6 rounded-full bg-[#10B981]/10 text-[#10B981] font-black text-xs flex items-center justify-center">
+                        {index + 1}
+                      </span>
+                      <span className="text-xs font-black text-[#1D1D1F] truncate max-w-[200px] uppercase" title={cat.nombre}>
+                        {cat.nombre}
+                      </span>
+                    </div>
+                    <span className="text-xs font-bold text-slate-600 bg-white px-2.5 py-1 rounded-md border border-slate-200 shadow-sm">
+                      {cat.cantidad} Procesamientos
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -396,56 +392,36 @@ export default function EstadisticasPage() {
             </div>
           </div>
 
-          {/* LISTAS TOP 5: 2 COLUMNAS */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-[24px] border border-slate-200/80 shadow-sm flex flex-col">
-              <h3 className="text-lg font-black text-[#1D1D1F] flex items-center gap-2 mb-1">
-                <ClipboardList size={20} className="text-[#0071E3]" /> Top 5 Exámenes
-              </h3>
-              <p className="text-xs text-slate-500 font-medium mb-6">Parámetros individuales más ordenados.</p>
-              
-              <div className="flex-1 flex flex-col justify-center gap-4">
-                {(stats?.topPruebas || []).map((prueba: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-[#F5F5F7] rounded-xl border border-slate-200/40">
+          {/* LISTA COMPLETA DE PRUEBAS */}
+          <div className="bg-white p-6 rounded-[24px] border border-slate-200/80 shadow-sm flex flex-col mb-8">
+            <h3 className="text-lg font-black text-[#1D1D1F] flex items-center gap-2 mb-1">
+              <ClipboardList size={20} className="text-[#0071E3]" /> Conteo General de Pruebas
+            </h3>
+            <p className="text-xs text-slate-500 font-medium mb-6">Listado completo de volumen de procesamiento por examen técnico.</p>
+            
+            <div className="flex-1 overflow-y-auto max-h-96 pr-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(stats?.todasLasPruebas || []).map((prueba: any, index: number) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-[#F5F5F7] hover:bg-white hover:shadow-md hover:border-[#0071E3]/20 rounded-xl border border-slate-200/60 transition-all group">
                     <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-full bg-[#0071E3]/10 text-[#0071E3] font-black text-xs flex items-center justify-center">
+                      <span className="w-6 h-6 rounded-full bg-[#0071E3]/10 text-[#0071E3] font-black text-xs flex items-center justify-center shrink-0">
                         {index + 1}
                       </span>
-                      <span className="text-xs font-black text-[#1D1D1F] truncate max-w-[200px] uppercase">
+                      <span className="text-xs font-black text-[#1D1D1F] group-hover:text-[#0071E3] transition-colors truncate max-w-[200px] uppercase" title={prueba.nombre}>
                         {prueba.nombre}
                       </span>
                     </div>
-                    <span className="text-xs font-bold text-slate-600 bg-white px-2.5 py-1 rounded-md border border-slate-200 shadow-sm">
+                    <span className="text-xs font-bold text-slate-600 bg-white px-2.5 py-1 rounded-md border border-slate-200 shadow-sm shrink-0">
                       {prueba.cantidad} Pruebas
                     </span>
                   </div>
                 ))}
               </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-[24px] border border-slate-200/80 shadow-sm flex flex-col">
-              <h3 className="text-lg font-black text-[#1D1D1F] flex items-center gap-2 mb-1">
-                <TrendingUp size={20} className="text-[#10B981]" /> Top 5 Categorías
-              </h3>
-              <p className="text-xs text-slate-500 font-medium mb-6">Áreas de procesamiento con mayor demanda.</p>
-              
-              <div className="flex-1 flex flex-col justify-center gap-4">
-                {(stats?.topCategorias || []).map((cat: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-[#F5F5F7] rounded-xl border border-slate-200/40">
-                    <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-full bg-[#10B981]/10 text-[#10B981] font-black text-xs flex items-center justify-center">
-                        {index + 1}
-                      </span>
-                      <span className="text-xs font-black text-[#1D1D1F] truncate max-w-[200px] uppercase">
-                        {cat.nombre}
-                      </span>
-                    </div>
-                    <span className="text-xs font-bold text-slate-600 bg-white px-2.5 py-1 rounded-md border border-slate-200 shadow-sm">
-                      {cat.cantidad} Procesamientos
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {(stats?.todasLasPruebas || []).length === 0 && (
+                <div className="text-center py-10 text-slate-400 font-bold">
+                  No hay pruebas procesadas en este período.
+                </div>
+              )}
             </div>
           </div>
 

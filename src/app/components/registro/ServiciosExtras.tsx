@@ -56,7 +56,7 @@ export default function ServiciosExtras({
     <section className="bg-white rounded-[24px] border border-slate-200/80 shadow-sm p-8 mb-6 animate-in fade-in duration-300">
       <div className="flex items-center gap-3 mb-6">
         <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 font-bold shrink-0">
-          <Syringe size={16} strokeWidth={2.5} />
+          2
         </div>
         <div>
           <h2 className="text-xl font-bold text-[#1D1D1F]">Servicios de Extracción</h2>
@@ -66,7 +66,7 @@ export default function ServiciosExtras({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="flex flex-col gap-3">
         {catalogo.map((servicio) => {
           const sel = seleccionados.find((s) => s.id === servicio.id);
           const activo = !!sel;
@@ -86,50 +86,54 @@ export default function ServiciosExtras({
                 }
               }}
               className={`
-                relative flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all duration-200 cursor-pointer
+                relative flex items-center justify-between gap-4 p-4 rounded-2xl border-2 text-left transition-all duration-200 cursor-pointer
                 ${activo
                   ? "border-amber-400 bg-amber-50 shadow-[0_0_0_4px_rgba(245,158,11,0.08)]"
                   : "border-slate-200 bg-[#F5F5F7]/60 hover:border-slate-300 hover:bg-white"
                 }
               `}
             >
-              {/* Icono */}
-              <div
-                className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                  activo ? "bg-amber-500 text-white" : "bg-slate-200/80 text-slate-500"
-                }`}
-              >
-                <Icono size={20} strokeWidth={2} />
-              </div>
+              <div className="flex items-center gap-4 flex-1">
+                {/* Icono */}
+                <div
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                    activo ? "bg-amber-500 text-white" : "bg-slate-200/80 text-slate-500"
+                  }`}
+                >
+                  <Icono size={22} strokeWidth={2} />
+                </div>
 
-              {/* Texto */}
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm font-bold leading-tight ${activo ? "text-amber-900" : "text-[#1D1D1F]"}`}>
-                  {servicio.nombre}
-                </p>
-                <p className={`text-base font-black mt-0.5 ${activo ? "text-amber-600" : "text-slate-600"}`}>
-                  ${servicio.precioUSD.toFixed(2)}
-                  <span className={`text-[11px] font-bold ml-1.5 ${activo ? "text-amber-500" : "text-slate-400"}`}>
-                    (Bs {(servicio.precioUSD * tasaBCV).toLocaleString("es-VE", { minimumFractionDigits: 2 })})
-                  </span>
-                </p>
+                {/* Texto */}
+                <div className="flex flex-col flex-1 min-w-0">
+                  <p className={`text-[15px] font-bold leading-tight ${activo ? "text-amber-900" : "text-[#1D1D1F]"}`}>
+                    {servicio.nombre}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`text-lg font-black ${activo ? "text-amber-600" : "text-slate-600"}`}>
+                      ${servicio.precioUSD.toFixed(2)}
+                    </span>
+                    <span className={`text-xs font-bold whitespace-nowrap ${activo ? "text-amber-500" : "text-slate-400"}`}>
+                      (Bs {(servicio.precioUSD * tasaBCV).toLocaleString("es-VE", { minimumFractionDigits: 2 })})
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* Controles de cantidad o Check */}
               {activo ? (
                 <div 
-                  className="flex items-center gap-2 bg-white rounded-lg border border-amber-200 p-1 shrink-0 shadow-sm" 
+                  className="flex items-center gap-3 bg-white rounded-xl border border-amber-200 p-1.5 shrink-0 shadow-sm" 
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <button type="button" onClick={() => updateCantidad(servicio, cantidad - 1)} className="w-7 h-7 flex items-center justify-center text-amber-600 hover:bg-amber-100 rounded-md font-black transition-colors">-</button>
-                  <span className="text-sm font-bold w-4 text-center text-amber-900">{cantidad}</span>
-                  <button type="button" onClick={() => updateCantidad(servicio, cantidad + 1)} className="w-7 h-7 flex items-center justify-center text-amber-600 hover:bg-amber-100 rounded-md font-black transition-colors">+</button>
+                  <button type="button" onClick={() => updateCantidad(servicio, cantidad - 1)} className="w-8 h-8 flex items-center justify-center text-amber-600 hover:bg-amber-100 rounded-lg font-black text-lg transition-colors">-</button>
+                  <span className="text-base font-black w-6 text-center text-amber-900">{cantidad}</span>
+                  <button type="button" onClick={() => updateCantidad(servicio, cantidad + 1)} className="w-8 h-8 flex items-center justify-center text-amber-600 hover:bg-amber-100 rounded-lg font-black text-lg transition-colors">+</button>
                 </div>
               ) : (
                 <CheckCircle2
-                  size={20}
+                  size={24}
                   strokeWidth={2.5}
-                  className="text-slate-300 shrink-0 opacity-50"
+                  className="text-slate-300 shrink-0 opacity-50 mr-2"
                 />
               )}
             </div>

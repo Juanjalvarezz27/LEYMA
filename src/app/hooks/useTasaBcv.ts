@@ -59,7 +59,7 @@ const useTasaBCV = (): TasaBCVState => {
 
       throw new Error('No se pudo obtener tasa de ninguna fuente');
 
-    } catch (apiError) {
+    } catch (apiError: any) {
       console.error('❌ Error en APIs:', apiError);
       
       // Intento 3: Usar localStorage si hay tasa guardada
@@ -72,7 +72,7 @@ const useTasaBCV = (): TasaBCVState => {
             return parsed.tasa;
           }
         }
-      } catch (localError) {
+      } catch (localError: any) {
         console.error('Error accediendo localStorage:', localError);
       }
 
@@ -100,13 +100,13 @@ const useTasaBCV = (): TasaBCVState => {
             tasa: nuevaTasa,
             fecha: new Date().toISOString()
           }));
-        } catch (storageError) {
+        } catch (storageError: any) {
           console.error('Error guardando en localStorage:', storageError);
         }
       } else {
         throw new Error('No se pudo obtener una tasa válida');
       }
-    } catch (err) {
+    } catch (err: any) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(`Error al obtener tasa: ${errorMessage}`);
       setTasa(TASA_POR_DEFECTO); // Usar tasa por defecto en caso de error

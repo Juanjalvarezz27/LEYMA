@@ -5,15 +5,24 @@ const prisma = new PrismaClient();
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const cedula = searchParams.get("cedula");
+  const q = searchParams.get("q") || searchParams.get("cedula");
 
-  if (!cedula) return NextResponse.json({ error: "Cédula no proporcionada" }, { status: 400 });
+  if (!q) return NextResponse.json({ error: "Término de búsqueda no proporcionado" }, { status: 400 });
 
   try {
-    const paciente = await prisma.paciente.findUnique({ where: { cedula } });
-    return NextResponse.json(paciente || null);
-  } catch (error) {
-    return NextResponse.json({ error: "Error al buscar el paciente" }, { status: 500 });
+    const pacientes = await prisma.paciente.findMany({
+      where: {
+        OR: [
+          { cedula: { contains: q } },
+          { nombreCompleto: { contains: q, mode: "insensitive" } }
+        ]
+      },
+      take: 10,
+      orderBy: { nombreCompleto: "asc" }
+    });
+    return NextResponse.json(pacientes);
+  } catch (error: any) {
+    return NextResponse.json({ error: "Error al buscar pacientes" }, { status: 500 });
   }
 }
 

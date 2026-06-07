@@ -30,8 +30,8 @@ export default function PacientesPage() {
       if (!res.ok) throw new Error("Error de red");
       const data = await res.json();
       setPacientes(data);
-    } catch (error) {
-      toast.error("Error al cargar la lista de pacientes.");
+    } catch (error: any) {
+      toast.error(error?.message || "Error al cargar la lista de pacientes.");
     } finally {
       setCargando(false);
     }

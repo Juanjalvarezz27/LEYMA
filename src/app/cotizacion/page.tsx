@@ -26,7 +26,7 @@ export default async function CotizacionPage({ searchParams }: { searchParams: a
     } else {
       datosCotizacion = raw;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error decoding cotizacion data", error);
     return notFound();
   }

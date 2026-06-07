@@ -17,7 +17,7 @@ import useTasaBCV from "../../hooks/useTasaBcv";
 
 const PALETA_GASTOS = ['#EF4444', '#F59E0B', '#8B5CF6', '#F43F5E', '#D946EF'];
 const PALETA_INGRESOS = ['#10B981', '#0EA5E9', '#3B82F6', '#14B8A6', '#06B6D4']; 
-type PeriodoType = "HOY" | "7DIAS" | "30DIAS" | "MES_ACTUAL" | "CUSTOM";
+type PeriodoType = "HOY" | "7DIAS" | "30DIAS" | "MES_ACTUAL" | "HISTORICO" | "CUSTOM";
 
 const formatearMetodo = (str: string) => {
   if (!str) return "N/A";
@@ -27,7 +27,7 @@ const formatearMetodo = (str: string) => {
 export default function MonederoPage() {
   const { tasa: tasaBCV, loading: loadingTasa } = useTasaBCV(); 
   
-  const [periodo, setPeriodo] = useState<PeriodoType>("7DIAS");
+  const [periodo, setPeriodo] = useState<PeriodoType>("HISTORICO");
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   
@@ -62,8 +62,8 @@ export default function MonederoPage() {
       setStats(data);
       setPaginaActual(1); // Reiniciar a la primera página cuando cambie el período global
       setPaginaActualDescuento(1);
-    } catch (error) {
-      toast.error("Error al cargar las finanzas");
+    } catch (error: any) {
+      toast.error(error?.message || "Error al cargar las finanzas");
     } finally {
       setCargando(false);
     }
@@ -242,7 +242,7 @@ export default function MonederoPage() {
           </button>
 
           <div className="flex items-center bg-[#F5F5F7] p-1.5 rounded-xl border border-slate-200/60 w-max">
-            {["HOY", "7DIAS", "30DIAS", "MES_ACTUAL", "CUSTOM"].map((opt) => (
+            {["HOY", "7DIAS", "30DIAS", "MES_ACTUAL", "HISTORICO", "CUSTOM"].map((opt) => (
               <button
                 key={opt}
                 onClick={() => setPeriodo(opt as PeriodoType)}
@@ -250,7 +250,7 @@ export default function MonederoPage() {
                   periodo === opt ? "bg-white text-[#0071E3] shadow-sm" : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                {opt === "CUSTOM" ? "Personalizado" : opt.replace('DIAS', ' Días').replace('_', ' ').toLowerCase()}
+                {opt === "CUSTOM" ? "Personalizado" : opt === "HISTORICO" ? "Histórico" : opt.replace('DIAS', ' Días').replace('_', ' ').toLowerCase()}
               </button>
             ))}
           </div>

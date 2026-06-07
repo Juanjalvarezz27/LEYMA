@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     if (!usuario) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
 
     return NextResponse.json(usuario);
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({ error: "Error al obtener perfil" }, { status: 500 });
   }
 }
@@ -68,7 +68,7 @@ export async function PUT(req: NextRequest) {
     });
 
     return NextResponse.json({ mensaje: "Perfil actualizado correctamente" });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({ error: "Error al actualizar perfil" }, { status: 500 });
   }
 }

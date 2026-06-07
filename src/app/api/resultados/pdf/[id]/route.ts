@@ -134,7 +134,7 @@ export async function GET(request: Request, { params }: { params: any }) {
         "Cache-Control": "no-store",
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error generando PDF en servidor:", error);
     return NextResponse.json(
       { error: "Error interno al generar el PDF" },

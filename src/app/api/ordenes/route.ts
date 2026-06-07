@@ -95,7 +95,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(nuevaOrden, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al crear la orden:", error);
     return NextResponse.json({ error: "Error interno al guardar la orden" }, { status: 500 });
   }

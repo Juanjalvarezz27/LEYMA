@@ -72,8 +72,8 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
       if (!res.ok) throw new Error();
       toast.success("¡Orden cerrada con éxito!");
       onSuccess(); 
-    } catch (error) {
-      toast.error("Error al guardar el pago.");
+    } catch (error: any) {
+      toast.error(error?.message || "Error al guardar el pago.");
       setGuardando(false);
     }
   };

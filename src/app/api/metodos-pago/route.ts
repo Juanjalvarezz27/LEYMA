@@ -9,7 +9,7 @@ export async function GET() {
       orderBy: { nombre: 'asc' }
     });
     return NextResponse.json(metodos);
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({ error: "Error al cargar métodos de pago" }, { status: 500 });
   }
 }

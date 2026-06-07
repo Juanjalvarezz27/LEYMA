@@ -107,7 +107,7 @@ export async function GET(req: Request) {
       }))
     });
 
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
@@ -161,7 +161,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ success: true, cierre: nuevoCierre });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({ error: "Error al cerrar caja" }, { status: 500 });
   }
 }
@@ -185,7 +185,7 @@ export async function DELETE(req: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({ error: "Error al anular cierre" }, { status: 500 });
   }
 }

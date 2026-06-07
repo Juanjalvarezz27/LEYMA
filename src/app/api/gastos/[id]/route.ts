@@ -32,7 +32,7 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true, message: "Gasto eliminado correctamente" });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al eliminar gasto:", error);
     return NextResponse.json({ error: "Error interno al eliminar el gasto" }, { status: 500 });
   }

@@ -14,7 +14,7 @@ export async function GET(req: Request) {
       orderBy: { precioUSD: "asc" },
     });
     return NextResponse.json(servicios);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al cargar servicios extra:", error);
     return NextResponse.json({ error: "Error interno al cargar servicios" }, { status: 500 });
   }

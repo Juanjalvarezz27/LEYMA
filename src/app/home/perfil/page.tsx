@@ -39,8 +39,8 @@ export default function PerfilPage() {
           tienePin: !!data.pinFirma,
           firmaUrl: data.firmaUrl || "",
         }));
-      } catch (error) {
-        toast.error("No se pudo cargar la información del perfil.");
+      } catch (error: any) {
+        toast.error(error?.message || "No se pudo cargar la información del perfil.");
       } finally {
         setCargando(false);
       }

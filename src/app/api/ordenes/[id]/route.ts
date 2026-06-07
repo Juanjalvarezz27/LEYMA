@@ -36,7 +36,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     if (!orden) return NextResponse.json({ error: "Orden no encontrada" }, { status: 404 });
 
     return NextResponse.json(orden);
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({ error: "Error al cargar la orden" }, { status: 500 });
   }
 }
@@ -95,7 +95,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     });
 
     return NextResponse.json(ordenActualizada);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al actualizar la orden:", error);
     return NextResponse.json({ error: "Error interno al actualizar" }, { status: 500 });
   }

@@ -30,6 +30,7 @@ export default function DescargarCotizacionButton({ dataB64, nombrePaciente }: D
         datosCotizacion = {
           paciente: { nombre: raw.p.n, cedula: raw.p.c, telefono: raw.p.t },
           pruebas: raw.e.map((x: any) => ({ nombre: x[0], precioUSD: x[1], cantidad: x[2] })),
+          serviciosExtras: raw.se ? raw.se.map((x: any) => ({ nombre: x[0], precioUSD: x[1], cantidad: x[2] })) : [],
           tasaBCV: raw.b,
           descuento: raw.d,
           subtotal: raw.s,
@@ -39,12 +40,13 @@ export default function DescargarCotizacionButton({ dataB64, nombrePaciente }: D
         datosCotizacion = raw;
       }
       
-      const { paciente, pruebas, tasaBCV, descuento, subtotal, total } = datosCotizacion;
+      const { paciente, pruebas, serviciosExtras, tasaBCV, descuento, subtotal, total } = datosCotizacion;
 
       const blob = await pdf(
         <PresupuestoDocument 
           paciente={paciente} 
           pruebas={pruebas} 
+          serviciosExtras={serviciosExtras || []}
           tasaBCV={tasaBCV} 
           descuento={descuento} 
           subtotal={subtotal} 
@@ -62,7 +64,7 @@ export default function DescargarCotizacionButton({ dataB64, nombrePaciente }: D
       URL.revokeObjectURL(url);
       
       toast.update(toastId, { render: "PDF descargado con éxito", type: "success", isLoading: false, autoClose: 3000 });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast.update(toastId, { render: "Error al generar el PDF", type: "error", isLoading: false, autoClose: 3000 });
     }

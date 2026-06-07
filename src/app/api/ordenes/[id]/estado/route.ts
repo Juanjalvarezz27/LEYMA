@@ -37,7 +37,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
 
     return NextResponse.json({ success: true, orden: ordenActualizada });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al cambiar estado:", error);
     return NextResponse.json({ error: "Error interno al cambiar el estado" }, { status: 500 });
   }

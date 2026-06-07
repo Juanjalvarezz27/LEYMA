@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 
 import useTasaBCV from "../../hooks/useTasaBcv";
 import SeleccionPruebas from "../../components/registro/SeleccionPruebas";
+import ServiciosExtras from "../../components/registro/ServiciosExtras";
 import ModalPreviewPresupuesto from "../../components/presupuestos/ModalPreviewPresupuesto";
 
 export default function PresupuestosPage() {
@@ -14,6 +15,10 @@ export default function PresupuestosPage() {
 
   const [pruebasCatalogo, setPruebasCatalogo] = useState<any[]>([]);
   const [pruebasSeleccionadas, setPruebasSeleccionadas] = useState<any[]>([]);
+  
+  // Servicios Extra
+  const [serviciosExtrasCatalogo, setServiciosExtrasCatalogo] = useState<any[]>([]);
+  const [serviciosExtrasSeleccionados, setServiciosExtrasSeleccionados] = useState<any[]>([]);
   
   // Datos del Paciente (Opcional)
   const [paciente, setPaciente] = useState({ nombre: "", cedula: "", telefono: "" });
@@ -64,14 +69,23 @@ export default function PresupuestosPage() {
         });
         
         setPruebasCatalogo(listaAplanada);
-      } catch (e) {
-        toast.error("Error al cargar el catálogo de pruebas");
+
+        const resServicios = await fetch("/api/servicios-extra");
+        if (resServicios.ok) {
+          const dataServicios = await resServicios.json();
+          setServiciosExtrasCatalogo(dataServicios);
+        }
+      } catch (e: any) {
+        toast.error(e?.message || "Error al cargar el catálogo de pruebas");
       }
     };
     fetchCatalogo();
   }, []);
 
-  const subtotalUSD = pruebasSeleccionadas.reduce((acc, p) => acc + (p.precioUSD * p.cantidad), 0);
+  const subtotalPruebasUSD = pruebasSeleccionadas.reduce((acc, p) => acc + (p.precioUSD * p.cantidad), 0);
+  const subtotalServiciosUSD = serviciosExtrasSeleccionados.reduce((acc, s) => acc + (s.precioUSD * (s.cantidad || 1)), 0);
+  const subtotalUSD = subtotalPruebasUSD + subtotalServiciosUSD;
+
   const descuentoUSD = subtotalUSD * (porcentajeDescuento / 100);
   const totalUSD = subtotalUSD - descuentoUSD;
   const totalBS = totalUSD * tasaBCV;
@@ -86,6 +100,7 @@ export default function PresupuestosPage() {
 
   const limpiar = () => {
     setPruebasSeleccionadas([]);
+    setServiciosExtrasSeleccionados([]);
     setPaciente({ nombre: "", cedula: "", telefono: "" });
     setPorcentajeDescuento(0);
   };
@@ -149,6 +164,14 @@ export default function PresupuestosPage() {
               </div>
             </div>
           </section>
+
+          {/* Servicios Extra */}
+          <ServiciosExtras
+            catalogo={serviciosExtrasCatalogo}
+            seleccionados={serviciosExtrasSeleccionados}
+            onCambio={setServiciosExtrasSeleccionados}
+            tasaBCV={tasaBCV}
+          />
 
           {/* Selección de Pruebas */}
           <SeleccionPruebas
@@ -224,6 +247,7 @@ export default function PresupuestosPage() {
         <ModalPreviewPresupuesto
           paciente={paciente}
           pruebas={pruebasSeleccionadas}
+          serviciosExtras={serviciosExtrasSeleccionados}
           tasaBCV={tasaBCV}
           descuento={descuentoUSD}
           subtotal={subtotalUSD}

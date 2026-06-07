@@ -15,7 +15,7 @@ export async function GET() {
     });
     
     return NextResponse.json(bioanalistas);
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({ error: "Error al obtener lista de bioanalistas" }, { status: 500 });
   }
 }

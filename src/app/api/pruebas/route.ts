@@ -13,7 +13,7 @@ export async function GET() {
       orderBy: { nombre: 'asc' },
     });
     return NextResponse.json(examenes);
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({ error: "Error al cargar el catálogo" }, { status: 500 });
   }
 }
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
     });
     
     return NextResponse.json(nuevaSubcategoria);
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({ error: "Error al crear el registro" }, { status: 500 });
   }
 }

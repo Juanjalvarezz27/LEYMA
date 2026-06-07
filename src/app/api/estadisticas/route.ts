@@ -36,6 +36,9 @@ export async function GET(req: Request) {
       const boundFin = getCaracasBoundsForDate(finStr);
       fechaInicio = boundInicio.inicio;
       fechaFin = boundFin.fin;
+    } else if (periodo === "HISTORICO") {
+      fechaInicio = new Date("2000-01-01T00:00:00Z");
+      fechaFin = new Date("2100-01-01T00:00:00Z");
     }
 
     const ordenes = await prisma.orden.findMany({
@@ -72,10 +75,6 @@ export async function GET(req: Request) {
     let totalPruebasProcesadas = 0;
     const pacientesUnicosSet = new Set<string>();
 
-    let pruebasValidadas = 0;
-    let pruebasEnRevision = 0;
-    let pruebasPendientes = 0;
-
     const distribucionSexo = { M: 0, F: 0 };
     const distribucionEdad = {
       "Bebés (0-2)": 0,
@@ -91,12 +90,14 @@ export async function GET(req: Request) {
     const conteoEstados: Record<string, number> = {};
 
     const diasDelPeriodo: string[] = [];
+    const mesesSet = new Set<string>();
     let temporalDate = new Date(fechaInicio);
     
-    // Si el rango es de menos de 60 días, agrupamos por días para la gráfica
+    // Si el rango es mayor a 60 días, agrupamos por meses
     const diferenciaDias = Math.ceil((fechaFin.getTime() - fechaInicio.getTime()) / (1000 * 3600 * 24));
+    const agruparPorMes = diferenciaDias > 60;
     
-    if (diferenciaDias <= 60) {
+    if (!agruparPorMes) {
       while (temporalDate <= fechaFin) {
         const key = formatToCaracasDateString(temporalDate);
         if (!diasDelPeriodo.includes(key)) diasDelPeriodo.push(key);
@@ -108,12 +109,19 @@ export async function GET(req: Request) {
     ordenes.forEach((orden) => {
       if (orden.resultadosCompletados) ordenesCompletadas++;
       
-      const fechaKey = formatToCaracasDateString(orden.fechaCreacion);
+      let fechaKey = formatToCaracasDateString(orden.fechaCreacion);
+      if (agruparPorMes) {
+        const [y, m] = fechaKey.split("-");
+        fechaKey = `${y}-${m}`;
+        mesesSet.add(fechaKey);
+      }
       pacientesUnicosSet.add(orden.pacienteId);
 
-      if (conteoTendencia[fechaKey]) {
-        conteoTendencia[fechaKey].ordenes += 1;
+      if (!conteoTendencia[fechaKey]) {
+        conteoTendencia[fechaKey] = { ordenes: 0, pruebas: 0 };
       }
+
+      conteoTendencia[fechaKey].ordenes += 1;
 
       const estadoNombre = orden.estado?.nombre || "Desconocido";
       conteoEstados[estadoNombre] = (conteoEstados[estadoNombre] || 0) + 1;
@@ -142,17 +150,7 @@ export async function GET(req: Request) {
       orden.detalles.forEach((detalle) => {
         totalPruebasProcesadas += detalle.cantidad;
 
-        if (!detalle.resultado) {
-          pruebasPendientes += detalle.cantidad;
-        } else if (detalle.resultado.firmado) {
-          pruebasValidadas += detalle.cantidad;
-        } else {
-          pruebasEnRevision += detalle.cantidad;
-        }
-
-        if (conteoTendencia[fechaKey]) {
-          conteoTendencia[fechaKey].pruebas += detalle.cantidad;
-        }
+        conteoTendencia[fechaKey].pruebas += detalle.cantidad;
 
         const catNombre = detalle.prueba?.subcategoria?.categoria?.nombre || "OTROS";
         conteoCategorias[catNombre] = (conteoCategorias[catNombre] || 0) + detalle.cantidad;
@@ -162,14 +160,27 @@ export async function GET(req: Request) {
       });
     });
 
-    const graficoTendencia = diasDelPeriodo.map((fecha) => {
-      const [year, month, day] = fecha.split("-");
-      return {
-        label: `${day}/${month}`,
-        Pacientes: conteoTendencia[fecha]?.ordenes || 0,
-        Pruebas: conteoTendencia[fecha]?.pruebas || 0
-      };
-    });
+    let graficoTendencia: any[] = [];
+    if (agruparPorMes) {
+      const mesesNombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+      graficoTendencia = Array.from(mesesSet).sort().map(fechaKey => {
+        const [year, month] = fechaKey.split("-");
+        return {
+          label: `${mesesNombres[parseInt(month, 10) - 1]} ${year}`,
+          Pacientes: conteoTendencia[fechaKey].ordenes,
+          Pruebas: conteoTendencia[fechaKey].pruebas
+        };
+      });
+    } else {
+      graficoTendencia = diasDelPeriodo.map((fecha) => {
+        const [year, month, day] = fecha.split("-");
+        return {
+          label: `${day}/${month}`,
+          Pacientes: conteoTendencia[fecha]?.ordenes || 0,
+          Pruebas: conteoTendencia[fecha]?.pruebas || 0
+        };
+      });
+    }
 
     const graficoSexo = [
       { name: "Masculino", value: distribucionSexo.M },
@@ -180,10 +191,9 @@ export async function GET(req: Request) {
     const graficoCategorias = Object.entries(conteoCategorias).map(([name, value]) => ({ name, value }));
     const graficoEstados = Object.entries(conteoEstados).map(([name, value]) => ({ name, value }));
 
-    const topPruebas = Object.entries(conteoPruebas)
+    const todasLasPruebas = Object.entries(conteoPruebas)
       .map(([nombre, cantidad]) => ({ nombre, cantidad }))
-      .sort((a, b) => b.cantidad - a.cantidad)
-      .slice(0, 5);
+      .sort((a, b) => b.cantidad - a.cantidad);
 
     const topCategorias = Object.entries(conteoCategorias)
       .map(([nombre, cantidad]) => ({ nombre, cantidad }))
@@ -192,12 +202,6 @@ export async function GET(req: Request) {
 
     // NUEVO KPI: Tasa de Procesamiento (Órdenes Completadas / Total)
     const tasaProcesamiento = totalOrdenes > 0 ? Math.round((ordenesCompletadas / totalOrdenes) * 100) : 0;
-    
-    const graficoControlCalidad = [
-      { name: "Validadas (QC)", value: pruebasValidadas },
-      { name: "En Revisión", value: pruebasEnRevision },
-      { name: "Pendientes", value: pruebasPendientes }
-    ];
 
     return NextResponse.json({
       kpis: {
@@ -210,13 +214,12 @@ export async function GET(req: Request) {
       graficoSexo,
       graficoEdad,
       graficoCategorias,
-      topPruebas,
+      todasLasPruebas,
       topCategorias,
-      graficoEstados,
-      graficoControlCalidad
+      graficoEstados
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al generar estadísticas:", error);
     return NextResponse.json({ error: "Error interno en el servidor analítico" }, { status: 500 });
   }

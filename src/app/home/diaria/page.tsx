@@ -42,8 +42,8 @@ export default function ListaDiariaPage() {
       if (!res.ok) throw new Error("Error al cargar");
       const data = await res.json();
       setOrdenes(data);
-    } catch (error) {
-      toast.error("Error al cargar las órdenes del día");
+    } catch (error: any) {
+      toast.error(error?.message || "Error al cargar las órdenes del día");
     } finally {
       setCargando(false);
     }

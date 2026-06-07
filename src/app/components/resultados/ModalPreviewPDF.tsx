@@ -35,7 +35,7 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
           color: { dark: "#000000", light: "#FFFFFF" },
         });
         setQrCodeUrl(base64Data);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error generando QR", err);
       }
     };

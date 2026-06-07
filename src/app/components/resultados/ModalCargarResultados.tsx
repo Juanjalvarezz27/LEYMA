@@ -44,7 +44,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
         if (target && target.closest && !target.closest('.custom-select-container')) {
           setOpenSelect(null);
         }
-      } catch (err) {
+      } catch (err: any) {
         setOpenSelect(null);
       }
     }

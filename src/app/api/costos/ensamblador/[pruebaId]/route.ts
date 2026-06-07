@@ -39,7 +39,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ pruebaId
       costoFijoPorPrueba
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error en ensamblador:", error);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
@@ -68,7 +68,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ pruebaId
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al actualizar receta:", error);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }

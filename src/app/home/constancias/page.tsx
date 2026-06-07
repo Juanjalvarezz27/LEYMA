@@ -25,8 +25,8 @@ export default function ConstanciasPage() {
       if (!res.ok) throw new Error("Error de red");
       const data = await res.json();
       setOrdenes(data);
-    } catch (error) {
-      toast.error("Error al cargar el historial de órdenes.");
+    } catch (error: any) {
+      toast.error(error?.message || "Error al cargar el historial de órdenes.");
     } finally {
       setCargando(false);
     }

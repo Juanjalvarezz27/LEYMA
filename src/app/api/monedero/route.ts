@@ -40,6 +40,9 @@ export async function GET(req: Request) {
       const boundFin = getCaracasBoundsForDate(finStr);
       fechaInicio = boundInicio.inicio;
       fechaFin = boundFin.fin;
+    } else if (periodo === "HISTORICO") {
+      fechaInicio = new Date("2000-01-01T00:00:00Z");
+      fechaFin = new Date("2100-01-01T00:00:00Z");
     }
 
     // 1. OBTENER INGRESOS
@@ -223,7 +226,7 @@ export async function GET(req: Request) {
       metodosPago 
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al generar monedero:", error);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }

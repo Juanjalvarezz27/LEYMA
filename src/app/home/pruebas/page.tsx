@@ -281,7 +281,7 @@ export default function PruebasPage() {
     const matchEstado = filtroEstado === "Todos" ? true : filtroEstado === "Activas" ? p.activa === true : p.activa === false;
     
     return matchBusqueda && matchCategoria && matchEstado;
-  });
+  }).sort((a, b) => a.nombre.localeCompare(b.nombre));
   
   const examenesAgrupados = pruebasFiltradas.reduce((acc, examen) => {
     const cat = examen.categoria.nombre;
@@ -390,7 +390,9 @@ export default function PruebasPage() {
             <p>No se encontraron registros con esos filtros.</p>
           </div>
         ) : (
-          (Object.entries(examenesAgrupados) as [string, any[]][]).map(([nombreCategoria, examenesDeCategoria]) => (
+          (Object.entries(examenesAgrupados) as [string, any[]][])
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([nombreCategoria, examenesDeCategoria]) => (
             <div key={nombreCategoria} className="space-y-4">
               
               <div className="flex items-center gap-3 py-3 mt-2 pl-2">
@@ -505,7 +507,7 @@ export default function PruebasPage() {
                               No hay pruebas asignadas.
                             </div>
                           ) : (
-                            examen.pruebas.map((p: any, index: number) => {
+                            [...examen.pruebas].sort((a: any, b: any) => a.nombre.localeCompare(b.nombre)).map((p: any, index: number) => {
                               const isPar = index % 2 === 0;
                               const bgFondoFila = p.activa && examen.activa
                                 ? (isPar ? 'bg-[#E8F2FF] border-[#0071E3]/20' : 'bg-[#E8F2FF]/40 border-[#0071E3]/10')

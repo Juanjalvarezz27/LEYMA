@@ -308,7 +308,7 @@ export default function PruebasPage() {
           </div>
         </div>
         <button onClick={activeTab === 'pruebas' ? abrirModalNuevo : abrirModalNuevoServicio} className="bg-[#0071E3] text-white px-5 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-[0_4px_12px_rgba(0,113,227,0.25)] hover:bg-[#0077ED] transition-all active:scale-95 shrink-0">
-          <Plus size={20} strokeWidth={2.5} /> {activeTab === 'pruebas' ? 'Nueva Subcategoría' : 'Nuevo Servicio'}
+          <Plus size={20} strokeWidth={2.5} /> {activeTab === 'pruebas' ? 'Nueva Prueba' : 'Nuevo Servicio'}
         </button>
       </div>
 

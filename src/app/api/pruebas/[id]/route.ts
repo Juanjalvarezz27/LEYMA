@@ -27,19 +27,31 @@ export async function PUT(
       return NextResponse.json(actualizado);
     }
 
-    // Validación de códigos repetidos globalmente (Excluyendo esta misma subcategoría)
+    // 1. Validar duplicados dentro del mismo formulario
     const codigos = body.pruebas.map((p: any) => p.codigo.toUpperCase());
+    const duplicadosEnForm = codigos.filter((item: string, index: number) => codigos.indexOf(item) !== index);
+    if (duplicadosEnForm.length > 0) {
+      const repetidos = Array.from(new Set(duplicadosEnForm)).join(", ");
+      return NextResponse.json({ error: `Has repetido códigos en la lista (${repetidos}). Cada código debe ser único.` }, { status: 400 });
+    }
+
+    // Filtramos los IDs que vienen del frontend para saber cuáles estamos actualizando
+    const idsMantener = body.pruebas.map((p: any) => p.id).filter(Boolean);
+
+    // 2. Validación de códigos repetidos en BD (Excluyendo las pruebas que estamos actualizando)
     const pruebasExistentes = await prisma.prueba.findMany({
-      where: { codigo: { in: codigos }, subcategoriaId: { not: id } }
+      where: { 
+        codigo: { in: codigos }, 
+        id: { notIn: idsMantener.length > 0 ? idsMantener : [''] } 
+      }
     });
 
     if (pruebasExistentes.length > 0) {
       const repetidos = pruebasExistentes.map(p => p.codigo).join(", ");
-      return NextResponse.json({ error: `Los códigos ${repetidos} ya están en uso.` }, { status: 400 });
+      return NextResponse.json({ error: `Los códigos ${repetidos} ya están registrados en otras pruebas.` }, { status: 400 });
     }
 
-    // Filtramos los IDs que vienen del frontend para saber cuáles el usuario decidió mantener
-    const idsMantener = body.pruebas.map((p: any) => p.id).filter(Boolean);
+
 
     // =========================================================================
     // NUEVA VALIDACIÓN: PREVENIR BORRADO DE PRUEBAS EN USO (Protección Foreing Key)

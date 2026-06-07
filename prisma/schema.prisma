@@ -59,7 +59,7 @@ model SubcategoriaPrueba {
 
 model Prueba {
   id                 String             @id @default(cuid())
-  codigo             String             @unique 
+  codigo             String             
   nombre             String             
   
   precioUSD          Float?             

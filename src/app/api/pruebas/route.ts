@@ -22,14 +22,30 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
+    // 1. Validar duplicados dentro del mismo formulario
     const codigos = body.pruebas.map((p: any) => p.codigo.toUpperCase());
+    const duplicadosEnForm = codigos.filter((item: string, index: number) => codigos.indexOf(item) !== index);
+    if (duplicadosEnForm.length > 0) {
+      const repetidos = Array.from(new Set(duplicadosEnForm)).join(", ");
+      return NextResponse.json({ error: `Has repetido códigos en la lista (${repetidos}). Cada código debe ser único en la misma estructura.` }, { status: 400 });
+    }
+
     const pruebasExistentes = await prisma.prueba.findMany({
       where: { codigo: { in: codigos } }
     });
 
     if (pruebasExistentes.length > 0) {
-      const repetidos = pruebasExistentes.map(p => p.codigo).join(", ");
-      return NextResponse.json({ error: `Los siguientes códigos ya están registrados: ${repetidos}` }, { status: 400 });
+      const conflictos = [];
+      for (const pExistente of pruebasExistentes) {
+        const pNueva = body.pruebas.find((p: any) => p.codigo.toUpperCase() === pExistente.codigo);
+        if (pNueva && pNueva.nombre.trim().toUpperCase() !== pExistente.nombre.trim().toUpperCase()) {
+          conflictos.push(`El código ${pExistente.codigo} ya está usado en "${pExistente.nombre}" y tú intentaste usarlo para "${pNueva.nombre}"`);
+        }
+      }
+
+      if (conflictos.length > 0) {
+        return NextResponse.json({ error: `Error de códigos compartidos: ${conflictos.join(" | ")}.` }, { status: 400 });
+      }
     }
 
     const categoria = await prisma.categoriaPrueba.upsert({

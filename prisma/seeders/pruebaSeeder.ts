@@ -3,6 +3,36 @@ import { PrismaClient } from '@prisma/client';
 export async function seedPruebas(prisma: PrismaClient) {
   console.log('Iniciando seeder de pruebas...');
 
+  async function upsertPruebaHelper(p: any, subId: string) {
+    const exist = await prisma.prueba.findFirst({ where: { codigo: p.codigo, subcategoriaId: subId } });
+    if (exist) {
+      await prisma.prueba.update({
+        where: { id: exist.id },
+        data: {
+          nombre: p.nombre,
+          precioUSD: p.precioUSD,
+          unidades: p.unidades,
+          valoresReferencia: p.valoresReferencia,
+          ordenVisual: p.ordenVisual,
+          subcategoriaId: subId,
+        }
+      });
+    } else {
+      await prisma.prueba.create({
+        data: {
+          codigo: p.codigo,
+          nombre: p.nombre,
+          precioUSD: p.precioUSD,
+          unidades: p.unidades,
+          valoresReferencia: p.valoresReferencia,
+          ordenVisual: p.ordenVisual,
+          subcategoriaId: subId,
+        }
+      });
+    }
+  }
+
+
   // 1. Crear Categorías (Nivel 1: Organizadores)
   const quimica = await prisma.categoriaPrueba.upsert({
     where: { nombre: 'QUIMICA' },
@@ -67,26 +97,7 @@ export async function seedPruebas(prisma: PrismaClient) {
 
   // Recorremos con UPSERT usando el campo único 'codigo'
   for (const p of pruebasQui) {
-    await prisma.prueba.upsert({
-      where: { codigo: p.codigo },
-      update: {
-        nombre: p.nombre,
-        precioUSD: p.precioUSD,
-        unidades: p.unidades,
-        valoresReferencia: p.valoresReferencia,
-        ordenVisual: p.ordenVisual,
-        subcategoriaId: subQuimicaBasica.id,
-      },
-      create: {
-        codigo: p.codigo,
-        nombre: p.nombre,
-        precioUSD: p.precioUSD,
-        unidades: p.unidades,
-        valoresReferencia: p.valoresReferencia,
-        ordenVisual: p.ordenVisual,
-        subcategoriaId: subQuimicaBasica.id,
-      },
-    });
+    await upsertPruebaHelper(p, subQuimicaBasica.id);
   }
 
   // =============================================
@@ -121,26 +132,7 @@ export async function seedPruebas(prisma: PrismaClient) {
   ];
 
   for (const p of pruebasBilirrubina) {
-    await prisma.prueba.upsert({
-      where: { codigo: p.codigo },
-      update: {
-        nombre: p.nombre,
-        precioUSD: p.precioUSD,
-        unidades: p.unidades,
-        valoresReferencia: p.valoresReferencia,
-        ordenVisual: p.ordenVisual,
-        subcategoriaId: subBilirrubina.id,
-      },
-      create: {
-        codigo: p.codigo,
-        nombre: p.nombre,
-        precioUSD: p.precioUSD,
-        unidades: p.unidades,
-        valoresReferencia: p.valoresReferencia,
-        ordenVisual: p.ordenVisual,
-        subcategoriaId: subBilirrubina.id,
-      },
-    });
+    await upsertPruebaHelper(p, subBilirrubina.id);
   }
 
   // --- PAQUETE: Proteínas Totales y Fraccionadas ($3.5) ---
@@ -170,26 +162,7 @@ export async function seedPruebas(prisma: PrismaClient) {
   ];
 
   for (const p of pruebasProteinas) {
-    await prisma.prueba.upsert({
-      where: { codigo: p.codigo },
-      update: {
-        nombre: p.nombre,
-        precioUSD: p.precioUSD,
-        unidades: p.unidades,
-        valoresReferencia: p.valoresReferencia,
-        ordenVisual: p.ordenVisual,
-        subcategoriaId: subProteinas.id,
-      },
-      create: {
-        codigo: p.codigo,
-        nombre: p.nombre,
-        precioUSD: p.precioUSD,
-        unidades: p.unidades,
-        valoresReferencia: p.valoresReferencia,
-        ordenVisual: p.ordenVisual,
-        subcategoriaId: subProteinas.id,
-      },
-    });
+    await upsertPruebaHelper(p, subProteinas.id);
   }
 
   // --- PAQUETE: Transaminasas ($3.5) ---
@@ -218,26 +191,7 @@ export async function seedPruebas(prisma: PrismaClient) {
   ];
 
   for (const p of pruebasTransaminasas) {
-    await prisma.prueba.upsert({
-      where: { codigo: p.codigo },
-      update: {
-        nombre: p.nombre,
-        precioUSD: p.precioUSD,
-        unidades: p.unidades,
-        valoresReferencia: p.valoresReferencia,
-        ordenVisual: p.ordenVisual,
-        subcategoriaId: subTransaminasas.id,
-      },
-      create: {
-        codigo: p.codigo,
-        nombre: p.nombre,
-        precioUSD: p.precioUSD,
-        unidades: p.unidades,
-        valoresReferencia: p.valoresReferencia,
-        ordenVisual: p.ordenVisual,
-        subcategoriaId: subTransaminasas.id,
-      },
-    });
+    await upsertPruebaHelper(p, subTransaminasas.id);
   }
 
   console.log('Seeder de pruebas completado con éxito.');

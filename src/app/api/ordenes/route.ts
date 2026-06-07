@@ -5,13 +5,6 @@ import { authOptions } from "../../../app/api/auth/[...nextauth]/route";
 
 const prisma = new PrismaClient();
 
-// Función de utilidad para obtener la hora exacta de Venezuela (UTC-4)
-const getHoraCaracas = (): Date => {
-  const ahora = new Date();
-  const caracasString = ahora.toLocaleString('en-US', { timeZone: 'America/Caracas' });
-  return new Date(caracasString);
-};
-
 // Utilidad vital: Si el ID es numérico lo convierte, si es texto (CUID/UUID) lo deja intacto.
 const parseId = (id: any) => isNaN(Number(id)) ? id : Number(id);
 
@@ -56,15 +49,13 @@ export async function POST(req: Request) {
       const montoEnBS = p.moneda === "BS" ? p.monto : (p.monto * tasa);
 
       return {
-        metodoId: parseId(p.metodoId), // <-- AQUÍ ESTABA EL ERROR PRINCIPAL
+        metodoId: parseId(p.metodoId),
         montoUSD: parseFloat(montoEnUSD.toFixed(2)),
         montoBS: parseFloat(montoEnBS.toFixed(2)),
         referencia: p.referencia || null,
-        fechaPago: getHoraCaracas() 
+        fechaPago: new Date()
       };
     }) : [];
-
-    const horaVenezuela = getHoraCaracas(); 
 
     const nuevaOrden = await prisma.orden.create({
       data: {
@@ -77,7 +68,7 @@ export async function POST(req: Request) {
         totalUSD: body.totalUSD,
         totalBS: body.totalBS,
         tasaBCV: body.tasaBCV,
-        fechaCreacion: horaVenezuela,
+        fechaCreacion: new Date(),
         detalles: {
           create: detallesData
         },

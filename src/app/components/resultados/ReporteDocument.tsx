@@ -194,8 +194,8 @@ export const pdfStyles = StyleSheet.create({
 const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fechaImpresa: string, qrCodeUrl: string }) => {
   const formatFechaHora = (dateString: string) => {
     const d = new Date(dateString);
-    const dateStr = d.toLocaleDateString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit' });
-    const timeStr = d.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const dateStr = d.toLocaleDateString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'America/Caracas' });
+    const timeStr = d.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Caracas' });
     return `${dateStr} ${timeStr}`;
   };
 

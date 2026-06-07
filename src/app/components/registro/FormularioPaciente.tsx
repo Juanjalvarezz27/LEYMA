@@ -1,6 +1,6 @@
 "use client";
 
-import { Baby } from "lucide-react";
+import { Baby, ArrowLeft } from "lucide-react";
 import { toast } from "react-toastify";
 
 interface FormularioPacienteProps {
@@ -73,7 +73,17 @@ export default function FormularioPaciente({
   return (
     <form onSubmit={handleSubmit} className="animate-in fade-in slide-in-from-top-4 duration-300">
       <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-        <h3 className="text-lg font-bold text-[#1D1D1F]">Registro de Nuevo Paciente</h3>
+        <div className="flex items-center gap-3">
+          <button 
+            type="button" 
+            onClick={limpiarSeleccion}
+            className="p-2 bg-[#F5F5F7] hover:bg-slate-200 text-slate-600 rounded-full transition-colors border border-slate-200/60"
+            title="Volver al buscador"
+          >
+            <ArrowLeft size={18} strokeWidth={2.5} />
+          </button>
+          <h3 className="text-lg font-bold text-[#1D1D1F]">Registro de Nuevo Paciente</h3>
+        </div>
         
         <div className={`flex items-center gap-3 px-4 py-2 rounded-xl border transition-colors ${formData.esBebe ? 'bg-orange-50/50 border-orange-100' : 'bg-slate-50 border-slate-100'}`}>
           <Baby size={18} className={formData.esBebe ? "text-orange-500" : "text-slate-400"} />
@@ -219,7 +229,7 @@ export default function FormularioPaciente({
           onClick={limpiarSeleccion}
           className="px-6 py-3 bg-slate-100 text-slate-600 font-semibold rounded-2xl hover:bg-slate-200 transition-colors"
         >
-          Cancelar
+          Volver al buscador
         </button>
         <button 
           type="submit"

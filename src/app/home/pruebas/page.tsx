@@ -410,22 +410,22 @@ export default function PruebasPage() {
                       
                       {/* Lado Izquierdo */}
                       <div className="flex flex-col w-[50%]">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest flex items-center gap-1.5 w-fit ${examen.activa ? 'bg-[#0071E3]/10 text-[#0071E3]' : 'bg-red-100 text-red-500'}`}>
-                            <Tags size={14} strokeWidth={2.5} /> Categoría: {examen.categoria.nombre}
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 w-fit ${examen.activa ? 'bg-[#0071E3]/10 text-[#0071E3]' : 'bg-red-100 text-red-500'}`}>
+                            <Tags size={12} strokeWidth={2.5} /> Categoría: {examen.categoria.nombre}
                           </span>
                           
                           {/* INDICADOR DE PAQUETE */}
                           {examen.esPaquete && (
-                            <span className="px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest bg-purple-100 text-purple-600 flex items-center gap-1.5 w-fit">
-                              <Package size={14} strokeWidth={2.5} /> PAQUETE
+                            <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-600 flex items-center gap-1.5 w-fit">
+                              <Package size={12} strokeWidth={2.5} /> PAQUETE
                             </span>
                           )}
-                          {!examen.activa && <span className="text-[11px] font-bold text-red-400 flex items-center gap-1"><Ban size={14} /> Inhabilitada</span>}
+                          {!examen.activa && <span className="text-[10px] font-bold text-red-400 flex items-center gap-1"><Ban size={12} /> Inhabilitada</span>}
                         </div>
                         
-                        <h3 className={`font-black text-2xl tracking-tight flex items-center gap-2.5 ${examen.activa ? 'text-[#1D1D1F]' : 'text-red-900/60 line-through'}`}>
-                          <FlaskConical size={26} strokeWidth={2.5} className={examen.activa ? "text-[#0071E3]" : "text-red-400"} />
+                        <h3 className={`font-black text-xl tracking-tight flex items-center gap-2.5 ${examen.activa ? 'text-[#1D1D1F]' : 'text-red-900/60 line-through'}`}>
+                          <FlaskConical size={22} strokeWidth={2.5} className={examen.activa ? "text-[#0071E3]" : "text-red-400"} />
                           {examen.nombre}
                         </h3>
                       </div>
@@ -634,7 +634,7 @@ export default function PruebasPage() {
       </div>
       )}
 
-      <ModalPrueba isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSavePrueba} pruebaEditar={pruebaEditando} categoriasExistentes={categoriasExistentes} subcategoriasExistentes={subcategoriasExistentes} />
+      <ModalPrueba isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSavePrueba} pruebaEditar={pruebaEditando} categoriasExistentes={categoriasExistentes} subcategoriasExistentes={subcategoriasExistentes} catalogoExamenes={examenes} />
       <ModalPruebaIndividual isOpen={isModalItemOpen} onClose={() => setIsModalItemOpen(false)} onSave={handleSavePruebaIndividual} itemEditar={itemEditando} />
       <ModalServicioExtra isOpen={isModalServicioOpen} onClose={() => setIsModalServicioOpen(false)} onSave={handleSaveServicio} itemEditar={servicioEditando} />
       

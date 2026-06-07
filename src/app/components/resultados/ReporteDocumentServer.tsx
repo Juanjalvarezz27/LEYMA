@@ -208,11 +208,13 @@ function formatFechaHora(dateString: string): string {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
+    timeZone: "America/Caracas"
   });
   const timeStr = d.toLocaleTimeString("es-VE", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
+    timeZone: "America/Caracas"
   });
   return `${dateStr} ${timeStr}`;
 }

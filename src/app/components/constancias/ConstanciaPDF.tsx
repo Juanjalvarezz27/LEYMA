@@ -104,10 +104,10 @@ const styles = StyleSheet.create({
 export default function ConstanciaPDF({ orden }: { orden: any }) {
   const fechaOrden = new Date(orden.fechaCreacion);
   const fechaFormateada = fechaOrden.toLocaleDateString("es-VE", {
-    weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: "America/Caracas"
   });
 
   const hoy = new Date();
@@ -115,6 +115,7 @@ export default function ConstanciaPDF({ orden }: { orden: any }) {
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: "America/Caracas"
   });
 
   return (

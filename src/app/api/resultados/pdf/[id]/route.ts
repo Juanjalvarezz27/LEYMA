@@ -70,12 +70,14 @@ export async function GET(request: Request, { params }: { params: any }) {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
+        timeZone: "America/Caracas"
       }) +
-      " " +
+      "  |  " +
       ahora.toLocaleTimeString("es-VE", {
         hour: "2-digit",
         minute: "2-digit",
         hour12: true,
+        timeZone: "America/Caracas"
       });
 
     // Generar QR como Data URL base64

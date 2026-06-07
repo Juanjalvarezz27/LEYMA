@@ -1,9 +1,9 @@
 "use client";
-import { X, Plus, Trash2, ChevronDown, Loader2, Package, LayoutList } from "lucide-react";
+import { X, Plus, Trash2, ChevronDown, Loader2, Package, LayoutList, Search } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
 
-export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, categoriasExistentes, subcategoriasExistentes }: any) {
+export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, categoriasExistentes, subcategoriasExistentes, catalogoExamenes = [] }: any) {
   const [formData, setFormData] = useState({ 
     categoria: "", 
     subcategoria: "", 
@@ -16,8 +16,14 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
   const [openDropdownSubcategoria, setOpenDropdownSubcategoria] = useState(false);
   const [guardando, setGuardando] = useState(false);
   
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  
   const dropdownCategoriaRef = useRef<HTMLDivElement>(null);
   const dropdownSubcategoriaRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  const todasLasPruebas = catalogoExamenes.flatMap((sub: any) => sub.pruebas || []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -26,6 +32,9 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
       }
       if (dropdownSubcategoriaRef.current && !dropdownSubcategoriaRef.current.contains(event.target as Node)) {
         setOpenDropdownSubcategoria(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearchResults(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -291,15 +300,69 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
           </div>
 
           <div className="px-8 pb-8 space-y-4 relative z-10">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center relative z-20">
               <div>
                 <h4 className="text-[14px] font-black text-[#1D1D1F] uppercase tracking-widest">
                   {formData.esPaquete ? "Parámetros del Paquete" : "Pruebas e Ítems Individuales"}
                 </h4>
               </div>
-              <button type="button" onClick={agregarFila} className="text-[13px] font-bold bg-[#0071E3] text-white px-5 py-2.5 rounded-xl hover:bg-[#0077ED] transition-all flex items-center gap-2 shadow-sm">
-                <Plus size={18} strokeWidth={3} /> Agregar Prueba
-              </button>
+              <div className="flex items-center gap-3">
+                {formData.esPaquete && (
+                  <div className="relative" ref={searchRef}>
+                    <div className="relative flex items-center">
+                      <Search className="absolute left-3 text-slate-400" size={16} />
+                      <input 
+                        type="text" 
+                        value={searchQuery}
+                        onChange={(e) => { setSearchQuery(e.target.value); setShowSearchResults(true); }}
+                        onFocus={() => setShowSearchResults(true)}
+                        placeholder="Buscar prueba existente..."
+                        className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 w-64"
+                      />
+                    </div>
+                    {showSearchResults && searchQuery.trim() && (
+                      <div className="absolute top-[100%] right-0 mt-2 w-96 bg-white border border-slate-200/80 rounded-2xl shadow-xl overflow-y-auto max-h-[300px] py-1.5 z-50">
+                        {todasLasPruebas
+                          .filter((p: any) => p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || p.codigo.toLowerCase().includes(searchQuery.toLowerCase()))
+                          .slice(0, 10)
+                          .map((p: any) => (
+                            <button 
+                              key={p.id} 
+                              type="button" 
+                              onClick={() => {
+                                // Evitar agregar duplicados exactos visualmente
+                                if (!pruebas.some(pr => pr.codigo === p.codigo)) {
+                                  setPruebas([...pruebas, { 
+                                    id: p.id, codigo: p.codigo, nombre: p.nombre, precioUSD: p.precioUSD ? p.precioUSD.toString() : "", 
+                                    unidades: p.unidades || "", valoresReferencia: p.valoresReferencia || "", 
+                                    opcionesPredefinidas: p.opcionesPredefinidas ? p.opcionesPredefinidas.split(',').filter(Boolean) : [], 
+                                    mostrarOpciones: !!p.opcionesPredefinidas 
+                                  }]);
+                                } else {
+                                  toast.info("Esta prueba ya está en la lista.");
+                                }
+                                setSearchQuery("");
+                                setShowSearchResults(false);
+                              }} 
+                              className="w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs font-bold bg-slate-100 text-slate-500 px-2.5 py-1 rounded-md shrink-0">{p.codigo}</span>
+                                <span className="text-sm font-bold text-[#1D1D1F] leading-tight break-words">{p.nombre}</span>
+                              </div>
+                            </button>
+                        ))}
+                        {todasLasPruebas.filter((p: any) => p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || p.codigo.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                           <div className="px-4 py-3 text-sm text-slate-400 italic">No se encontraron pruebas</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <button type="button" onClick={agregarFila} className="text-[13px] font-bold bg-[#0071E3] text-white px-5 py-2.5 rounded-xl hover:bg-[#0077ED] transition-all flex items-center gap-2 shadow-sm">
+                  <Plus size={18} strokeWidth={3} /> Agregar Prueba
+                </button>
+              </div>
             </div>
 
             <div className="space-y-4">

@@ -154,7 +154,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/20">
-      <div className="bg-white w-full max-w-[1100px] max-h-[90vh] flex flex-col rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] overflow-hidden animate-in zoom-in-95 duration-100">
+      <div className="bg-white w-full max-w-[1100px] max-h-[95vh] flex flex-col rounded-[32px] overflow-x-hidden overflow-y-auto shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] animate-in zoom-in-95 duration-100 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
         
         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
           <div>
@@ -168,9 +168,9 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col relative z-50 min-h-0">
+        <form onSubmit={handleSubmit} className="flex flex-col relative z-50">
           
-          <div className="p-8 pb-4 space-y-8 shrink-0 relative z-50">
+          <div className="p-8 pb-4 space-y-8 relative z-50">
             {/* SECTOR DE MODALIDAD */}
             <div className="flex gap-4 mb-2">
             <button
@@ -290,7 +290,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
           </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-8 pb-8 space-y-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 relative z-10">
+          <div className="px-8 pb-8 space-y-4 relative z-10">
             <div className="flex justify-between items-center">
               <div>
                 <h4 className="text-[14px] font-black text-[#1D1D1F] uppercase tracking-widest">
@@ -314,12 +314,12 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
 
                     <div className={`${formData.esPaquete ? 'col-span-5' : 'col-span-4'} flex flex-col gap-1.5`}>
                       <label className="text-[10px] font-bold text-slate-400 uppercase">Nombre</label>
-                      <input type="text" required value={p.nombre} onChange={(e) => actualizarPrueba(index, 'nombre', e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20" placeholder="Ej. GLOBULOS BLANCOS" />
+                      <textarea rows={1} required value={p.nombre} onChange={(e) => actualizarPrueba(index, 'nombre', e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 resize-y min-h-[46px]" placeholder="Ej. GLOBULOS BLANCOS" />
                     </div>
 
                     <div className="col-span-3 flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase">Valores Referencia</label>
-                      <input type="text" value={p.valoresReferencia} onChange={(e) => actualizarPrueba(index, 'valoresReferencia', e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20" placeholder="Vacío para manual" />
+                      <textarea rows={1} value={p.valoresReferencia} onChange={(e) => actualizarPrueba(index, 'valoresReferencia', e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 resize-y min-h-[46px]" placeholder="Vacío para manual" />
                     </div>
 
                     <div className={`${formData.esPaquete ? 'col-span-2' : 'col-span-1'} flex flex-col gap-1.5`}>
@@ -388,7 +388,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
           </div>
         </form>
 
-        <div className="p-6 bg-white border-t border-slate-100 flex gap-4 shrink-0 rounded-b-[32px] relative z-40">
+        <div className="p-6 bg-white border-t border-slate-100 flex gap-4 rounded-b-[32px] relative z-40">
           <button type="button" onClick={onClose} disabled={guardando} className="flex-1 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-colors disabled:opacity-50">Cancelar</button>
           <button type="submit" onClick={handleSubmit} disabled={guardando} className="flex-1 py-4 bg-[#0071E3] text-white font-bold rounded-2xl shadow-lg hover:bg-[#0077ED] transition-colors disabled:opacity-70 flex items-center justify-center gap-2">
             {guardando && <Loader2 className="animate-spin" size={20} strokeWidth={3} />}

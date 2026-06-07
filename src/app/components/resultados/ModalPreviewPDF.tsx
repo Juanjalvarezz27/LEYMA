@@ -86,7 +86,7 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
     const mensaje =
       `*Laboratorio LEYMA C.A.*\nHola ${orden.paciente.nombreCompleto},\n\n` +
       `Tus resultados ya están listos.\n\n` +
-      `📄 *Ver tu informe en PDF:*\n${link}\n\n` +
+      `*Ver tu informe en PDF:*\n${link}\n\n` +
       `¡Cualquier consulta estamos a tu orden. Feliz día!`;
 
     window.open(`https://wa.me/${cleaned}?text=${encodeURIComponent(mensaje)}`, "_blank");

@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Plus, Trash2, CheckCircle2, ChevronRight, Calculator, FlaskConical, Beaker, ChevronDown, TrendingUp } from "lucide-react";
+import { Search, Plus, Trash2, CheckCircle2, ChevronRight, Calculator, FlaskConical, Beaker, ChevronDown, TrendingUp, X } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalConfirmacion from "../../components/ui/ModalConfirmacion";
 
 export default function TabEnsamblador() {
   const [examenes, setExamenes] = useState<any[]>([]);
+  const [isAddInsumoModalOpen, setIsAddInsumoModalOpen] = useState(false);
   const [insumosDisponibles, setInsumosDisponibles] = useState<any[]>([]);
   const [selectedPrueba, setSelectedPrueba] = useState<any>(null);
   
@@ -18,16 +19,16 @@ export default function TabEnsamblador() {
 
   // Selector
   const [searchTerm, setSearchTerm] = useState("");
-  const [insumoIdToAdd, setInsumoIdToAdd] = useState("");
-  const [cantidadToAdd, setCantidadToAdd] = useState("");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchInsumo, setSearchInsumo] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [insumosEnPreparacion, setInsumosEnPreparacion] = useState<any[]>([]);
 
   // Modal Eliminar Insumo de Receta
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [insumoToRemove, setInsumoToRemove] = useState<number | null>(null);
 
   const [loading, setLoading] = useState(true);
+  const [isCargandoEnsamblaje, setIsCargandoEnsamblaje] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -54,6 +55,7 @@ export default function TabEnsamblador() {
   );
 
   const cargarEnsamblaje = async (pruebaId: string) => {
+    setIsCargandoEnsamblaje(true);
     try {
       const res = await fetch(`/api/costos/ensamblador/${pruebaId}`);
       if (!res.ok) throw new Error("Error en la solicitud");
@@ -66,6 +68,8 @@ export default function TabEnsamblador() {
       recalcularTotal(recetaCargada);
     } catch (error) {
       toast.error("Error al cargar la receta del examen");
+    } finally {
+      setIsCargandoEnsamblaje(false);
     }
   };
 
@@ -74,22 +78,59 @@ export default function TabEnsamblador() {
     setCostoVariable(total);
   };
 
-  const handleAgregarInsumo = () => {
-    if (!insumoIdToAdd || !cantidadToAdd) return toast.warning("Seleccione un insumo y su cantidad");
-    const insumo = insumosDisponibles.find(i => i.id === parseInt(insumoIdToAdd));
-    if (!insumo) return;
+  const handleSeleccionarInsumoParaPreparacion = (insumo: any) => {
+    if (insumosEnPreparacion.find(i => i.id === insumo.id)) {
+      toast.info("Este insumo ya está en la lista de preparación");
+      return;
+    }
+    setInsumosEnPreparacion([...insumosEnPreparacion, { ...insumo, cantidadParaAgregar: "" }]);
+    setSearchInsumo("");
+    setIsDropdownOpen(false);
+  };
 
-    if (receta.find(r => r.insumoId === insumo.id)) {
-      return toast.warning("El insumo ya está en la receta");
+  const handleRemoverDePreparacion = (id: number) => {
+    setInsumosEnPreparacion(insumosEnPreparacion.filter(i => i.id !== id));
+  };
+
+  const handleCantidadPreparacionChange = (id: number, value: string) => {
+    setInsumosEnPreparacion(insumosEnPreparacion.map(i => 
+      i.id === id ? { ...i, cantidadParaAgregar: value } : i
+    ));
+  };
+
+  const handleAgregarDesdePreparacion = () => {
+    const validInsumos = insumosEnPreparacion.filter(i => parseFloat(i.cantidadParaAgregar || "0") > 0);
+    
+    if (validInsumos.length === 0) {
+      return toast.warning("Asigna una cantidad mayor a 0 a por lo menos un insumo.");
     }
 
-    const nuevaReceta = [...receta, { ...insumo, insumoId: insumo.id, cantidadUsada: parseFloat(cantidadToAdd) }];
+    let duplicados = 0;
+    const agregados: any[] = [];
+
+    validInsumos.forEach(insumo => {
+      if (receta.find(r => r.insumoId === insumo.id)) {
+        duplicados++;
+      } else {
+        agregados.push({ ...insumo, insumoId: insumo.id, cantidadUsada: parseFloat(insumo.cantidadParaAgregar) });
+      }
+    });
+
+    if (agregados.length === 0 && duplicados > 0) {
+      return toast.warning("Todos los insumos seleccionados ya están en la receta.");
+    }
+
+    const nuevaReceta = [...receta, ...agregados];
     setReceta(nuevaReceta);
     recalcularTotal(nuevaReceta);
     
-    setInsumoIdToAdd("");
-    setCantidadToAdd("");
+    setInsumosEnPreparacion([]);
     setSearchInsumo("");
+    setIsAddInsumoModalOpen(false);
+
+    if (duplicados > 0) {
+      toast.info(`Se agregaron ${agregados.length} insumos. Omitidos ${duplicados} por estar repetidos.`);
+    }
   };
 
   const handleEliminarRequest = (insumoId: number) => {
@@ -130,6 +171,137 @@ export default function TabEnsamblador() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-6" style={{ minHeight: '750px' }}>
+      {/* Modal Añadir Insumos (Tipo Carrito) */}
+      {isAddInsumoModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white w-full max-w-4xl h-[85vh] rounded-[32px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-100 text-[#0071E3] flex items-center justify-center">
+                  <Beaker size={20} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-[#1D1D1F]">Añadir Insumos</h3>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-0.5">a la receta de {selectedPrueba?.codigo}</p>
+                </div>
+              </div>
+              <button onClick={() => setIsAddInsumoModalOpen(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+                <X size={20} strokeWidth={2.5} />
+              </button>
+            </div>
+
+            <div className="px-6 py-5 border-b border-slate-100 bg-white shrink-0 relative z-20">
+              <label className="text-[11px] font-black text-[#0071E3] uppercase tracking-widest ml-1 mb-2 block">Buscador Inteligente</label>
+              <div className="relative">
+                <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
+                <input 
+                  type="text"
+                  placeholder="Escribe el nombre del reactivo o insumo..."
+                  value={searchInsumo}
+                  onChange={e => {
+                    setSearchInsumo(e.target.value);
+                    if (e.target.value.trim() !== "") setIsDropdownOpen(true);
+                    else setIsDropdownOpen(false);
+                  }}
+                  onFocus={() => { if(searchInsumo.trim() !== "") setIsDropdownOpen(true) }}
+                  className="w-full pl-12 pr-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-[#0071E3] focus:ring-4 focus:ring-[#0071E3]/10 transition-all shadow-sm"
+                />
+                
+                {isDropdownOpen && searchInsumo.trim() !== "" && (
+                  <div className="absolute top-full mt-2 left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-xl py-2 flex flex-col z-50" style={{ maxHeight: "300px" }}>
+                    <div className="overflow-y-auto flex-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full">
+                      {filteredInsumosDisponibles.map(i => (
+                        <div 
+                          key={i.id}
+                          className="px-5 py-3 text-sm cursor-pointer hover:bg-[#0071E3]/5 hover:text-[#0071E3] transition-colors border-b border-slate-50 last:border-0 flex justify-between items-center group"
+                          onClick={() => handleSeleccionarInsumoParaPreparacion(i)}
+                        >
+                          <div>
+                            <p className="font-bold text-slate-700 group-hover:text-[#0071E3]">{i.nombre}</p>
+                            <p className="text-xs text-slate-500 font-medium mt-0.5">Costo: ${i.costoUnitarioUSD.toFixed(4)} / {i.unidadMedida}</p>
+                          </div>
+                          <Plus size={16} className="text-slate-300 group-hover:text-[#0071E3]" />
+                        </div>
+                      ))}
+                      {filteredInsumosDisponibles.length === 0 && (
+                        <div className="px-5 py-8 text-sm text-slate-400 font-medium text-center">No se encontraron resultados para "{searchInsumo}"</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto bg-slate-50/50 flex flex-col p-6 relative z-0">
+              <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                Lista de Preparación <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-[10px]">{insumosEnPreparacion.length}</span>
+              </h4>
+              
+              {insumosEnPreparacion.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-slate-400 opacity-60">
+                  <div className="w-20 h-20 rounded-full bg-white shadow-sm flex items-center justify-center mb-4 border border-slate-100">
+                    <Search size={32} className="text-slate-300" strokeWidth={1.5} />
+                  </div>
+                  <p className="font-medium text-sm">Busca y selecciona insumos arriba para agregarlos aquí.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {insumosEnPreparacion.map(insumo => (
+                    <div key={insumo.id} className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-4 shadow-sm hover:border-[#0071E3]/30 transition-all">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-slate-800 text-sm truncate">{insumo.nombre}</p>
+                        <p className="text-xs font-medium text-slate-500 mt-1">Costo Unitario: <span className="text-[#0071E3] font-bold">${insumo.costoUnitarioUSD.toFixed(4)}</span> / {insumo.unidadMedida}</p>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="relative w-32">
+                          <input
+                            type="number"
+                            placeholder="0.00"
+                            value={insumo.cantidadParaAgregar}
+                            onChange={(e) => handleCantidadPreparacionChange(insumo.id, e.target.value)}
+                            className="w-full pl-3 pr-10 py-2 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all"
+                            min="0"
+                            step="0.0001"
+                          />
+                          <span className="absolute right-3 top-2 text-xs font-bold text-slate-400">
+                            {insumo.unidadMedida}
+                          </span>
+                        </div>
+                        <button 
+                          onClick={() => handleRemoverDePreparacion(insumo.id)}
+                          className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors border border-transparent hover:border-red-100"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 bg-white border-t border-slate-100 flex gap-4 shrink-0">
+              <button type="button" onClick={() => setIsAddInsumoModalOpen(false)} className="flex-1 md:flex-none md:w-32 py-3.5 bg-slate-100 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-200 hover:text-slate-800 transition-colors">
+                Cancelar
+              </button>
+              <button 
+                type="button" 
+                onClick={handleAgregarDesdePreparacion} 
+                disabled={insumosEnPreparacion.length === 0}
+                className={`flex-1 py-3.5 font-bold rounded-xl flex items-center justify-center gap-2 transition-all ${
+                  insumosEnPreparacion.length > 0 
+                    ? "bg-[#0071E3] text-white shadow-lg shadow-blue-500/20 hover:bg-[#0077ED]" 
+                    : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                }`}
+              >
+                <CheckCircle2 size={18} strokeWidth={2.5} /> Guardar Insumos en la Receta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ModalConfirmacion
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
@@ -207,6 +379,14 @@ export default function TabEnsamblador() {
 
       {/* Main Area: Ensamblador */}
       <div className="w-full lg:w-2/3 flex flex-col relative bg-white rounded-3xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden h-full">
+        {isCargandoEnsamblaje && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white z-[60]">
+            <div className="w-16 h-16 rounded-full border-4 border-slate-100 border-t-[#0071E3] animate-spin mb-4 shadow-sm"></div>
+            <h3 className="font-black text-xl text-slate-800 tracking-tight">Cargando estructura...</h3>
+            <p className="text-sm font-medium text-slate-500 mt-1">Obteniendo receta de la base de datos</p>
+          </div>
+        )}
+
         {!selectedPrueba ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50">
             <div className="w-24 h-24 rounded-full bg-white shadow-sm flex items-center justify-center mb-6">
@@ -239,87 +419,22 @@ export default function TabEnsamblador() {
             </div>
 
             <div className="p-6 flex-1 flex flex-col min-h-0">
-              {/* Formulario Añadir Insumo */}
-              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 mb-4 shrink-0 shadow-inner">
-                <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+              
+              <div className="flex justify-between items-center mb-4 shrink-0">
+                <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                   <Beaker size={18} className="text-[#0071E3]" />
-                  Añadir Insumo a la Receta
+                  Estructura Actual de la Receta
                 </h4>
-                <div className="flex flex-col lg:flex-row gap-4">
-                  <div className="relative flex-1 min-w-0">
-                    <div 
-                      className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl flex items-center justify-between cursor-pointer focus:ring-4 focus:ring-blue-50 transition-all shadow-sm min-w-0"
-                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    >
-                      <span className="text-slate-700 font-medium text-sm truncate pr-4">
-                        {insumoIdToAdd ? `${insumosDisponibles.find(i => i.id === parseInt(insumoIdToAdd))?.nombre} ($${insumosDisponibles.find(i => i.id === parseInt(insumoIdToAdd))?.costoUnitarioUSD.toFixed(4)} / ${insumosDisponibles.find(i => i.id === parseInt(insumoIdToAdd))?.unidadMedida})` : "Selecciona un insumo del inventario..."}
-                      </span>
-                      <ChevronDown size={18} className={`text-slate-400 shrink-0 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                    </div>
-                    
-                    {isDropdownOpen && (
-                      <div className="absolute z-20 w-full mt-2 bg-white border border-slate-100 rounded-2xl shadow-xl py-2 flex flex-col" style={{ maxHeight: "300px" }}>
-                        <div className="px-3 pb-2 pt-1 shrink-0 border-b border-slate-100">
-                          <div className="relative">
-                            <Search className="absolute left-3 top-2.5 text-slate-400" size={14} />
-                            <input 
-                              type="text"
-                              placeholder="Buscar insumo..."
-                              value={searchInsumo}
-                              onChange={e => setSearchInsumo(e.target.value)}
-                              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-100 focus:border-[#0071E3]"
-                              onClick={e => e.stopPropagation()}
-                            />
-                          </div>
-                        </div>
-                        <div className="overflow-y-auto flex-1">
-                          {filteredInsumosDisponibles.map(i => (
-                            <div 
-                              key={i.id}
-                              className={`px-5 py-3 text-sm cursor-pointer hover:bg-blue-50 hover:text-[#0071E3] transition-colors ${insumoIdToAdd === i.id.toString() ? 'bg-blue-50 text-[#0071E3] font-bold' : 'text-slate-600 font-medium'}`}
-                              onClick={() => {
-                                setInsumoIdToAdd(i.id.toString());
-                                setIsDropdownOpen(false);
-                                setSearchInsumo("");
-                              }}
-                            >
-                              {i.nombre} <span className="text-xs text-slate-400 font-mono ml-2 whitespace-nowrap">(${i.costoUnitarioUSD.toFixed(4)} / {i.unidadMedida})</span>
-                            </div>
-                          ))}
-                          {filteredInsumosDisponibles.length === 0 && (
-                            <div className="px-5 py-4 text-sm text-slate-400 font-medium text-center">No se encontraron insumos.</div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="relative w-full xl:w-40 shrink-0">
-                    <input
-                      type="number"
-                      placeholder="Cantidad"
-                      value={cantidadToAdd}
-                      onChange={(e) => setCantidadToAdd(e.target.value)}
-                      className="w-full pl-4 pr-12 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-blue-50 focus:border-[#0071E3] transition-all font-mono shadow-sm"
-                      min="0.0001"
-                      step="0.0001"
-                    />
-                    <span className="absolute right-4 top-3.5 text-slate-400 text-xs font-bold bg-white">
-                      {insumoIdToAdd ? insumosDisponibles.find(i => i.id === parseInt(insumoIdToAdd))?.unidadMedida : ""}
-                    </span>
-                  </div>
-                  <button 
-                    onClick={handleAgregarInsumo}
-                    className="bg-[#0071E3] text-white px-8 py-3.5 rounded-2xl hover:bg-blue-600 font-bold text-sm transition-all shadow-md shadow-blue-500/20 shrink-0 flex items-center justify-center gap-2"
-                  >
-                    <Plus size={18} /> Agregar
-                  </button>
-                </div>
+                <button 
+                  onClick={() => setIsAddInsumoModalOpen(true)}
+                  className="bg-[#0071E3] text-white px-5 py-2.5 rounded-xl hover:bg-[#0077ED] font-bold text-[13px] transition-all shadow-md shadow-blue-500/20 flex items-center gap-2"
+                >
+                  <Plus size={18} strokeWidth={2.5} /> Añadir Insumo a la Receta
+                </button>
               </div>
 
               {/* Lista de receta actual */}
               <div className="flex-1 flex flex-col min-h-0">
-                <h4 className="text-sm font-bold text-slate-800 mb-3 shrink-0">Estructura Actual</h4>
                 
                 <div className="flex-1 overflow-auto rounded-2xl border border-slate-100 shadow-sm mb-4 bg-white" style={{ minHeight: '180px' }}>
                   <table className="w-full text-left bg-white relative">
@@ -347,15 +462,15 @@ export default function TabEnsamblador() {
                         <tr key={idx} className="hover:bg-blue-50/30 transition-colors group">
                           <td className="px-6 py-4">
                             <p className="font-bold text-slate-700 text-sm">{item.nombre}</p>
-                            <p className="text-xs text-slate-400 mt-1 font-mono">${item.costoUnitarioUSD.toFixed(4)} / {item.unidadMedida}</p>
+                            <p className="text-xs text-slate-500 font-medium mt-1">Costo: <span className="text-[#0071E3] font-bold">${item.costoUnitarioUSD.toFixed(4)}</span> / {item.unidadMedida}</p>
                           </td>
                           <td className="px-6 py-4 text-center">
-                            <span className="inline-block bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg font-mono text-sm font-semibold border border-slate-200 shadow-sm">
-                              {item.cantidadUsada} <span className="text-slate-400 text-xs ml-1">{item.unidadMedida}</span>
+                            <span className="inline-block bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-sm font-bold border border-slate-200 shadow-sm">
+                              {item.cantidadUsada} <span className="text-slate-400 text-xs font-medium ml-1">{item.unidadMedida}</span>
                             </span>
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <span className="font-mono font-black text-[#0071E3] text-base">
+                            <span className="font-black text-[#0071E3] text-base">
                               ${(item.cantidadUsada * item.costoUnitarioUSD).toFixed(4)}
                             </span>
                           </td>

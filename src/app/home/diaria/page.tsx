@@ -93,7 +93,7 @@ export default function ListaDiariaPage() {
       return;
     }
     const numeroWA = formatWhatsAppNumber(orden.paciente.telefono);
-    const mensaje = `*Laboratorio LEYMA S.A.*\nHola ${orden.paciente.nombreCompleto}, nos comunicamos referente a su orden N° ${orden.id.toString().padStart(5, '0')}.`;
+    const mensaje = `*Laboratorio LEYMA C.A.*\nHola ${orden.paciente.nombreCompleto}, nos comunicamos referente a su orden N° ${orden.id.toString().padStart(5, '0')}.`;
     const url = `https://wa.me/${numeroWA}?text=${encodeURIComponent(mensaje)}`;
     window.open(url, "_blank");
   };

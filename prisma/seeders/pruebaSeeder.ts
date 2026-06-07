@@ -4,12 +4,6 @@ export async function seedPruebas(prisma: PrismaClient) {
   console.log('Iniciando seeder de pruebas...');
 
   // 1. Crear Categorías (Nivel 1: Organizadores)
-  const hematologia = await prisma.categoriaPrueba.upsert({
-    where: { nombre: 'HEMATOLOGIA' },
-    update: {},
-    create: { nombre: 'HEMATOLOGIA' },
-  });
-
   const quimica = await prisma.categoriaPrueba.upsert({
     where: { nombre: 'QUIMICA' },
     update: {},
@@ -21,19 +15,6 @@ export async function seedPruebas(prisma: PrismaClient) {
   // la mejor estrategia para el seeder es buscarlas por su nombre combinado con la categoría.
   
   // Para hacerlo limpio y compatible, usamos un findFirst o un upsert basado en una consulta previa
-  let subHematologia = await prisma.subcategoriaPrueba.findFirst({
-    where: { nombre: 'Hematología Completa', categoriaId: hematologia.id }
-  });
-  
-  if (!subHematologia) {
-    subHematologia = await prisma.subcategoriaPrueba.create({
-      data: {
-        nombre: 'Hematología Completa',
-        categoriaId: hematologia.id,
-      }
-    });
-  }
-
   let subQuimicaBasica = await prisma.subcategoriaPrueba.findFirst({
     where: { nombre: 'Química Sanguínea', categoriaId: quimica.id }
   });
@@ -48,66 +29,6 @@ export async function seedPruebas(prisma: PrismaClient) {
   }
 
   // 3. Crear Pruebas Individuales (Nivel 3: Ítems facturables con Precio y Código)
-  
-  // Pruebas para la subcategoría de Hematología
-  const pruebasHem = [
-    { 
-      codigo: 'GB-01', 
-      nombre: 'GLOBULOS BLANCOS', 
-      precioUSD: 2.0, 
-      unidades: '10^3/mm3', 
-      valoresReferencia: '4.8 - 10.8', 
-      ordenVisual: 1 
-    },
-    { 
-      codigo: 'GR-01', 
-      nombre: 'GLOBULOS ROJOS', 
-      precioUSD: 2.0, 
-      unidades: '10^6/mm3', 
-      valoresReferencia: '4.2 - 5.4', 
-      ordenVisual: 2 
-    },
-    { 
-      codigo: 'HGB-01', 
-      nombre: 'HEMOGLOBINA', 
-      precioUSD: 3.0, 
-      unidades: 'g/dL', 
-      valoresReferencia: '11.5 - 14.0', 
-      ordenVisual: 3 
-    },
-    { 
-      codigo: 'PLQ-01', 
-      nombre: 'PLAQUETAS', 
-      precioUSD: 3.0, 
-      unidades: '10^3/uL', 
-      valoresReferencia: '140 - 440', 
-      ordenVisual: 4 
-    },
-  ];
-
-  // Recorremos con UPSERT usando el campo único 'codigo'
-  for (const p of pruebasHem) {
-    await prisma.prueba.upsert({
-      where: { codigo: p.codigo },
-      update: {
-        nombre: p.nombre,
-        precioUSD: p.precioUSD,
-        unidades: p.unidades,
-        valoresReferencia: p.valoresReferencia,
-        ordenVisual: p.ordenVisual,
-        subcategoriaId: subHematologia.id,
-      },
-      create: {
-        codigo: p.codigo,
-        nombre: p.nombre,
-        precioUSD: p.precioUSD,
-        unidades: p.unidades,
-        valoresReferencia: p.valoresReferencia,
-        ordenVisual: p.ordenVisual,
-        subcategoriaId: subHematologia.id,
-      },
-    });
-  }
 
   // =============================================
   // PRUEBAS INDIVIDUALES de Química Sanguínea

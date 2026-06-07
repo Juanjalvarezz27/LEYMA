@@ -124,7 +124,7 @@ export default function ConstanciaPDF({ orden }: { orden: any }) {
         {/* MEMBRETE COMPACTADO */}
         <View style={styles.header}>
           <Image src="/Logo2.png" style={styles.logo} />
-          <Text style={styles.titleLaboratorio}>LABORATORIO CLÍNICO LEYMA S.A.</Text>
+          <Text style={styles.titleLaboratorio}>LABORATORIO CLÍNICO LEYMA C.A.</Text>
           <Text style={styles.subtitleHeader}>RIF: J-XXXXXXXX-X • R.S: XXXXXXX</Text>
           <Text style={styles.subtitleHeader}>Trujillo, Estado Trujillo, Venezuela</Text>
         </View>
@@ -138,7 +138,7 @@ export default function ConstanciaPDF({ orden }: { orden: any }) {
             Quien suscribe, hace constar por medio de la presente que el(la) ciudadano(a){" "}
             <Text style={styles.textoDestacado}>{orden.paciente.nombreCompleto.toUpperCase()}</Text>, titular de la
             Cédula de Identidad Nro. <Text style={styles.textoDestacado}>V-{orden.paciente.cedula || "S/N"}</Text>,
-            asistió a las instalaciones de Laboratorio Clínico LEYMA S.A. el día{" "}
+            asistió a las instalaciones de Laboratorio Clínico LEYMA C.A. el día{" "}
             <Text style={styles.textoDestacado}>{fechaFormateada}</Text> (Según Orden N°{" "}
             {orden.id.toString().padStart(5, "0")}), con el fin de realizarse los siguientes exámenes de laboratorio:
           </Text>

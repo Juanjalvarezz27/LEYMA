@@ -116,7 +116,7 @@ export default function ConstanciasPage() {
       return;
     }
     const numeroWA = formatWhatsAppNumber(paciente.telefono);
-    const mensaje = `*Laboratorio LEYMA S.A.*\nHola ${paciente.nombreCompleto}, nos comunicamos con usted para `;
+    const mensaje = `*Laboratorio LEYMA C.A.*\nHola ${paciente.nombreCompleto}, nos comunicamos con usted para `;
     const url = `https://wa.me/${numeroWA}?text=${encodeURIComponent(mensaje)}`;
     window.open(url, "_blank");
   };

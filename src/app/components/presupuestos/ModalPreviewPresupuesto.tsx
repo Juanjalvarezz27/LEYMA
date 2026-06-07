@@ -130,7 +130,7 @@ export default function ModalPreviewPresupuesto({
     let text = `*Laboratorio LEYMA C.A.*\nHola ${paciente.nombre || 'estimado paciente'},\n\n`;
     text += `Adjunto le enviamos el presupuesto solicitado.\n\n`;
     text += `*Total a pagar:* $${total.toFixed(2)} / Bs ${(total * tasaBCV).toFixed(2)}\n\n`;
-    text += `📄 *Ver cotización y descargar PDF aquí:*\n${url}\n\n`;
+    text += `*Ver cotización y descargar PDF aquí:*\n${url}\n\n`;
     text += `¡Cualquier consulta estamos a su orden!`;
     
     // Abrimos wa.me apuntando DIRECTO al número formateado

@@ -44,7 +44,7 @@ export default function LoginPage() {
       {/* TARJETA MAESTRA RECTANGULAR Optimizada */}
       <div className="relative w-full max-w-[1100px] flex flex-col lg:flex-row bg-white/60 rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden z-10 border border-white">
         
-        {/* COLUMNA IZQUIERDA: LEYMA S.A. */}
+        {/* COLUMNA IZQUIERDA: LEYMA C.A. */}
         <div className="hidden lg:flex w-[45%] flex-col justify-between p-14 bg-white border-r border-slate-100 relative z-20">
           
           <div className="flex flex-col items-start mt-4">

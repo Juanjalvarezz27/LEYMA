@@ -164,8 +164,8 @@ export default function Sidebar() {
                   setIsConfigOpen(!isConfigOpen);
                 }}
                 title={isCollapsed ? "Configuración" : ""}
-                className={`w-full flex items-center justify-between rounded-2xl transition-all duration-300 group overflow-hidden whitespace-nowrap ${
-                  isCollapsed ? "justify-center px-0 py-3" : "px-4 py-3"
+                className={`w-full flex items-center rounded-2xl transition-all duration-300 group overflow-hidden whitespace-nowrap ${
+                  isCollapsed ? "justify-center px-0 py-3" : "justify-between px-4 py-3"
                 } text-slate-700 hover:bg-slate-100/80 hover:text-[#1D1D1F] font-semibold`}
               >
                 <div className="flex items-center">

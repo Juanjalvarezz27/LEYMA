@@ -331,9 +331,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                     <Text style={pdfStyles.colRef}>VALORES DE REFERENCIA</Text>
                   </View>
 
-                  {detalles[0]?.prueba?.subcategoria?.esPaquete && (
-                    <Text style={pdfStyles.subcatTitle}>{subCatNombre}</Text>
-                  )}
+                  <Text style={pdfStyles.subcatTitle}>{subCatNombre}</Text>
 
                   {detalles.map((det: any) => {
                     const isPaquete = detalles[0]?.prueba?.subcategoria?.esPaquete;
@@ -344,7 +342,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                         {det.cantidad > 1 ? (
                           <View>
                             <View style={pdfStyles.row}>
-                              <Text style={isPaquete ? pdfStyles.rowDescSub : pdfStyles.rowDesc}>{det.prueba.nombre}</Text>
+                              <Text style={pdfStyles.rowDescSub}>{det.prueba.nombre}</Text>
                               <Text style={pdfStyles.rowRes}></Text>
                               <Text style={pdfStyles.rowUni}>{det.prueba.unidades || ''}</Text>
                               <Text style={pdfStyles.rowRef}>{det.resultado?.valoresReferencia || det.prueba.valoresReferencia || ''}</Text>
@@ -364,7 +362,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                           </View>
                         ) : (
                           <View style={pdfStyles.row}>
-                            <Text style={isPaquete ? pdfStyles.rowDescSub : pdfStyles.rowDesc}>{det.prueba.nombre}</Text>
+                            <Text style={pdfStyles.rowDescSub}>{det.prueba.nombre}</Text>
                             <Text style={pdfStyles.rowRes}>{listaValores[0]?.valorIngresado || "-"}</Text>
                             <Text style={pdfStyles.rowUni}>{det.prueba.unidades || ''}</Text>
                             <Text style={pdfStyles.rowRef}>{det.resultado?.valoresReferencia || det.prueba.valoresReferencia || ''}</Text>

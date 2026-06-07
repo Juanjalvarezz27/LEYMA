@@ -128,7 +128,7 @@ export async function PUT(
     return NextResponse.json(subcatActualizada);
   } catch (error) {
     console.error("Error en PUT /api/pruebas:", error);
-    return NextResponse.json({ error: "Error al actualizar la estructura de la prueba" }, { status: 500 });
+    return NextResponse.json({ error: `Error al actualizar la estructura: ${(error as Error).message}` }, { status: 500 });
   }
 }
 

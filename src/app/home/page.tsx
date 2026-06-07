@@ -93,7 +93,7 @@ export default function HomeDashboardPage() {
                 Hola, <span className="text-[#0071E3]">{status === "loading" ? "..." : nombreUsuario}</span>
               </h1>
               <p className="text-lg font-medium text-slate-500 max-w-xl">
-                Bienvenido al panel principal de LEYMA S.A. ¿Qué te gustaría hacer hoy?
+                Bienvenido al panel principal de LEYMA C.A. ¿Qué te gustaría hacer hoy?
               </p>
             </div>
           </div>

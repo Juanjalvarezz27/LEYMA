@@ -113,7 +113,7 @@ export default function ResultadosPage() {
       return;
     }
     const numeroWA = formatWhatsAppNumber(orden.paciente.telefono);
-    const mensaje = `*Laboratorio LEYMA S.A.*\nHola ${orden.paciente.nombreCompleto}, nos comunicamos referente a su orden N° ${orden.id.toString().padStart(5, '0')}.`;
+    const mensaje = `*Laboratorio LEYMA C.A.*\nHola ${orden.paciente.nombreCompleto}, nos comunicamos referente a su orden N° ${orden.id.toString().padStart(5, '0')}.`;
     const url = `https://wa.me/${numeroWA}?text=${encodeURIComponent(mensaje)}`;
     window.open(url, "_blank");
   };
@@ -124,7 +124,7 @@ export default function ResultadosPage() {
       return;
     }
     const numeroWA = formatWhatsAppNumber(orden.paciente.telefono);
-    let mensaje = `*Laboratorio LEYMA S.A.*\nHola ${orden.paciente.nombreCompleto},\n\n`;
+    let mensaje = `*Laboratorio LEYMA C.A.*\nHola ${orden.paciente.nombreCompleto},\n\n`;
     mensaje += `Te informamos que tus resultados ya están listos y validados.\n\n`;
     mensaje += `Por favor, acércate a nuestras instalaciones para realizar el pago pendiente y recibir tu informe oficial.\n\n`;
     mensaje += `*Total de la orden:* $${orden.totalUSD.toFixed(2)} / Bs ${orden.totalBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}\n\n`;

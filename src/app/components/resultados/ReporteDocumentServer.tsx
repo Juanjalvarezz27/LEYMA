@@ -34,7 +34,7 @@ const pdfStyles = StyleSheet.create({
   page: {
     paddingTop: 40,
     paddingBottom: 50,
-    paddingHorizontal: 40,
+    paddingHorizontal: 20,
     fontFamily: "Inter",
     fontSize: 10,
     color: "#000",
@@ -117,10 +117,10 @@ const pdfStyles = StyleSheet.create({
     paddingBottom: 2,
     marginBottom: 3,
   },
-  colDesc: { width: "28%", fontWeight: 700, fontSize: 8.5 },
-  colRes: { width: "25%", fontWeight: 700, fontSize: 8.5, textAlign: "center" },
-  colUni: { width: "20%", fontWeight: 700, fontSize: 8.5, textAlign: "center" },
-  colRef: { width: "27%", fontWeight: 700, fontSize: 8.5, textAlign: "center" },
+  colDesc: { width: "27%", fontWeight: 700, fontSize: 8.5 },
+  colRes: { width: "32%", fontWeight: 700, fontSize: 8.5, textAlign: "center" },
+  colUni: { width: "15%", fontWeight: 700, fontSize: 8.5, textAlign: "center" },
+  colRef: { width: "26%", fontWeight: 700, fontSize: 8.5, textAlign: "center" },
 
   subcatTitle: {
     fontSize: 9.5,
@@ -135,18 +135,18 @@ const pdfStyles = StyleSheet.create({
     marginBottom: 4,
     paddingVertical: 4,
   },
-  rowDesc: { width: "28%", fontSize: 8.5, fontWeight: 700 },
-  rowDescSub: { width: "28%", fontSize: 8.5, fontWeight: 700, paddingLeft: 10 },
+  rowDesc: { width: "27%", fontSize: 8.5, fontWeight: 700 },
+  rowDescSub: { width: "27%", fontSize: 8.5, fontWeight: 700, paddingLeft: 10 },
   multiRowDesc: {
-    width: "28%",
+    width: "27%",
     fontSize: 8,
     fontWeight: 400,
     paddingLeft: 15,
     color: "#334155",
   },
-  rowRes: { width: "25%", fontSize: 9, fontWeight: 700, textAlign: "center", lineHeight: 1.2 },
-  rowUni: { width: "20%", fontSize: 8.5, textAlign: "center", lineHeight: 1.2 },
-  rowRef: { width: "27%", fontSize: 8.5, textAlign: "center", lineHeight: 1.2 },
+  rowRes: { width: "32%", fontSize: 9, fontWeight: 700, textAlign: "center", lineHeight: 1.2 },
+  rowUni: { width: "15%", fontSize: 8.5, textAlign: "center", lineHeight: 1.2 },
+  rowRef: { width: "26%", fontSize: 8.5, textAlign: "center", lineHeight: 1.2 },
 
   obsContainer: {
     marginLeft: 10,

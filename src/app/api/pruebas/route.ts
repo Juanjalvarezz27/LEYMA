@@ -48,6 +48,14 @@ export async function POST(req: Request) {
       }
     }
 
+    // 2. Validar que el nombre del paquete/perfil no exista ya
+    const subcatExistente = await prisma.subcategoriaPrueba.findUnique({
+      where: { nombre: body.subcategoria.toUpperCase() }
+    });
+    if (subcatExistente) {
+      return NextResponse.json({ error: `El perfil, paquete o subcategoría con el nombre "${body.subcategoria.toUpperCase()}" ya existe en el sistema.` }, { status: 400 });
+    }
+
     const categoria = await prisma.categoriaPrueba.upsert({
       where: { nombre: body.categoria.toUpperCase() },
       update: {},

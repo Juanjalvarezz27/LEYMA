@@ -56,8 +56,19 @@ export async function PUT(
       }
 
       if (conflictos.length > 0) {
-        return NextResponse.json({ error: `Conflicto de códigos compartidos: ${conflictos.join(" | ")}.` }, { status: 400 });
+        return NextResponse.json({ error: `Error de códigos compartidos: ${conflictos.join(" | ")}.` }, { status: 400 });
       }
+    }
+
+    // 2. Validar que el nombre del paquete/perfil no exista ya en otro registro
+    const subcatExistente = await prisma.subcategoriaPrueba.findFirst({
+      where: { 
+        nombre: body.subcategoria.toUpperCase(),
+        id: { not: id } 
+      }
+    });
+    if (subcatExistente) {
+      return NextResponse.json({ error: `El perfil, paquete o subcategoría con el nombre "${body.subcategoria.toUpperCase()}" ya existe en el sistema.` }, { status: 400 });
     }
 
 

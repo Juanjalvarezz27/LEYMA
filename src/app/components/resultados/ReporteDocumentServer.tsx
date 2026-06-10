@@ -32,9 +32,9 @@ Font.register({
 // ---------------------------------------------------------------------------
 const pdfStyles = StyleSheet.create({
   page: {
-    paddingTop: 25,
-    paddingBottom: 40,
-    paddingHorizontal: 30,
+    paddingTop: 40,
+    paddingBottom: 50,
+    paddingHorizontal: 40,
     fontFamily: "Inter",
     fontSize: 10,
     color: "#000",
@@ -114,21 +114,26 @@ const pdfStyles = StyleSheet.create({
     flexDirection: "row",
     borderBottomWidth: 1,
     borderBottomColor: "#000",
-    paddingBottom: 4,
-    marginBottom: 6,
+    paddingBottom: 2,
+    marginBottom: 3,
   },
   colDesc: { width: "32%", fontWeight: 700, fontSize: 8.5 },
   colRes: { width: "25%", fontWeight: 700, fontSize: 8.5, textAlign: "center" },
   colUni: { width: "20%", fontWeight: 700, fontSize: 8.5, textAlign: "center" },
   colRef: { width: "23%", fontWeight: 700, fontSize: 8.5, textAlign: "center" },
 
-  subcatTitle: { fontSize: 9.5, fontWeight: 700, paddingVertical: 3, paddingLeft: 5 },
+  subcatTitle: {
+    fontSize: 9.5,
+    fontWeight: 700,
+    paddingVertical: 4,
+    paddingLeft: 5,
+  },
 
   row: {
     flexDirection: "row",
     alignItems: "flex-start",
     marginBottom: 4,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
   rowDesc: { width: "32%", fontSize: 8.5, fontWeight: 700 },
   rowDescSub: { width: "32%", fontSize: 8.5, fontWeight: 700, paddingLeft: 10 },
@@ -139,9 +144,9 @@ const pdfStyles = StyleSheet.create({
     paddingLeft: 15,
     color: "#334155",
   },
-  rowRes: { width: "25%", fontSize: 9.5, fontWeight: 700, textAlign: "center" },
-  rowUni: { width: "20%", fontSize: 8.5, textAlign: "center" },
-  rowRef: { width: "23%", fontSize: 8.5, textAlign: "center" },
+  rowRes: { width: "25%", fontSize: 9, fontWeight: 700, textAlign: "center", lineHeight: 1.2 },
+  rowUni: { width: "20%", fontSize: 8.5, textAlign: "center", lineHeight: 1.2 },
+  rowRef: { width: "23%", fontSize: 8.5, textAlign: "center", lineHeight: 1.2 },
 
   obsContainer: {
     marginLeft: 10,
@@ -293,6 +298,92 @@ const ReporteDocumentServer = ({
     return acc;
   }, {});
 
+  const renderDetalleRow = (det: any, subCatNombre: string) => {
+    const isPaquete = subCatNombre !== "PRUEBAS INDIVIDUALES";
+    const listaValores = det.resultado?.valores || [];
+    return (
+      <View key={det.id} wrap={false}>
+        {det.cantidad > 1 ? (
+          <View>
+            <View style={pdfStyles.row}>
+              <Text
+                style={
+                  isPaquete
+                    ? pdfStyles.rowDescSub
+                    : pdfStyles.rowDesc
+                }
+              >
+                {det.prueba.nombre}
+              </Text>
+              <Text style={pdfStyles.rowRes}></Text>
+              <Text style={pdfStyles.rowUni}>
+                {det.prueba.unidades || ""}
+              </Text>
+              <Text style={pdfStyles.rowRef}>
+                {det.resultado?.valoresReferencia ||
+                  det.prueba.valoresReferencia ||
+                  ""}
+              </Text>
+            </View>
+            {Array(det.cantidad)
+              .fill(0)
+              .map((_: any, i: number) => {
+                const valorMuestra =
+                  listaValores[i]?.valorIngresado || "-";
+                return (
+                  <View key={i} style={pdfStyles.row}>
+                    <Text style={pdfStyles.multiRowDesc}>
+                      Muestra {i + 1}
+                    </Text>
+                    <Text style={pdfStyles.rowRes}>
+                      {valorMuestra}
+                    </Text>
+                    <Text style={pdfStyles.rowUni}></Text>
+                    <Text style={pdfStyles.rowRef}></Text>
+                  </View>
+                );
+              })}
+          </View>
+        ) : (
+          <View style={pdfStyles.row}>
+            <Text
+              style={
+                isPaquete
+                  ? pdfStyles.rowDescSub
+                  : pdfStyles.rowDesc
+              }
+            >
+              {det.prueba.nombre}
+            </Text>
+            <Text style={pdfStyles.rowRes}>
+              {listaValores.length > 0 
+                ? listaValores.map((v: any) => v.valorIngresado || " ").join("\n").trim() || "-"
+                : "-"}
+            </Text>
+            <Text style={pdfStyles.rowUni}>
+              {det.prueba.unidades || ""}
+            </Text>
+            <Text style={pdfStyles.rowRef}>
+              {det.resultado?.valoresReferencia ||
+                det.prueba.valoresReferencia ||
+                ""}
+            </Text>
+          </View>
+        )}
+        {det.resultado?.observaciones && (
+          <View style={pdfStyles.obsContainer}>
+            <Text style={pdfStyles.obsLabel}>
+              Nota ({det.prueba.nombre}):{" "}
+            </Text>
+            <Text style={pdfStyles.obsText}>
+              {det.resultado.observaciones}
+            </Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   return (
     <Document>
       <Page size="LETTER" style={pdfStyles.page}>
@@ -399,7 +490,7 @@ const ReporteDocumentServer = ({
               : "";
 
             return (
-              <View key={catNombre} style={pdfStyles.categoryBlock} wrap={false}>
+              <View key={catNombre} style={pdfStyles.categoryBlock}>
                 <View style={{ width: "100%" }}>
                   <Text style={pdfStyles.catTitle}>
                     {catNombre}
@@ -411,103 +502,25 @@ const ReporteDocumentServer = ({
                   {Object.entries(catData.subcategorias).map(
                     ([subCatNombre, detalles]: [string, any]) => (
                       <View key={subCatNombre} style={{ marginBottom: 10 }}>
-                        <View style={pdfStyles.tableHeader}>
-                          <Text style={pdfStyles.colDesc}>PARAMETRO</Text>
-                          <Text style={pdfStyles.colRes}>RESULTADO</Text>
-                          <Text style={pdfStyles.colUni}>UNIDADES</Text>
-                          <Text style={pdfStyles.colRef}>VALORES DE REFERENCIA</Text>
+                        <View wrap={false}>
+                          <View style={pdfStyles.tableHeader}>
+                            <Text style={pdfStyles.colDesc}>PARAMETRO</Text>
+                            <Text style={pdfStyles.colRes}>RESULTADO</Text>
+                            <Text style={pdfStyles.colUni}>UNIDADES</Text>
+                            <Text style={pdfStyles.colRef}>
+                              VALORES DE REFERENCIA
+                            </Text>
+                          </View>
+
+                          {subCatNombre !== "PRUEBAS INDIVIDUALES" && (
+                            <Text style={pdfStyles.subcatTitle}>{subCatNombre}</Text>
+                          )}
+
+                          {detalles.length > 0 && renderDetalleRow(detalles[0], subCatNombre)}
                         </View>
 
-                        {subCatNombre !== "PRUEBAS INDIVIDUALES" && (
-                          <Text style={pdfStyles.subcatTitle}>{subCatNombre}</Text>
-                        )}
-
-                        {detalles.map((det: any) => {
-                          const isPaquete = subCatNombre !== "PRUEBAS INDIVIDUALES";
-                          const listaValores = det.resultado?.valores || [];
-
-                          return (
-                            <View key={det.id} wrap={false}>
-                              {det.cantidad > 1 || listaValores.length > 1 ? (
-                                <View>
-                                  <View style={pdfStyles.row}>
-                                    <Text
-                                      style={
-                                        isPaquete
-                                          ? pdfStyles.rowDescSub
-                                          : pdfStyles.rowDesc
-                                      }
-                                    >
-                                      {det.prueba.nombre}
-                                    </Text>
-                                    <Text style={pdfStyles.rowRes}></Text>
-                                    <Text style={pdfStyles.rowUni}>
-                                      {det.prueba.unidades || ""}
-                                    </Text>
-                                    <Text style={pdfStyles.rowRef}>
-                                      {det.resultado?.valoresReferencia ||
-                                        det.prueba.valoresReferencia ||
-                                        ""}
-                                    </Text>
-                                  </View>
-                                  {Array(Math.max(det.cantidad, listaValores.length))
-                                    .fill(0)
-                                    .map((_: any, i: number) => {
-                                      const valorMuestra =
-                                        listaValores[i]?.valorIngresado || "-";
-                                      const titulo = det.cantidad > 1 ? `Muestra ${i + 1}` : "";
-                                      return (
-                                        <View key={i} style={pdfStyles.row}>
-                                          <Text style={pdfStyles.multiRowDesc}>
-                                            {titulo}
-                                          </Text>
-                                          <Text style={pdfStyles.rowRes}>
-                                            {valorMuestra}
-                                          </Text>
-                                          <Text style={pdfStyles.rowUni}></Text>
-                                          <Text style={pdfStyles.rowRef}></Text>
-                                        </View>
-                                      );
-                                    })}
-                                </View>
-                              ) : (
-                                <View style={pdfStyles.row}>
-                                  <Text
-                                    style={
-                                      isPaquete
-                                        ? pdfStyles.rowDescSub
-                                        : pdfStyles.rowDesc
-                                    }
-                                  >
-                                    {det.prueba.nombre}
-                                  </Text>
-                                  <Text style={pdfStyles.rowRes}>
-                                    {listaValores[0]?.valorIngresado || "-"}
-                                  </Text>
-                                  <Text style={pdfStyles.rowUni}>
-                                    {det.prueba.unidades || ""}
-                                  </Text>
-                                  <Text style={pdfStyles.rowRef}>
-                                    {det.resultado?.valoresReferencia ||
-                                      det.prueba.valoresReferencia ||
-                                      ""}
-                                  </Text>
-                                </View>
-                              )}
-
-                              {det.resultado?.observaciones && (
-                                <View style={pdfStyles.obsContainer}>
-                                  <Text style={pdfStyles.obsLabel}>
-                                    Nota ({det.prueba.nombre}):{" "}
-                                  </Text>
-                                  <Text style={pdfStyles.obsText}>
-                                    {det.resultado.observaciones}
-                                  </Text>
-                                </View>
-                              )}
-                            </View>
-                          );
-                        })}
+                        {detalles.length > 1 &&
+                          detalles.slice(1).map((det: any) => renderDetalleRow(det, subCatNombre))}
                       </View>
                     )
                   )}

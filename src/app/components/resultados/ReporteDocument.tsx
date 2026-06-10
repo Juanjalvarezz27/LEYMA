@@ -24,19 +24,20 @@ Font.register({
 export const pdfStyles = StyleSheet.create({
   page: {
     paddingTop: 25,
-    paddingBottom: 70, 
+    paddingBottom: 40,
     paddingHorizontal: 30,
     fontFamily: 'Inter',
     fontSize: 10, 
     color: '#000'
   },
   topContact: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 3,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
     paddingBottom: 4,
-    marginBottom: 6,
+    marginBottom: 6
   },
   topContactText: { fontSize: 7, color: '#64748B', fontWeight: 700 }, 
   topContactRight: { flexDirection: 'row', gap: 10 },
@@ -75,25 +76,11 @@ export const pdfStyles = StyleSheet.create({
 
   // --- ESTRUCTURA DE BLOQUE POR CATEGORÍA ---
   categoryBlock: {
-    flexDirection: 'row',
     width: '100%',
     marginBottom: 20, 
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
     paddingBottom: 10
-  },
-  tableSide: {
-    width: '74%', 
-    paddingRight: 15 
-  },
-  signatureSide: {
-    width: '26%', 
-    justifyContent: 'center', 
-    alignItems: 'center',
-    borderLeftWidth: 1,
-    borderLeftColor: '#CBD5E1', 
-    paddingLeft: 15, 
-    paddingBottom: 5
   },
 
   catTitle: {
@@ -105,6 +92,12 @@ export const pdfStyles = StyleSheet.create({
     marginBottom: 8,
     textTransform: 'uppercase'
   },
+  catBioanalistaText: {
+    fontSize: 8.5,
+    fontWeight: 700,
+    color: "#000",
+    letterSpacing: 0.5,
+  },
   tableHeader: {
     flexDirection: 'row',
     borderBottomWidth: 1,
@@ -113,54 +106,67 @@ export const pdfStyles = StyleSheet.create({
     marginBottom: 6
   },
   
-  colDesc: { width: '38%', fontWeight: 700, fontSize: 8.5 }, 
-  colRes: { width: '17%', fontWeight: 700, fontSize: 8.5, textAlign: 'center' }, 
-  colUni: { width: '15%', fontWeight: 700, fontSize: 8.5, textAlign: 'center' }, 
-  colRef: { width: '30%', fontWeight: 700, fontSize: 8.5, textAlign: 'right' }, 
+  colDesc: { width: '32%', fontWeight: 700, fontSize: 8.5 }, 
+  colRes: { width: '25%', fontWeight: 700, fontSize: 8.5, textAlign: 'center' }, 
+  colUni: { width: '20%', fontWeight: 700, fontSize: 8.5, textAlign: 'center' }, 
+  colRef: { width: '23%', fontWeight: 700, fontSize: 8.5, textAlign: 'center' }, 
   
   subcatTitle: { fontSize: 9.5, fontWeight: 700, paddingVertical: 3, paddingLeft: 5 }, 
   
   row: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4, paddingVertical: 3 },
-  rowDesc: { width: '38%', fontSize: 8.5, fontWeight: 700 }, 
-  rowDescSub: { width: '38%', fontSize: 8.5, fontWeight: 700, paddingLeft: 10 }, 
-  multiRowDesc: { width: '38%', fontSize: 8, fontWeight: 400, paddingLeft: 15, color: '#334155' }, 
-  rowRes: { width: '17%', fontSize: 10.5, fontWeight: 700, textAlign: 'center' }, 
-  rowUni: { width: '15%', fontSize: 8.5, textAlign: 'center' }, 
-  rowRef: { width: '30%', fontSize: 8.5, textAlign: 'right' }, 
+  rowDesc: { width: '32%', fontSize: 8.5, fontWeight: 700 }, 
+  rowDescSub: { width: '32%', fontSize: 8.5, fontWeight: 700, paddingLeft: 10 }, 
+  multiRowDesc: { width: '32%', fontSize: 8, fontWeight: 400, paddingLeft: 15, color: '#334155' }, 
+  rowRes: { width: '25%', fontSize: 9.5, fontWeight: 700, textAlign: 'center' }, 
+  rowUni: { width: '20%', fontSize: 8.5, textAlign: 'center' }, 
+  rowRef: { width: '23%', fontSize: 8.5, textAlign: 'center' }, 
   
   obsContainer: { marginLeft: 10, marginBottom: 5, marginTop: 2, flexDirection: 'row' },
   obsLabel: { fontSize: 8.5, fontWeight: 700, color: '#475569' }, 
   obsText: { fontSize: 8.5, fontWeight: 400, color: '#475569' }, 
 
-  // ESTILOS DE FIRMAS LATERALES
-  inlineSignatureBlock: {
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 5
+  // ESTILOS DE FIRMAS AL FINAL
+  footerSignaturesContainer: {
+    marginTop: 40,
+    paddingBottom: 20,
   },
-  inlineFirmaImage: {
-    width: 85,
-    height: 40,
-    objectFit: 'contain',
-    marginBottom: 2, 
+  footerSignaturesRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 40,
   },
-  inlineSignatureLine: {
-    width: '100%',
+  footerSignatureBlock: {
+    alignItems: "center",
+    width: 140,
+  },
+  footerFirmaImage: {
+    width: 110,
+    height: 45,
+    objectFit: "contain",
+    marginBottom: 4,
+  },
+  footerSignatureLine: {
+    width: "100%",
     borderTopWidth: 1,
-    borderTopColor: '#000',
-    paddingTop: 6, 
-    alignItems: 'center'
+    borderTopColor: "#000",
+    paddingTop: 6,
+    alignItems: "center",
   },
-  inlineBioanalista: { fontSize: 8.5, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', textAlign: 'center' }, 
-  inlineLabName: { fontSize: 7, color: '#64748B', marginTop: 1.5, textAlign: 'center' }, 
+  footerBioanalista: {
+    fontSize: 9,
+    fontWeight: 700,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    textAlign: "center",
+  },
+  footerLabName: {
+    fontSize: 7,
+    color: "#64748B",
+    marginTop: 2,
+    textAlign: "center",
+  }, 
 
   // FOOTER GENERAL (Uno al lado del otro)
-  footer: {
-    position: 'absolute',
-    bottom: 25, 
-    left: 30, 
-    right: 30,
-  },
   footerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -168,7 +174,8 @@ export const pdfStyles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
     paddingTop: 10,
-    width: '100%'
+    marginTop: 30,
+    width: "100%",
   },
   qrRow: {
     flexDirection: 'row',
@@ -209,6 +216,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
     return `${edad} ${esBebe ? 'Meses' : 'Años'}`;
   };
 
+  const allSigners = new Map();
   const groupedByCategory = orden.detalles.reduce((acc: any, det: any) => {
     const catNombre = det.prueba?.subcategoria?.categoria?.nombre || "OTROS";
     const subcatNombre = det.prueba?.subcategoria?.nombre || "PRUEBAS INDIVIDUALES";
@@ -228,6 +236,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
 
     if (det.resultado?.firmado && det.resultado?.procesadoPor) {
       acc[catNombre].signers.set(det.resultado.procesadoPor.id, det.resultado.procesadoPor);
+      allSigners.set(det.resultado.procesadoPor.id, det.resultado.procesadoPor);
     }
 
     return acc;
@@ -239,10 +248,10 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
         
         {/* INFO CONTACTO SUPERIOR */}
         <View style={pdfStyles.topContact}>
-          <Text style={pdfStyles.topContactText}>DIRECCIÓN: AV. BOLÍVAR, SECTOR CARMONA, EDIF. LEYMA.</Text>
+          <Text style={pdfStyles.topContactText}>DIRECCIÓN: AVENIDA CORO DETRÁS DEL HOSPITAL, TRUJILLO 3150.</Text>
           <View style={pdfStyles.topContactRight}>
-            <Text style={pdfStyles.topContactText}>TELÉFONO: 0412-9164371</Text>
-            <Text style={pdfStyles.topContactText}>CORREO: CONTACTO@LEYMA.COM</Text>
+            <Text style={pdfStyles.topContactText}>TELÉFONO: 0422 - 8164371</Text>
+            <Text style={pdfStyles.topContactText}>CORREO: LABORATORIOLEYMA@GMAIL.COM</Text>
             <Text style={pdfStyles.topContactText}>RIF: J-00000000-0</Text>
           </View>
         </View>
@@ -313,135 +322,143 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
           </View>
         </View>
 
-        {/* CUERPO DEL REPORTE - DISEÑO DE COLUMNAS (TABLA IZQ / FIRMA DER) */}
-        {Object.entries(groupedByCategory).map(([catNombre, catData]: [string, any]) => (
-          <View key={catNombre} style={pdfStyles.categoryBlock} wrap={false}>
-            
-            {/* LADO IZQUIERDO: LA TABLA */}
-            <View style={pdfStyles.tableSide}>
-              <Text style={pdfStyles.catTitle}>{catNombre}</Text>
+        {/* CUERPO DEL REPORTE */}
+        {Object.entries(groupedByCategory).map(([catNombre, catData]: [string, any]) => {
+          const bioanalistasText = catData.signers.size > 0 
+            ? ` - PROCESADO POR: ${Array.from(catData.signers.values()).map((b: any) => b.nombre).join(" / ")}` 
+            : "";
 
-              {Object.entries(catData.subcategorias).map(([subCatNombre, detalles]: [string, any]) => (
-                <View key={subCatNombre} style={{ marginBottom: 10 }}>
-                  
-                  <View style={pdfStyles.tableHeader}>
-                    <Text style={pdfStyles.colDesc}>PARAMETRO</Text>
-                    <Text style={pdfStyles.colRes}>RESULTADO</Text>
-                    <Text style={pdfStyles.colUni}>UNIDADES</Text>
-                    <Text style={pdfStyles.colRef}>VALORES DE REFERENCIA</Text>
-                  </View>
+          return (
+            <View key={catNombre} style={pdfStyles.categoryBlock} wrap={false}>
+              
+              {/* LA TABLA DE RESULTADOS */}
+              <View style={{ width: "100%" }}>
+                <Text style={pdfStyles.catTitle}>
+                  {catNombre}
+                  {bioanalistasText && (
+                    <Text style={pdfStyles.catBioanalistaText}>{bioanalistasText}</Text>
+                  )}
+                </Text>
 
-                  <Text style={pdfStyles.subcatTitle}>{subCatNombre}</Text>
-
-                  {detalles.map((det: any) => {
-                    const isPaquete = detalles[0]?.prueba?.subcategoria?.esPaquete;
-                    const listaValores = det.resultado?.valores || [];
+                {Object.entries(catData.subcategorias).map(([subCatNombre, detalles]: [string, any]) => (
+                  <View key={subCatNombre} style={{ marginBottom: 10 }}>
                     
-                    return (
-                      <View key={det.id} wrap={false}>
-                        {det.cantidad > 1 ? (
-                          <View>
+                    <View style={pdfStyles.tableHeader}>
+                      <Text style={pdfStyles.colDesc}>PARAMETRO</Text>
+                      <Text style={pdfStyles.colRes}>RESULTADO</Text>
+                      <Text style={pdfStyles.colUni}>UNIDADES</Text>
+                      <Text style={pdfStyles.colRef}>VALORES DE REFERENCIA</Text>
+                    </View>
+
+                    <Text style={pdfStyles.subcatTitle}>{subCatNombre}</Text>
+
+                    {detalles.map((det: any) => {
+                      const isPaquete = detalles[0]?.prueba?.subcategoria?.esPaquete;
+                      const listaValores = det.resultado?.valores || [];
+                      
+                      return (
+                        <View key={det.id} wrap={false}>
+                          {det.cantidad > 1 ? (
+                            <View>
+                              <View style={pdfStyles.row}>
+                                <Text style={pdfStyles.rowDescSub}>{det.prueba.nombre}</Text>
+                                <Text style={pdfStyles.rowRes}></Text>
+                                <Text style={pdfStyles.rowUni}>{det.prueba.unidades || ''}</Text>
+                                <Text style={pdfStyles.rowRef}>{det.resultado?.valoresReferencia || det.prueba.valoresReferencia || ''}</Text>
+                              </View>
+                              
+                              {Array(det.cantidad).fill(0).map((_, i) => {
+                                const valorMuestra = listaValores[i]?.valorIngresado || "-";
+                                return (
+                                  <View key={i} style={pdfStyles.row}>
+                                    <Text style={pdfStyles.multiRowDesc}>Muestra {i + 1}</Text>
+                                    <Text style={pdfStyles.rowRes}>{valorMuestra}</Text>
+                                    <Text style={pdfStyles.rowUni}></Text>
+                                    <Text style={pdfStyles.rowRef}></Text>
+                                  </View>
+                                );
+                              })}
+                            </View>
+                          ) : (
                             <View style={pdfStyles.row}>
                               <Text style={pdfStyles.rowDescSub}>{det.prueba.nombre}</Text>
-                              <Text style={pdfStyles.rowRes}></Text>
+                              <Text style={pdfStyles.rowRes}>{listaValores[0]?.valorIngresado || "-"}</Text>
                               <Text style={pdfStyles.rowUni}>{det.prueba.unidades || ''}</Text>
                               <Text style={pdfStyles.rowRef}>{det.resultado?.valoresReferencia || det.prueba.valoresReferencia || ''}</Text>
                             </View>
-                            
-                            {Array(det.cantidad).fill(0).map((_, i) => {
-                              const valorMuestra = listaValores[i]?.valorIngresado || "-";
-                              return (
-                                <View key={i} style={pdfStyles.row}>
-                                  <Text style={pdfStyles.multiRowDesc}>Muestra {i + 1}</Text>
-                                  <Text style={pdfStyles.rowRes}>{valorMuestra}</Text>
-                                  <Text style={pdfStyles.rowUni}></Text>
-                                  <Text style={pdfStyles.rowRef}></Text>
-                                </View>
-                              );
-                            })}
-                          </View>
-                        ) : (
-                          <View style={pdfStyles.row}>
-                            <Text style={pdfStyles.rowDescSub}>{det.prueba.nombre}</Text>
-                            <Text style={pdfStyles.rowRes}>{listaValores[0]?.valorIngresado || "-"}</Text>
-                            <Text style={pdfStyles.rowUni}>{det.prueba.unidades || ''}</Text>
-                            <Text style={pdfStyles.rowRef}>{det.resultado?.valoresReferencia || det.prueba.valoresReferencia || ''}</Text>
-                          </View>
-                        )}
-                        
-                        {det.resultado?.observaciones && (
-                          <View style={pdfStyles.obsContainer}>
-                            <Text style={pdfStyles.obsLabel}>Nota ({det.prueba.nombre}): </Text>
-                            <Text style={pdfStyles.obsText}>{det.resultado.observaciones}</Text>
-                          </View>
-                        )}
-                      </View>
-                    );
-                  })}
-                </View>
-              ))}
-            </View>
+                          )}
+                          
+                          {det.resultado?.observaciones && (
+                            <View style={pdfStyles.obsContainer}>
+                              <Text style={pdfStyles.obsLabel}>Nota ({det.prueba.nombre}): </Text>
+                              <Text style={pdfStyles.obsText}>{det.resultado.observaciones}</Text>
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                ))}
+              </View>
 
-            {/* LADO DERECHO: LA FIRMA */}
-            <View style={pdfStyles.signatureSide}>
-              {catData.signers.size > 0 ? (
-                Array.from(catData.signers.values()).map((bio: any) => (
-                  <View key={bio.id} style={pdfStyles.inlineSignatureBlock}>
+            </View>
+          );
+        })}
+
+        {/* FIRMAS Y FOOTER FINAL (SIEMPRE JUNTOS) */}
+        <View wrap={false}>
+          {/* FIRMAS AL FINAL DEL DOCUMENTO */}
+          <View style={pdfStyles.footerSignaturesContainer}>
+            <View style={pdfStyles.footerSignaturesRow}>
+              {allSigners.size > 0 ? (
+                Array.from(allSigners.values()).map((bio: any) => (
+                  <View key={bio.id} style={pdfStyles.footerSignatureBlock}>
                     {bio.firmaUrl ? (
-                      <Image src={bio.firmaUrl} style={pdfStyles.inlineFirmaImage} />
+                      <Image src={bio.firmaUrl} style={pdfStyles.footerFirmaImage} />
                     ) : (
-                      <View style={{ height: 35 }} /> 
+                      <View style={{ height: 49 }} />
                     )}
-                    <View style={pdfStyles.inlineSignatureLine}>
-                      <Text style={pdfStyles.inlineBioanalista}>{bio.nombre}</Text>
-                      <Text style={pdfStyles.inlineLabName}>Bioanalista LEYMA C.A.</Text>
+                    <View style={pdfStyles.footerSignatureLine}>
+                      <Text style={pdfStyles.footerBioanalista}>{bio.nombre}</Text>
+                      <Text style={pdfStyles.footerLabName}>
+                        BIOANALISTA LEYMA C.A.
+                      </Text>
                     </View>
                   </View>
                 ))
               ) : (
-                <View style={pdfStyles.inlineSignatureBlock}>
-                  <View style={{ height: 35 }} /> 
-                  <View style={pdfStyles.inlineSignatureLine}>
-                    <Text style={pdfStyles.inlineBioanalista}>BIOANALISTA</Text>
-                    <Text style={pdfStyles.inlineLabName}>LEYMA C.A.</Text>
+                <View style={pdfStyles.footerSignatureBlock}>
+                  <View style={{ height: 49 }} />
+                  <View style={pdfStyles.footerSignatureLine}>
+                    <Text style={pdfStyles.footerBioanalista}>BIOANALISTA</Text>
+                    <Text style={pdfStyles.footerLabName}>LEYMA C.A.</Text>
                   </View>
                 </View>
               )}
             </View>
-
           </View>
-        ))}
 
-        {/* FOOTER GENERAL DE LA ÚLTIMA PÁGINA (QR a la izq y Legal a la der) */}
-        <View style={pdfStyles.footer} fixed render={(props: any) => {
-          const { pageNumber, totalPages } = props;
-          if (pageNumber === totalPages) {
-            return (
-              <View style={pdfStyles.footerContent}>
-                
-                <View style={pdfStyles.qrRow}>
-                  {qrCodeUrl ? (
-                    <Image src={qrCodeUrl} style={pdfStyles.qrImage} />
-                  ) : <View style={pdfStyles.qrImage} />}
-                  <View style={pdfStyles.qrLabelBox}>
-                    <Text style={pdfStyles.qrTitle}>DOC. VERIFICADO</Text>
-                    <Text style={pdfStyles.qrSubtitle}>
-                      Escanee este código para validar la autenticidad en el servidor de LEYMA C.A.
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={pdfStyles.legalBox}>
-                  <Text style={pdfStyles.legalText}>
-                    ESTE REPORTE ES UN DOCUMENTO ELECTRÓNICO OFICIAL{"\n"}GENERADO POR EL SISTEMA LEYMA C.A.
-                  </Text>
-                </View>
-                
+          {/* FOOTER GENERAL DE LA ÚLTIMA PÁGINA (QR a la izq y Legal a la der) */}
+          <View style={pdfStyles.footerContent}>
+            <View style={pdfStyles.qrRow}>
+              {qrCodeUrl ? (
+                <Image src={qrCodeUrl} style={pdfStyles.qrImage} />
+              ) : <View style={pdfStyles.qrImage} />}
+              <View style={pdfStyles.qrLabelBox}>
+                <Text style={pdfStyles.qrTitle}>DOC. VERIFICADO</Text>
+                <Text style={pdfStyles.qrSubtitle}>
+                  Escanee este código para validar la autenticidad en el servidor de LEYMA C.A.
+                </Text>
               </View>
-            );
-          }
-          return <View />;
-        }} />
+            </View>
+
+            <View style={pdfStyles.legalBox}>
+              <Text style={pdfStyles.legalText}>
+                ESTE REPORTE ES UN DOCUMENTO ELECTRÓNICO OFICIAL{"\n"}GENERADO POR EL SISTEMA LEYMA C.A.
+              </Text>
+            </View>
+          </View>
+        </View>
 
       </Page>
     </Document>

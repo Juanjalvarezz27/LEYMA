@@ -428,7 +428,7 @@ const ReporteDocumentServer = ({
 
                           return (
                             <View key={det.id} wrap={false}>
-                              {det.cantidad > 1 ? (
+                              {det.cantidad > 1 || listaValores.length > 1 ? (
                                 <View>
                                   <View style={pdfStyles.row}>
                                     <Text
@@ -450,15 +450,17 @@ const ReporteDocumentServer = ({
                                         ""}
                                     </Text>
                                   </View>
-                                  {Array(det.cantidad)
+                                  {Array(Math.max(det.cantidad, listaValores.length))
                                     .fill(0)
                                     .map((_: any, i: number) => {
                                       const valorMuestra =
                                         listaValores[i]?.valorIngresado || "-";
+                                      const esRecuento = det.prueba.nombre.toUpperCase().includes("RECUENTO DIFERENCIAL");
+                                      const titulo = det.cantidad > 1 ? `Muestra ${i + 1}` : (esRecuento ? "" : `Muestra ${i + 1}`);
                                       return (
                                         <View key={i} style={pdfStyles.row}>
                                           <Text style={pdfStyles.multiRowDesc}>
-                                            Muestra {i + 1}
+                                            {titulo}
                                           </Text>
                                           <Text style={pdfStyles.rowRes}>
                                             {valorMuestra}

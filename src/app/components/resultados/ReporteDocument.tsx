@@ -360,7 +360,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                       
                       return (
                         <View key={det.id} wrap={false}>
-                          {det.cantidad > 1 ? (
+                          {det.cantidad > 1 || listaValores.length > 1 ? (
                             <View>
                               <View style={pdfStyles.row}>
                                 <Text style={isPaquete ? pdfStyles.rowDescSub : pdfStyles.rowDesc}>{det.prueba.nombre}</Text>
@@ -369,11 +369,13 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                                 <Text style={pdfStyles.rowRef}>{det.resultado?.valoresReferencia || det.prueba.valoresReferencia || ''}</Text>
                               </View>
                               
-                              {Array(det.cantidad).fill(0).map((_, i) => {
+                              {Array(Math.max(det.cantidad, listaValores.length)).fill(0).map((_, i) => {
                                 const valorMuestra = listaValores[i]?.valorIngresado || "-";
+                                const esRecuento = det.prueba.nombre.toUpperCase().includes("RECUENTO DIFERENCIAL");
+                                const titulo = det.cantidad > 1 ? `Muestra ${i + 1}` : (esRecuento ? "" : `Muestra ${i + 1}`);
                                 return (
                                   <View key={i} style={pdfStyles.row}>
-                                    <Text style={pdfStyles.multiRowDesc}>Muestra {i + 1}</Text>
+                                    <Text style={pdfStyles.multiRowDesc}>{titulo}</Text>
                                     <Text style={pdfStyles.rowRes}>{valorMuestra}</Text>
                                     <Text style={pdfStyles.rowUni}></Text>
                                     <Text style={pdfStyles.rowRef}></Text>

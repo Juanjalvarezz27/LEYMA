@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X, Microscope, CheckCircle, Save, Loader2, AlertCircle, FileSignature, Lock, Check, ChevronDown } from "lucide-react";
+import { X, Microscope, CheckCircle, Save, Loader2, AlertCircle, FileSignature, Lock, Check, ChevronDown, Plus, Minus } from "lucide-react";
 import { toast } from "react-toastify";
 
 interface ModalCargarResultadosProps {
@@ -183,7 +183,8 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
 
     for (const d of examenesAValidar) {
       const valoresDeDetalle = valores[d.id];
-      for (let i = 0; i < d.cantidad; i++) {
+      const itemsLength = Math.max(d.cantidad, valoresDeDetalle?.length || 0);
+      for (let i = 0; i < itemsLength; i++) {
         if (!valoresDeDetalle?.[i]?.trim()) {
           faltantes = true;
           break;
@@ -197,8 +198,8 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
       if (faltantes) break;
     }
 
-    if (faltantes) {
-      toast.error(accion === "FIRMAR" ? "Asegúrese de haber transcrito todos los resultados y valores de referencia pendientes de los exámenes seleccionados." : "Debe llenar todos los resultados y valores de referencia pendientes antes de guardar.");
+    if (faltantes && (accion === "FIRMAR" || accion === "EDITAR")) {
+      toast.error(accion === "FIRMAR" ? "Asegúrese de haber transcrito todos los resultados y valores de referencia pendientes de los exámenes seleccionados." : "Debe llenar todos los resultados y valores de referencia antes de guardar la edición.");
       return;
     }
 
@@ -355,8 +356,8 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                     </div>
 
                     <div className="flex items-center text-xs font-black text-slate-800 uppercase tracking-wider mb-2 px-2">
-                      <div className="w-[40%]">Parametro</div>
-                      <div className="w-[20%] text-center">Resultados</div>
+                      <div className="w-[30%]">Parametro</div>
+                      <div className="w-[30%] text-center">Resultados</div>
                       <div className="w-[20%] text-center">Unidades</div>
                       <div className="w-[20%] text-center">Valores de Referencia</div>
                     </div>
@@ -371,7 +372,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
 
                           <div className="flex items-center">
                             
-                            <div className="w-[40%] flex items-center gap-3 pl-2">
+                            <div className="w-[30%] flex items-center gap-3 pl-2">
                               <div className="flex flex-col">
                                 <span className={`text-[15px] font-semibold ${estaFirmado ? 'text-green-800' : 'text-[#1D1D1F]'}`}>
                                   {det.prueba.nombre}
@@ -397,75 +398,118 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                               )}
                             </div>
 
-                            <div className="w-[20%] px-2 flex flex-col gap-1.5">
-                              {Array(det.cantidad).fill(0).map((_, i) => {
-                                const tieneOpciones = !!det.prueba.opcionesPredefinidas;
-                                const opcionesArray = tieneOpciones ? det.prueba.opcionesPredefinidas.split(',').map((o: string) => o.trim()).filter(Boolean) : [];
+                            <div className="w-[30%] px-2 flex flex-col gap-1.5">
+                              {(() => {
+                                const currentValores = valores[det.id] && valores[det.id].length > 0 ? valores[det.id] : Array(det.cantidad).fill("");
+                                const esRecuentoDiferencial = det.prueba.nombre.toUpperCase().includes("RECUENTO DIFERENCIAL");
 
-                                const isSelectOpen = openSelect === `${det.id}-${i}`;
-                                const selectedValue = valores[det.id]?.[i] || "";
+                                return currentValores.map((_, i) => {
+                                  const tieneOpciones = !!det.prueba.opcionesPredefinidas;
+                                  const opcionesArray = tieneOpciones ? det.prueba.opcionesPredefinidas.split(',').map((o: string) => o.trim()).filter(Boolean) : [];
 
-                                return tieneOpciones && opcionesArray.length > 0 ? (
-                                  <div key={i} className={`relative w-full custom-select-container ${isSelectOpen ? 'z-50' : 'z-10'}`}>
-                                    <div className="relative w-full flex items-center">
-                                      <input
-                                        type="text"
-                                        disabled={esLectura}
-                                        value={selectedValue}
-                                        onChange={(e) => handleValorChange(det.id, i, e.target.value)}
-                                        className={`w-full text-center text-[14px] font-black bg-white border rounded-lg pl-3 pr-8 py-1.5 outline-none transition-all shadow-sm focus:ring-2 focus:ring-[#0071E3]/20 ${
-                                          esLectura ? 'border-green-200 text-green-700 bg-green-50/50 cursor-not-allowed' : selectedValue.trim() ? 'border-[#0071E3] text-[#0071E3]' : 'border-slate-300 text-[#1D1D1F] focus:border-[#0071E3]'
-                                        }`}
-                                        placeholder="Seleccione o escriba"
-                                      />
-                                      <button
-                                        type="button"
-                                        disabled={esLectura}
-                                        onClick={() => setOpenSelect(isSelectOpen ? null : `${det.id}-${i}`)}
-                                        className={`absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-md text-slate-400 hover:text-slate-600 transition-colors ${esLectura ? 'cursor-not-allowed opacity-50' : 'hover:bg-slate-100 cursor-pointer'}`}
-                                      >
-                                        <ChevronDown size={14} className={`transition-transform ${isSelectOpen ? "rotate-180" : ""}`} />
-                                      </button>
-                                    </div>
-                                    
-                                    {isSelectOpen && (
-                                      <div id={`dropdown-menu-${det.id}-${i}`} className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden py-1 z-50">
-                                        <div className="max-h-40 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200">
-                                          <button
-                                            type="button"
-                                            onClick={() => { handleValorChange(det.id, i, ""); setOpenSelect(null); }}
-                                            className={`w-full text-center px-2 py-2 text-[13px] font-bold transition-colors ${!selectedValue ? "bg-[#0071E3]/10 text-[#0071E3]" : "text-slate-500 hover:bg-slate-50"}`}
-                                          >
-                                            Seleccione
-                                          </button>
-                                          {opcionesArray.map((opc: string) => (
-                                            <button
-                                              key={opc}
-                                              type="button"
-                                              onClick={() => { handleValorChange(det.id, i, opc); setOpenSelect(null); }}
-                                              className={`w-full text-center px-2 py-2 text-[13px] font-bold transition-colors ${selectedValue === opc ? "bg-[#0071E3]/10 text-[#0071E3]" : "text-slate-700 hover:bg-slate-50"}`}
-                                            >
-                                              {opc}
-                                            </button>
-                                          ))}
-                                        </div>
+                                  const isSelectOpen = openSelect === `${det.id}-${i}`;
+                                  const selectedValue = valores[det.id]?.[i] || "";
+
+                                  return (
+                                    <div key={i} className="flex items-center gap-1 w-full">
+                                      <div className="flex-1 relative">
+                                        {tieneOpciones && opcionesArray.length > 0 ? (
+                                          <div className={`relative w-full custom-select-container ${isSelectOpen ? 'z-50' : 'z-10'}`}>
+                                            <div className="relative w-full flex items-center">
+                                              <input
+                                                type="text"
+                                                disabled={esLectura}
+                                                value={selectedValue}
+                                                onChange={(e) => handleValorChange(det.id, i, e.target.value)}
+                                                className={`w-full text-center text-[14px] font-black bg-white border rounded-lg pl-3 pr-8 py-1.5 outline-none transition-all shadow-sm focus:ring-2 focus:ring-[#0071E3]/20 ${
+                                                  esLectura ? 'border-green-200 text-green-700 bg-green-50/50 cursor-not-allowed' : selectedValue.trim() ? 'border-[#0071E3] text-[#0071E3]' : 'border-slate-300 text-[#1D1D1F] focus:border-[#0071E3]'
+                                                }`}
+                                                placeholder="Seleccione o escriba"
+                                              />
+                                              <button
+                                                type="button"
+                                                disabled={esLectura}
+                                                onClick={() => setOpenSelect(isSelectOpen ? null : `${det.id}-${i}`)}
+                                                className={`absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-md text-slate-400 hover:text-slate-600 transition-colors ${esLectura ? 'cursor-not-allowed opacity-50' : 'hover:bg-slate-100 cursor-pointer'}`}
+                                              >
+                                                <ChevronDown size={14} className={`transition-transform ${isSelectOpen ? "rotate-180" : ""}`} />
+                                              </button>
+                                            </div>
+                                            
+                                            {isSelectOpen && (
+                                              <div id={`dropdown-menu-${det.id}-${i}`} className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden py-1 z-50">
+                                                <div className="max-h-40 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200">
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => { handleValorChange(det.id, i, ""); setOpenSelect(null); }}
+                                                    className={`w-full text-center px-2 py-2 text-[13px] font-bold transition-colors ${!selectedValue ? "bg-[#0071E3]/10 text-[#0071E3]" : "text-slate-500 hover:bg-slate-50"}`}
+                                                  >
+                                                    Seleccione
+                                                  </button>
+                                                  {opcionesArray.map((opc: string) => (
+                                                    <button
+                                                      key={opc}
+                                                      type="button"
+                                                      onClick={() => { handleValorChange(det.id, i, opc); setOpenSelect(null); }}
+                                                      className={`w-full text-center px-2 py-2 text-[13px] font-bold transition-colors ${selectedValue === opc ? "bg-[#0071E3]/10 text-[#0071E3]" : "text-slate-700 hover:bg-slate-50"}`}
+                                                    >
+                                                      {opc}
+                                                    </button>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <input
+                                            type="text"
+                                            disabled={esLectura}
+                                            value={valores[det.id]?.[i] || ""}
+                                            onChange={(e) => handleValorChange(det.id, i, e.target.value)}
+                                            className={`w-full text-center text-[14px] font-black bg-white border rounded-lg py-1.5 outline-none transition-all shadow-sm focus:ring-2 focus:ring-[#0071E3]/20 ${
+                                              esLectura ? 'border-green-200 text-green-700 bg-green-50/50 cursor-not-allowed' : valores[det.id]?.[i]?.trim() ? 'border-[#0071E3] text-[#0071E3]' : 'border-slate-300 text-[#1D1D1F] focus:border-[#0071E3]'
+                                            }`}
+                                            placeholder={det.cantidad > 1 || esRecuentoDiferencial ? `Resultado ${i + 1}` : "-"}
+                                          />
+                                        )}
                                       </div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <input
-                                    key={i}
-                                    type="text"
-                                    disabled={esLectura}
-                                    value={valores[det.id]?.[i] || ""}
-                                    onChange={(e) => handleValorChange(det.id, i, e.target.value)}
-                                    className={`w-full text-center text-[14px] font-black bg-white border rounded-lg py-1.5 outline-none transition-all shadow-sm focus:ring-2 focus:ring-[#0071E3]/20 ${
-                                      esLectura ? 'border-green-200 text-green-700 bg-green-50/50 cursor-not-allowed' : valores[det.id]?.[i]?.trim() ? 'border-[#0071E3] text-[#0071E3]' : 'border-slate-300 text-[#1D1D1F] focus:border-[#0071E3]'
-                                    }`}
-                                    placeholder={det.cantidad > 1 ? `Resultado ${i + 1}` : "-"}
-                                  />
-                                );
-                              })}
+
+                                      {/* Controles Dinámicos */}
+                                      {esRecuentoDiferencial && !esLectura && (
+                                        <div className="flex items-center gap-1 shrink-0 ml-1">
+                                          {i === currentValores.length - 1 && (
+                                            <button
+                                              type="button"
+                                              title="Agregar Resultado"
+                                              onClick={() => {
+                                                const nuevos = [...currentValores, ""];
+                                                setValores(prev => ({ ...prev, [det.id]: nuevos }));
+                                              }}
+                                              className="p-1.5 bg-blue-50 text-[#0071E3] border border-blue-200 hover:bg-[#0071E3] hover:text-white rounded-md transition-all shadow-sm"
+                                            >
+                                              <Plus size={14} strokeWidth={3} />
+                                            </button>
+                                          )}
+                                          {currentValores.length > det.cantidad && i >= det.cantidad && (
+                                            <button
+                                              type="button"
+                                              title="Eliminar Resultado"
+                                              onClick={() => {
+                                                const nuevos = [...currentValores];
+                                                nuevos.splice(i, 1);
+                                                setValores(prev => ({ ...prev, [det.id]: nuevos }));
+                                              }}
+                                              className="p-1.5 bg-red-50 text-red-500 border border-red-200 hover:bg-red-500 hover:text-white rounded-md transition-all shadow-sm"
+                                            >
+                                              <Minus size={14} strokeWidth={3} />
+                                            </button>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                });
+                              })()}
                             </div>
 
                             <div className="w-[20%] text-sm text-slate-600 font-medium text-center">

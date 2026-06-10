@@ -96,6 +96,9 @@ export async function POST(req: Request) {
         where: { id: ordenId },
         data: { resultadosCompletados: allSigned }
       });
+    }, {
+      maxWait: 5000,
+      timeout: 20000
     });
 
     return NextResponse.json({ success: true });

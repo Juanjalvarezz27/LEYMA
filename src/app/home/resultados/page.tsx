@@ -70,7 +70,13 @@ export default function ResultadosPage() {
   }, [busqueda, tabActiva, fechaFiltro]);
 
   const ordenesFiltradas = ordenes.filter(orden => {
-    const tieneResultadosFaltantes = orden.detalles.some((d: any) => !d.resultado);
+    const tieneResultadosFaltantes = orden.detalles.some((d: any) => {
+      if (!d.resultado) return true;
+      if (!d.resultado.valores || d.resultado.valores.length < d.cantidad) return true;
+      if (d.resultado.valores.some((v: any) => !v.valorIngresado || v.valorIngresado.trim() === '')) return true;
+      if (!d.prueba.valoresReferencia && (!d.resultado.valoresReferencia || d.resultado.valoresReferencia.trim() === '')) return true;
+      return false;
+    });
     const todoFirmado = orden.resultadosCompletados; 
 
     if (tabActiva === "PENDIENTES" && !tieneResultadosFaltantes) return false;

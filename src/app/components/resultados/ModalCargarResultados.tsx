@@ -325,8 +325,10 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
           )}
 
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200">
-            {Object.entries(groupedDetalles).map(([catNombre, subcategorias]) => (
-              <div key={catNombre} className="mb-2">
+            {Object.entries(groupedDetalles).map(([catNombre, subcategorias]) => {
+              const hasOpenSelectInCat = openSelect && Object.values(subcategorias as any).flat().some((d: any) => openSelect.startsWith(`${d.id}-`));
+              return (
+              <div key={catNombre} className={`mb-2 relative ${hasOpenSelectInCat ? 'z-50' : 'z-10'}`}>
 
                 <div className="bg-slate-100/80 px-8 py-3.5 border-y border-slate-200 flex justify-between items-center">
                   <h3 className="text-[17px] font-black text-[#1D1D1F] tracking-widest uppercase">
@@ -334,8 +336,10 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                   </h3>
                 </div>
 
-                {Object.entries(subcategorias as any).map(([subCatNombre, detalles]: [string, any]) => (
-                  <div key={subCatNombre} className={`px-8 py-5 relative ${openSelect ? 'z-50' : 'z-10'}`}>
+                {Object.entries(subcategorias as any).map(([subCatNombre, detalles]: [string, any]) => {
+                  const hasOpenSelectInSubcat = openSelect && detalles.some((d: any) => openSelect.startsWith(`${d.id}-`));
+                  return (
+                  <div key={subCatNombre} className={`px-8 py-5 relative ${hasOpenSelectInSubcat ? 'z-50' : 'z-10'}`}>
 
                     <div className="mb-4 border-b-2 border-[#1D1D1F] pb-2">
                       <h4 className="text-sm font-black text-slate-600 uppercase tracking-widest">
@@ -396,17 +400,26 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
 
                                 return tieneOpciones && opcionesArray.length > 0 ? (
                                   <div key={i} className={`relative w-full custom-select-container ${isSelectOpen ? 'z-50' : 'z-10'}`}>
-                                    <button
-                                      type="button"
-                                      disabled={esLectura}
-                                      onClick={() => setOpenSelect(isSelectOpen ? null : `${det.id}-${i}`)}
-                                      className={`w-full flex items-center justify-between text-[14px] font-black bg-white border rounded-lg px-3 py-1.5 outline-none transition-all shadow-sm focus:ring-2 focus:ring-[#0071E3]/20 ${
-                                        esLectura ? 'border-green-200 text-green-700 bg-green-50/50 cursor-not-allowed' : selectedValue.trim() ? 'border-[#0071E3] text-[#0071E3]' : 'border-slate-300 text-[#1D1D1F] hover:border-[#0071E3]'
-                                      }`}
-                                    >
-                                      <span className="truncate flex-1 text-center">{selectedValue || "- Seleccione -"}</span>
-                                      <ChevronDown size={14} className={`text-slate-400 transition-transform ${isSelectOpen ? "rotate-180" : ""}`} />
-                                    </button>
+                                    <div className="relative w-full flex items-center">
+                                      <input
+                                        type="text"
+                                        disabled={esLectura}
+                                        value={selectedValue}
+                                        onChange={(e) => handleValorChange(det.id, i, e.target.value)}
+                                        className={`w-full text-center text-[14px] font-black bg-white border rounded-lg pl-3 pr-8 py-1.5 outline-none transition-all shadow-sm focus:ring-2 focus:ring-[#0071E3]/20 ${
+                                          esLectura ? 'border-green-200 text-green-700 bg-green-50/50 cursor-not-allowed' : selectedValue.trim() ? 'border-[#0071E3] text-[#0071E3]' : 'border-slate-300 text-[#1D1D1F] focus:border-[#0071E3]'
+                                        }`}
+                                        placeholder="Seleccione o escriba"
+                                      />
+                                      <button
+                                        type="button"
+                                        disabled={esLectura}
+                                        onClick={() => setOpenSelect(isSelectOpen ? null : `${det.id}-${i}`)}
+                                        className={`absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-md text-slate-400 hover:text-slate-600 transition-colors ${esLectura ? 'cursor-not-allowed opacity-50' : 'hover:bg-slate-100 cursor-pointer'}`}
+                                      >
+                                        <ChevronDown size={14} className={`transition-transform ${isSelectOpen ? "rotate-180" : ""}`} />
+                                      </button>
+                                    </div>
                                     
                                     {isSelectOpen && (
                                       <div id={`dropdown-menu-${det.id}-${i}`} className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden py-1 z-50">
@@ -416,7 +429,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                                             onClick={() => { handleValorChange(det.id, i, ""); setOpenSelect(null); }}
                                             className={`w-full text-center px-2 py-2 text-[13px] font-bold transition-colors ${!selectedValue ? "bg-[#0071E3]/10 text-[#0071E3]" : "text-slate-500 hover:bg-slate-50"}`}
                                           >
-                                            - Seleccione -
+                                            Seleccione
                                           </button>
                                           {opcionesArray.map((opc: string) => (
                                             <button
@@ -486,9 +499,9 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                       )})}
                     </div>
                   </div>
-                ))}
+                )})}
               </div>
-            ))}
+            )})}
           </div>
         </div>
 
@@ -586,7 +599,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                   className="w-full flex items-center justify-between px-4 py-3.5 bg-[#F5F5F7] border border-slate-200 rounded-xl text-[14px] font-bold text-[#1D1D1F] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 text-left"
                 >
                   <span className="truncate">
-                    {selectedBioanalista ? bioanalistas.find(b => b.id === selectedBioanalista)?.nombre : "-- Seleccionar --"}
+                    {selectedBioanalista ? bioanalistas.find(b => b.id === selectedBioanalista)?.nombre : "Seleccionar"}
                   </span>
                   <ChevronDown size={18} className={`text-slate-400 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
                 </button>

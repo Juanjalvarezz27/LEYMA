@@ -25,8 +25,8 @@ export async function POST(req: Request) {
     let validadorId = usuarioSesion.id;
     let validacionActiva = false;
 
-    // Si la acción es FIRMAR, verificamos quién es la bioanalista y si su PIN es correcto
-    if (accion === "FIRMAR") {
+    // Si la acción es FIRMAR o EDITAR, verificamos quién es la bioanalista y si su PIN es correcto
+    if (accion === "FIRMAR" || accion === "EDITAR") {
       if (!pin || !bioanalistaId) return NextResponse.json({ error: "Faltan credenciales de validación." }, { status: 400 });
       
       const bioanalista = await prisma.usuario.findFirst({ 
@@ -43,11 +43,12 @@ export async function POST(req: Request) {
       for (const res of resultados) {
         const currentRes = await tx.resultadoPrueba.findUnique({ where: { detalleOrdenId: res.detalleOrdenId } });
         
-        // Si ya está firmado por completo, NO LO TOCAMOS
-        if (currentRes?.firmado) continue;
+        // Si ya está firmado por completo y no es edición, NO LO TOCAMOS
+        if (currentRes?.firmado && accion !== "EDITAR") continue;
 
         // Determinamos si ESTE examen específico debe ser firmado en esta pasada
-        const debeFirmarEste = validacionActiva && res.marcadoParaFirma;
+        // Si es edición, permitiremos que todos los enviados se guarden
+        const debeFirmarEste = validacionActiva && (res.marcadoParaFirma || accion === "EDITAR");
 
         await tx.resultadoPrueba.upsert({
           where: { detalleOrdenId: res.detalleOrdenId },

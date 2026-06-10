@@ -13,6 +13,7 @@ interface ModalCargarResultadosProps {
 export default function ModalCargarResultados({ orden, onClose, onSuccess }: ModalCargarResultadosProps) {
   const [guardando, setGuardando] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
+  const [accionActualModal, setAccionActualModal] = useState<"FIRMAR" | "EDITAR">("FIRMAR");
   
   // Estados para Firmas
   const [bioanalistas, setBioanalistas] = useState<any[]>([]);
@@ -136,6 +137,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
   }, {});
 
   const abrirModalFirma = () => {
+    setAccionActualModal("FIRMAR");
     const initialSel: Record<string, boolean> = {};
     orden.detalles.forEach((d: any) => {
       if (!d.resultado?.firmado) {
@@ -148,14 +150,24 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
     setShowPinModal(true);
   };
 
-  const procesarResultados = async (accion: "GUARDAR" | "FIRMAR", pin = "") => {
+  const abrirModalEdicion = () => {
+    setAccionActualModal("EDITAR");
+    setPinFirma("");
+    setSelectedBioanalista("");
+    setShowPinModal(true);
+  };
+
+  const procesarResultados = async (accion: "GUARDAR" | "FIRMAR" | "EDITAR", pin = "") => {
     let faltantes = false;
     
-    const examenesPendientes = orden.detalles.filter((d: any) => !d.resultado?.firmado);
+    // Si es EDITAR, consideramos TODOS los detalles de la orden
+    const examenesBase = accion === "EDITAR" 
+      ? orden.detalles 
+      : orden.detalles.filter((d: any) => !d.resultado?.firmado);
     
     const examenesAValidar = accion === "FIRMAR" 
-      ? examenesPendientes.filter((d: any) => seleccionados[d.id]) 
-      : examenesPendientes;
+      ? examenesBase.filter((d: any) => seleccionados[d.id]) 
+      : examenesBase;
 
     if (accion === "FIRMAR" && examenesAValidar.length === 0) {
       toast.warning("Debe seleccionar al menos un examen para firmar.");
@@ -183,11 +195,11 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
       return;
     }
 
-    const resultadosArray = examenesPendientes.map((d: any) => ({
+    const resultadosArray = examenesBase.map((d: any) => ({
       detalleOrdenId: d.id,
       observaciones: observaciones[d.id] || "",
       valoresReferencia: valoresReferenciaCustom[d.id] || null,
-      marcadoParaFirma: accion === "FIRMAR" ? !!seleccionados[d.id] : false, 
+      marcadoParaFirma: (accion === "FIRMAR" || accion === "EDITAR") ? (accion === "EDITAR" ? true : !!seleccionados[d.id]) : false, 
       valores: (valores[d.id] || Array(d.cantidad).fill("")).map((valText: string) => ({
         pruebaId: d.prueba.id,
         valorIngresado: valText
@@ -213,18 +225,25 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
 
       setGuardando(false);
 
-      if (accion === "FIRMAR") {
-        const pendientesRestantes = examenesPendientes.length - examenesAValidar.length;
-        if (pendientesRestantes > 0) {
-          toast.success("Resultados validados. Faltan pruebas por firmar.");
-          setShowPinModal(false);
-          setPinFirma("");
-          setSelectedBioanalista("");
-          onSuccess(false); 
+      if (accion === "FIRMAR" || accion === "EDITAR") {
+        if (accion === "FIRMAR") {
+          const pendientesRestantes = examenesBase.length - examenesAValidar.length;
+          if (pendientesRestantes > 0) {
+            toast.success("Resultados validados. Faltan pruebas por firmar.");
+            setShowPinModal(false);
+            setPinFirma("");
+            setSelectedBioanalista("");
+            onSuccess(false); 
+          } else {
+            toast.success("Todos los resultados han sido validados y firmados.");
+            setShowPinModal(false);
+            onSuccess(true); 
+          }
         } else {
-          toast.success("Todos los resultados han sido validados y firmados.");
+          // EDITAR
+          toast.success("Edición guardada exitosamente.");
           setShowPinModal(false);
-          onSuccess(true); 
+          onSuccess(true);
         }
       } else {
         toast.success("Transcripción guardada exitosamente.");
@@ -240,7 +259,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
   const confirmarFirma = () => {
     if (!selectedBioanalista) return toast.error("Debe seleccionar una bioanalista.");
     if (pinFirma.length !== 4) return toast.error("El PIN debe tener 4 dígitos.");
-    procesarResultados("FIRMAR", pinFirma);
+    procesarResultados(accionActualModal, pinFirma);
   };
 
   const examenesPendientes = orden.detalles.filter((d: any) => !d.resultado?.firmado);
@@ -334,6 +353,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                     <div className="space-y-1">
                       {detalles.map((det: any) => {
                         const estaFirmado = det.resultado?.firmado;
+                        const esLectura = estaFirmado && !orden.resultadosCompletados;
                         
                         return (
                         <div key={det.id} className={`flex flex-col group rounded-xl p-2 border transition-colors ${estaFirmado ? 'bg-green-50/30 border-green-100' : 'hover:bg-slate-50 border-transparent hover:border-slate-200'} ${openSelect?.startsWith(`${det.id}-`) ? 'relative z-50' : 'relative z-10'}`}>
@@ -354,8 +374,8 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                                     Requiere {det.cantidad} Muestras
                                   </span>
                                 )}
-                              </div>
-                              {!estaFirmado && (
+                               </div>
+                              {!esLectura && (
                                 <button
                                   onClick={() => setObsExpandidas(prev => ({ ...prev, [det.id]: !prev[det.id] }))}
                                   className={`p-1.5 rounded-lg transition-colors ${obsExpandidas[det.id] || observaciones[det.id] ? 'bg-blue-100 text-[#0071E3]' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-600 opacity-0 group-hover:opacity-100'}`}
@@ -378,10 +398,10 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                                   <div key={i} className={`relative w-full custom-select-container ${isSelectOpen ? 'z-50' : 'z-10'}`}>
                                     <button
                                       type="button"
-                                      disabled={estaFirmado}
+                                      disabled={esLectura}
                                       onClick={() => setOpenSelect(isSelectOpen ? null : `${det.id}-${i}`)}
                                       className={`w-full flex items-center justify-between text-[14px] font-black bg-white border rounded-lg px-3 py-1.5 outline-none transition-all shadow-sm focus:ring-2 focus:ring-[#0071E3]/20 ${
-                                        estaFirmado ? 'border-green-200 text-green-700 bg-green-50/50 cursor-not-allowed' : selectedValue.trim() ? 'border-[#0071E3] text-[#0071E3]' : 'border-slate-300 text-[#1D1D1F] hover:border-[#0071E3]'
+                                        esLectura ? 'border-green-200 text-green-700 bg-green-50/50 cursor-not-allowed' : selectedValue.trim() ? 'border-[#0071E3] text-[#0071E3]' : 'border-slate-300 text-[#1D1D1F] hover:border-[#0071E3]'
                                       }`}
                                     >
                                       <span className="truncate flex-1 text-center">{selectedValue || "- Seleccione -"}</span>
@@ -416,11 +436,11 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                                   <input
                                     key={i}
                                     type="text"
-                                    disabled={estaFirmado}
+                                    disabled={esLectura}
                                     value={valores[det.id]?.[i] || ""}
                                     onChange={(e) => handleValorChange(det.id, i, e.target.value)}
                                     className={`w-full text-center text-[14px] font-black bg-white border rounded-lg py-1.5 outline-none transition-all shadow-sm focus:ring-2 focus:ring-[#0071E3]/20 ${
-                                      estaFirmado ? 'border-green-200 text-green-700 bg-green-50/50 cursor-not-allowed' : valores[det.id]?.[i]?.trim() ? 'border-[#0071E3] text-[#0071E3]' : 'border-slate-300 text-[#1D1D1F] focus:border-[#0071E3]'
+                                      esLectura ? 'border-green-200 text-green-700 bg-green-50/50 cursor-not-allowed' : valores[det.id]?.[i]?.trim() ? 'border-[#0071E3] text-[#0071E3]' : 'border-slate-300 text-[#1D1D1F] focus:border-[#0071E3]'
                                     }`}
                                     placeholder={det.cantidad > 1 ? `Resultado ${i + 1}` : "-"}
                                   />
@@ -437,28 +457,28 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                                 det.prueba.valoresReferencia
                               ) : (
                                 <textarea
-                                  disabled={estaFirmado}
+                                  disabled={esLectura}
                                   value={valoresReferenciaCustom[det.id] || ""}
                                   onChange={(e) => setValoresReferenciaCustom(prev => ({...prev, [det.id]: e.target.value}))}
                                   placeholder="Indique valores ref..."
                                   rows={2}
                                   className={`w-full text-center text-[13px] font-medium bg-white border rounded-lg p-2 outline-none transition-all shadow-sm focus:ring-2 focus:ring-[#0071E3]/20 resize-none placeholder:text-slate-400 placeholder:text-xs placeholder:font-normal leading-tight ${
-                                    estaFirmado ? 'border-green-200 text-green-700 bg-green-50/50 cursor-not-allowed' : valoresReferenciaCustom[det.id]?.trim() ? 'border-[#0071E3] text-[#0071E3]' : 'border-dashed border-orange-300 text-[#1D1D1F] focus:border-orange-500 bg-orange-50/30'
+                                    esLectura ? 'border-green-200 text-green-700 bg-green-50/50 cursor-not-allowed' : valoresReferenciaCustom[det.id]?.trim() ? 'border-[#0071E3] text-[#0071E3]' : 'border-dashed border-orange-300 text-[#1D1D1F] focus:border-orange-500 bg-orange-50/30'
                                   }`}
                                 />
                               )}
                             </div>
                           </div>
 
-                          {(obsExpandidas[det.id] || (estaFirmado && observaciones[det.id])) && (
+                          {(obsExpandidas[det.id] || observaciones[det.id]) && (
                             <div className="mt-3 w-full pl-6 pr-2">
                               <textarea
                                 value={observaciones[det.id] || ""}
-                                disabled={estaFirmado}
+                                disabled={esLectura}
                                 onChange={(e) => setObservaciones({ ...observaciones, [det.id]: e.target.value })}
                                 placeholder={`Observación específica para ${det.prueba.nombre}...`}
                                 rows={2}
-                                className={`w-full border rounded-xl p-3 text-sm font-medium outline-none resize-none ${estaFirmado ? 'bg-green-50 border-green-200 text-green-800 cursor-not-allowed' : 'bg-yellow-50/50 border-yellow-200/60 text-slate-700 focus:ring-2 focus:ring-yellow-400/20'}`}
+                                className={`w-full border rounded-xl p-3 text-sm font-medium outline-none resize-none ${esLectura ? 'bg-green-50 border-green-200 text-green-800 cursor-not-allowed' : 'bg-yellow-50/50 border-yellow-200/60 text-slate-700 focus:ring-2 focus:ring-yellow-400/20'}`}
                               />
                             </div>
                           )}
@@ -489,6 +509,12 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
               <Lock size={20} strokeWidth={2.5} /> Validar y Firmar
             </button>
           )}
+
+          {orden.resultadosCompletados && (
+            <button onClick={abrirModalEdicion} disabled={guardando} className="px-8 py-3.5 text-[15px] font-black text-white bg-blue-600 hover:bg-blue-700 rounded-2xl transition-colors shadow-sm flex items-center gap-2">
+              <FileSignature size={20} strokeWidth={2.5} /> Guardar Edición
+            </button>
+          )}
         </div>
       </div>
 
@@ -507,41 +533,49 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
               </p>
             </div>
             
-            {/* Lista de Exámenes Agrupados */}
-            <div className="mb-6 bg-slate-50 border border-slate-200 rounded-xl p-5 max-h-60 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300">
-              <div className="flex justify-between items-center mb-4">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest block">Exámenes a Firmar</label>
-                <button onClick={toggleSeleccionTodos} className="text-xs font-bold text-[#0071E3] hover:underline">
-                  Seleccionar Todos
-                </button>
+            {/* Lista de Exámenes Agrupados (Solo al Firmar, no al Editar para no confundir) */}
+            {accionActualModal === "FIRMAR" ? (
+              <div className="mb-6 bg-slate-50 border border-slate-200 rounded-xl p-5 max-h-60 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300">
+                <div className="flex justify-between items-center mb-4">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest block">Exámenes a Firmar</label>
+                  <button onClick={toggleSeleccionTodos} className="text-xs font-bold text-[#0071E3] hover:underline">
+                    Seleccionar Todos
+                  </button>
+                </div>
+                
+                <div className="space-y-5">
+                  {Object.entries(pendientesAgrupados).map(([cat, dets]: [string, any]) => (
+                    <div key={cat} className="space-y-2">
+                      <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-1 mb-2">
+                        {cat}
+                      </h4>
+                      {dets.map((d: any) => (
+                        <label key={d.id} className="flex items-center gap-3 cursor-pointer group p-3 bg-white hover:bg-[#F5F5F7] border border-slate-200 hover:border-slate-300 rounded-xl transition-all shadow-sm">
+                          <input 
+                            type="checkbox" 
+                            checked={seleccionados[d.id] || false} 
+                            onChange={(e) => setSeleccionados({...seleccionados, [d.id]: e.target.checked})}
+                            className="w-4 h-4 rounded text-[#0071E3] border-slate-300 focus:ring-[#0071E3] cursor-pointer"
+                          />
+                          <div className="flex flex-col">
+                            <span className="text-[14px] font-bold text-[#1D1D1F]">{d.prueba.nombre}</span>
+                            <span className="text-[11px] text-slate-400 font-medium">
+                              {d.prueba.subcategoria?.nombre}
+                            </span>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  ))}
+                </div>
               </div>
-              
-              <div className="space-y-5">
-                {Object.entries(pendientesAgrupados).map(([cat, dets]: [string, any]) => (
-                  <div key={cat} className="space-y-2">
-                    <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-1 mb-2">
-                      {cat}
-                    </h4>
-                    {dets.map((d: any) => (
-                      <label key={d.id} className="flex items-center gap-3 cursor-pointer group p-3 bg-white hover:bg-[#F5F5F7] border border-slate-200 hover:border-slate-300 rounded-xl transition-all shadow-sm">
-                        <input 
-                          type="checkbox" 
-                          checked={seleccionados[d.id] || false} 
-                          onChange={(e) => setSeleccionados({...seleccionados, [d.id]: e.target.checked})}
-                          className="w-4 h-4 rounded text-[#0071E3] border-slate-300 focus:ring-[#0071E3] cursor-pointer"
-                        />
-                        <div className="flex flex-col">
-                          <span className="text-[14px] font-bold text-[#1D1D1F]">{d.prueba.nombre}</span>
-                          <span className="text-[11px] text-slate-400 font-medium">
-                            {d.prueba.subcategoria?.nombre}
-                          </span>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                ))}
+            ) : (
+              <div className="mb-6 bg-blue-50/50 border border-blue-100 rounded-xl p-4 text-center">
+                <p className="text-sm font-medium text-blue-800">
+                  Ingrese sus credenciales para autorizar y registrar la edición de los resultados.
+                </p>
               </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
               <div className="w-full relative" ref={dropdownRef}>
@@ -592,7 +626,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
               <button onClick={() => setShowPinModal(false)} className="flex-1 py-3.5 text-[15px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Cancelar</button>
               <button onClick={confirmarFirma} disabled={guardando} className="flex-1 py-3.5 text-[15px] font-bold text-white bg-[#0071E3] hover:bg-[#0077ED] rounded-xl transition-colors shadow-[0_4px_12px_rgba(0,113,227,0.25)] flex justify-center items-center gap-2 hover:-translate-y-0.5 active:translate-y-0">
                 {guardando ? <Loader2 size={20} className="animate-spin" /> : <FileSignature size={20} strokeWidth={2.5}/>}
-                Firmar Seleccionados
+                {accionActualModal === "FIRMAR" ? "Firmar Seleccionados" : "Confirmar Edición"}
               </button>
             </div>
           </div>

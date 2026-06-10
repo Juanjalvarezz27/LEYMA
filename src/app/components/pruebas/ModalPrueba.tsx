@@ -23,7 +23,30 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
   const dropdownSubcategoriaRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const todasLasPruebas = catalogoExamenes.flatMap((sub: any) => sub.pruebas || []);
+  // Computar listado unificado para el buscador
+  const individualTestsMap = new Map();
+  catalogoExamenes.forEach((sub: any) => {
+    (sub.pruebas || []).forEach((p: any) => {
+      if (!individualTestsMap.has(p.codigo)) {
+        individualTestsMap.set(p.codigo, {
+          tipo: 'prueba',
+          ...p
+        });
+      }
+    });
+  });
+  
+  const pruebasIndividualesUnicas = Array.from(individualTestsMap.values());
+  
+  const subcategoriasYPaquetes = catalogoExamenes.map((cat: any) => ({
+    tipo: cat.esPaquete ? 'paquete' : 'subcategoria',
+    id: cat.id,
+    nombre: cat.nombre,
+    codigoCategoria: cat.categoria?.nombre || 'S/C',
+    pruebas: cat.pruebas || []
+  }));
+
+  const busquedaUnificada = [...subcategoriasYPaquetes, ...pruebasIndividualesUnicas];
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -80,6 +103,46 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
     const nuevas = [...pruebas];
     nuevas.splice(index, 1);
     setPruebas(nuevas);
+  };
+
+  const agregarAlListadoBusqueda = (item: any) => {
+    if (item.tipo === 'paquete' || item.tipo === 'subcategoria') {
+      // Agregar todas sus pruebas
+      const nuevasPruebas = item.pruebas.filter((p: any) => !pruebas.some((pr: any) => pr.codigo === p.codigo)).map((p: any) => ({
+        id: p.id, codigo: p.codigo, nombre: p.nombre, precioUSD: p.precioUSD ? p.precioUSD.toString() : "", 
+        unidades: p.unidades || "", valoresReferencia: p.valoresReferencia || "", 
+        opcionesPredefinidas: p.opcionesPredefinidas ? p.opcionesPredefinidas.split(',').filter(Boolean) : [], 
+        mostrarOpciones: !!p.opcionesPredefinidas 
+      }));
+      
+      if (nuevasPruebas.length > 0) {
+        // Limpiamos el primer item si está vacío (cuando se abre el modal y se busca de inmediato)
+        setPruebas(prev => {
+          const prevLimpio = (prev.length === 1 && !prev[0].codigo && !prev[0].nombre) ? [] : prev;
+          return [...prevLimpio, ...nuevasPruebas];
+        });
+        toast.success(`Se agregaron ${nuevasPruebas.length} pruebas de ${item.nombre}`);
+      } else {
+        toast.info("Todas las pruebas de este grupo ya estaban agregadas.");
+      }
+    } else {
+      // Es una prueba individual
+      if (!pruebas.some(pr => pr.codigo === item.codigo)) {
+        setPruebas(prev => {
+          const prevLimpio = (prev.length === 1 && !prev[0].codigo && !prev[0].nombre) ? [] : prev;
+          return [...prevLimpio, { 
+            id: item.id, codigo: item.codigo, nombre: item.nombre, precioUSD: item.precioUSD ? item.precioUSD.toString() : "", 
+            unidades: item.unidades || "", valoresReferencia: item.valoresReferencia || "", 
+            opcionesPredefinidas: item.opcionesPredefinidas ? item.opcionesPredefinidas.split(',').filter(Boolean) : [], 
+            mostrarOpciones: !!item.opcionesPredefinidas 
+          }];
+        });
+      } else {
+        toast.info("Esta prueba ya está en la lista.");
+      }
+    }
+    setSearchQuery("");
+    setShowSearchResults(false);
   };
 
   const actualizarPrueba = (index: number, campo: string, valor: any) => {
@@ -322,38 +385,41 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                     </div>
                     {showSearchResults && searchQuery.trim() && (
                       <div className="absolute top-[100%] right-0 mt-2 w-96 bg-white border border-slate-200/80 rounded-2xl shadow-xl overflow-y-auto max-h-[300px] py-1.5 z-50">
-                        {todasLasPruebas
-                          .filter((p: any) => p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || p.codigo.toLowerCase().includes(searchQuery.toLowerCase()))
-                          .slice(0, 10)
-                          .map((p: any) => (
+                        {busquedaUnificada
+                          .filter(item => 
+                            item.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            (item.codigo && item.codigo.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                            (item.codigoCategoria && item.codigoCategoria.toLowerCase().includes(searchQuery.toLowerCase()))
+                          )
+                          .slice(0, 15)
+                          .map((item: any) => (
                             <button 
-                              key={p.id} 
+                              key={`${item.tipo}-${item.id}`} 
                               type="button" 
-                              onClick={() => {
-                                // Evitar agregar duplicados exactos visualmente
-                                if (!pruebas.some(pr => pr.codigo === p.codigo)) {
-                                  setPruebas([...pruebas, { 
-                                    id: p.id, codigo: p.codigo, nombre: p.nombre, precioUSD: p.precioUSD ? p.precioUSD.toString() : "", 
-                                    unidades: p.unidades || "", valoresReferencia: p.valoresReferencia || "", 
-                                    opcionesPredefinidas: p.opcionesPredefinidas ? p.opcionesPredefinidas.split(',').filter(Boolean) : [], 
-                                    mostrarOpciones: !!p.opcionesPredefinidas 
-                                  }]);
-                                } else {
-                                  toast.info("Esta prueba ya está en la lista.");
-                                }
-                                setSearchQuery("");
-                                setShowSearchResults(false);
-                              }} 
+                              onClick={() => agregarAlListadoBusqueda(item)} 
                               className="w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0"
                             >
-                              <div className="flex items-center gap-3">
-                                <span className="text-xs font-bold bg-slate-100 text-slate-500 px-2.5 py-1 rounded-md shrink-0">{p.codigo}</span>
-                                <span className="text-sm font-bold text-[#1D1D1F] leading-tight break-words">{p.nombre}</span>
+                              <div className="flex items-start gap-3">
+                                <span className={`mt-0.5 text-[10px] font-bold px-2.5 py-1 rounded-md shrink-0 uppercase tracking-widest ${
+                                  item.tipo === 'paquete' ? 'bg-purple-100 text-purple-600' :
+                                  item.tipo === 'subcategoria' ? 'bg-blue-100 text-[#0071E3]' :
+                                  'bg-slate-100 text-slate-500'
+                                }`}>
+                                  {item.tipo === 'prueba' ? item.codigo : (item.tipo === 'paquete' ? 'Paquete' : 'Subcat.')}
+                                </span>
+                                <div className="flex flex-col text-left">
+                                  <span className="text-sm font-bold text-[#1D1D1F] leading-tight break-words">{item.nombre}</span>
+                                  {item.tipo !== 'prueba' && (
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                                      {item.pruebas.length} pruebas • Cat: {item.codigoCategoria}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </button>
                         ))}
-                        {todasLasPruebas.filter((p: any) => p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || p.codigo.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
-                           <div className="px-4 py-3 text-sm text-slate-400 italic">No se encontraron pruebas</div>
+                        {busquedaUnificada.filter(item => item.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || (item.codigo && item.codigo.toLowerCase().includes(searchQuery.toLowerCase())) || (item.codigoCategoria && item.codigoCategoria.toLowerCase().includes(searchQuery.toLowerCase()))).length === 0 && (
+                           <div className="px-4 py-3 text-sm text-slate-400 italic">No se encontraron resultados</div>
                         )}
                       </div>
                     )}

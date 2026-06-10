@@ -4,9 +4,11 @@ import { seedEstados } from './seeders/estadoSeeder';
 import { seedMetodosPago } from './seeders/metodoPagoSeeder';
 import { seedTiposDescuento } from './seeders/tipoDescuentoSeeder';
 import { seedUsuarios } from './seeders/usuarioSeeder';
+import { seedCategorias } from './seeders/categoriaSeeder';     
+import { seedSubcategorias } from './seeders/subcategoriaSeeder';  
 import { seedPruebas } from './seeders/pruebaSeeder';
 import { seedServiciosExtra } from './seeders/servicioExtraSeeder';
-import { seedCostos } from './seeders/costoSeeder';
+import { seedCostosFijos } from './seeders/costoFijoSeeder'; 
 
 const prisma = new PrismaClient();
 
@@ -29,14 +31,20 @@ async function main() {
     await seedUsuarios(prisma);
     console.log('Usuarios base cargados correctamente.');
 
+    await seedCategorias(prisma);
+    console.log('Categorías de pruebas cargadas correctamente.');
+
+    await seedSubcategorias(prisma);
+    console.log('Subcategorías de pruebas cargadas correctamente.');
+
     await seedPruebas(prisma);
     console.log('Pruebas de laboratorio cargadas correctamente.');
 
     await seedServiciosExtra(prisma);
     console.log('Servicios extra cargados correctamente.');
 
-    await seedCostos(prisma);
-    console.log('Estructura de costos base cargada correctamente.');
+    await seedCostosFijos(prisma);
+    console.log('Costos fijos cargados correctamente.');
 
     console.log('Sistema inicializado con exito.');
   } catch (error) {

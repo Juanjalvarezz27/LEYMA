@@ -127,9 +127,16 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
     });
   };
 
-  const groupedDetalles = orden.detalles.reduce((acc: any, det: any) => {
-    const catNombre = det.prueba?.subcategoria?.categoria?.nombre || "OTROS";
-    const subcatNombre = det.prueba?.subcategoria?.nombre || "PRUEBAS INDIVIDUALES";
+  const sortedDetalles = [...orden.detalles].sort((a: any, b: any) => {
+    const ordenA = a.prueba?.ordenVisual || 0;
+    const ordenB = b.prueba?.ordenVisual || 0;
+    return ordenA - ordenB;
+  });
+
+  const groupedDetalles = sortedDetalles.reduce((acc: any, det: any) => {
+    // Si la prueba tiene categoriaVisual o subcategoriaVisual, las usamos prioritariamente
+    const catNombre = det.prueba?.categoriaVisual || det.prueba?.subcategoria?.categoria?.nombre || "OTROS";
+    const subcatNombre = det.prueba?.subcategoriaVisual || det.prueba?.subcategoria?.nombre || "PRUEBAS INDIVIDUALES";
     if (!acc[catNombre]) acc[catNombre] = {};
     if (!acc[catNombre][subcatNombre]) acc[catNombre][subcatNombre] = [];
     acc[catNombre][subcatNombre].push(det);
@@ -266,7 +273,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
 
   // Agrupamos los pendientes por categoría para el modal de firma
   const pendientesAgrupados = examenesPendientes.reduce((acc: any, det: any) => {
-    const catNombre = det.prueba?.subcategoria?.categoria?.nombre || "OTROS";
+    const catNombre = det.prueba?.categoriaVisual || det.prueba?.subcategoria?.categoria?.nombre || "OTROS";
     if (!acc[catNombre]) acc[catNombre] = [];
     acc[catNombre].push(det);
     return acc;

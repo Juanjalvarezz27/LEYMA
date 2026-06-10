@@ -30,6 +30,8 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
       if (!individualTestsMap.has(p.codigo)) {
         individualTestsMap.set(p.codigo, {
           tipo: 'prueba',
+          categoriaNombre: sub.categoria?.nombre || 'S/C',
+          subcategoriaNombre: sub.nombre,
           ...p
         });
       }
@@ -80,11 +82,13 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
         unidades: p.unidades || "",
         valoresReferencia: p.valoresReferencia || "",
         opcionesPredefinidas: p.opcionesPredefinidas ? p.opcionesPredefinidas.split(',').filter(Boolean) : [],
-        mostrarOpciones: !!p.opcionesPredefinidas
+        mostrarOpciones: !!p.opcionesPredefinidas,
+        categoriaVisual: p.categoriaVisual || "",
+        subcategoriaVisual: p.subcategoriaVisual || ""
       })));
     } else {
       setFormData({ categoria: "", subcategoria: "", esPaquete: false, precioPaqueteUSD: "" });
-      setPruebas([{ id: "", codigo: "", nombre: "", precioUSD: "", unidades: "", valoresReferencia: "", opcionesPredefinidas: [], mostrarOpciones: false }]);
+      setPruebas([{ id: "", codigo: "", nombre: "", precioUSD: "", unidades: "", valoresReferencia: "", opcionesPredefinidas: [], mostrarOpciones: false, categoriaVisual: "", subcategoriaVisual: "" }]);
     }
     setGuardando(false);
   }, [pruebaEditar, isOpen]);
@@ -92,7 +96,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
   if (!isOpen) return null;
 
   const agregarFila = () => {
-    setPruebas([...pruebas, { id: "", codigo: "", nombre: "", precioUSD: "", unidades: "", valoresReferencia: "", opcionesPredefinidas: [], mostrarOpciones: false }]);
+    setPruebas([...pruebas, { id: "", codigo: "", nombre: "", precioUSD: "", unidades: "", valoresReferencia: "", opcionesPredefinidas: [], mostrarOpciones: false, categoriaVisual: "", subcategoriaVisual: "" }]);
   };
 
   const eliminarFila = (index: number) => {
@@ -112,7 +116,9 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
         id: p.id, codigo: p.codigo, nombre: p.nombre, precioUSD: p.precioUSD ? p.precioUSD.toString() : "", 
         unidades: p.unidades || "", valoresReferencia: p.valoresReferencia || "", 
         opcionesPredefinidas: p.opcionesPredefinidas ? p.opcionesPredefinidas.split(',').filter(Boolean) : [], 
-        mostrarOpciones: !!p.opcionesPredefinidas 
+        mostrarOpciones: !!p.opcionesPredefinidas,
+        categoriaVisual: item.codigoCategoria || "", // El nombre de la categoría del paquete original
+        subcategoriaVisual: item.nombre // El nombre del paquete original
       }));
       
       if (nuevasPruebas.length > 0) {
@@ -134,7 +140,9 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
             id: item.id, codigo: item.codigo, nombre: item.nombre, precioUSD: item.precioUSD ? item.precioUSD.toString() : "", 
             unidades: item.unidades || "", valoresReferencia: item.valoresReferencia || "", 
             opcionesPredefinidas: item.opcionesPredefinidas ? item.opcionesPredefinidas.split(',').filter(Boolean) : [], 
-            mostrarOpciones: !!item.opcionesPredefinidas 
+            mostrarOpciones: !!item.opcionesPredefinidas,
+            categoriaVisual: item.categoriaNombre || item.codigoCategoria || "",
+            subcategoriaVisual: item.subcategoriaNombre || item.nombre || ""
           }];
         });
       } else {
@@ -205,7 +213,9 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
           precioUSD: !formData.esPaquete ? parseFloat(p.precioUSD) : null,
           unidades: p.unidades,
           valoresReferencia: p.valoresReferencia || null,
-          opcionesPredefinidas: p.opcionesPredefinidas.length > 0 ? p.opcionesPredefinidas.join(',') : null
+          opcionesPredefinidas: p.opcionesPredefinidas.length > 0 ? p.opcionesPredefinidas.join(',') : null,
+          categoriaVisual: p.categoriaVisual || null,
+          subcategoriaVisual: p.subcategoriaVisual || null
         }))
       };
 
@@ -370,7 +380,6 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                 </h4>
               </div>
               <div className="flex items-center gap-3">
-                {formData.esPaquete && (
                   <div className="relative" ref={searchRef}>
                     <div className="relative flex items-center">
                       <Search className="absolute left-3 text-slate-400" size={16} />
@@ -409,9 +418,13 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                                 </span>
                                 <div className="flex flex-col text-left">
                                   <span className="text-sm font-bold text-[#1D1D1F] leading-tight break-words">{item.nombre}</span>
-                                  {item.tipo !== 'prueba' && (
+                                  {item.tipo !== 'prueba' ? (
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
                                       {item.pruebas.length} pruebas • Cat: {item.codigoCategoria}
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                                      Cat: {item.categoriaNombre} • Sub: {item.subcategoriaNombre}
                                     </span>
                                   )}
                                 </div>
@@ -424,7 +437,6 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                       </div>
                     )}
                   </div>
-                )}
                 <button type="button" onClick={agregarFila} className="text-[13px] font-bold bg-[#0071E3] text-white px-5 py-2.5 rounded-xl hover:bg-[#0077ED] transition-all flex items-center gap-2 shadow-sm">
                   <Plus size={18} strokeWidth={3} /> Agregar Prueba
                 </button>
@@ -432,19 +444,64 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
             </div>
 
             <div className="space-y-4">
-              {pruebas.map((p, index) => (
-                <div key={index} className="flex flex-col bg-[#F5F5F7]/60 border border-slate-200/80 p-5 rounded-2xl shadow-sm hover:border-[#0071E3]/30 transition-colors">
-                  
-                  <div className="grid grid-cols-12 gap-4 items-end w-full">
-                    <div className="col-span-2 xl:col-span-1 flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase">Código</label>
-                      <input type="text" required value={p.codigo} onChange={(e) => actualizarPrueba(index, 'codigo', e.target.value.toUpperCase())} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20" placeholder="HE-01" />
-                    </div>
+              {pruebas.map((p, index) => {
+                const prev = index > 0 ? pruebas[index - 1] : null;
+                const cat = p.categoriaVisual || "SIN CATEGORIA";
+                const sub = p.subcategoriaVisual || "SIN SUBCATEGORIA";
+                const prevCat = prev ? (prev.categoriaVisual || "SIN CATEGORIA") : null;
+                const prevSub = prev ? (prev.subcategoriaVisual || "SIN SUBCATEGORIA") : null;
+                
+                const isNewGroup = cat !== prevCat || sub !== prevSub;
+                const showHeader = isNewGroup && (cat !== "SIN CATEGORIA" || sub !== "SIN SUBCATEGORIA");
 
-                    <div className={`${formData.esPaquete ? 'col-span-5' : 'col-span-4'} flex flex-col gap-1.5`}>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase">Nombre</label>
-                      <textarea rows={1} required value={p.nombre} onChange={(e) => actualizarPrueba(index, 'nombre', e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 resize-y min-h-[46px]" placeholder="Ej. GLOBULOS BLANCOS" />
-                    </div>
+                return (
+                  <div key={index} className="flex flex-col">
+                    {showHeader && (
+                      <div className="flex items-center gap-3 px-2 mt-4 mb-3">
+                        <div className="flex items-center gap-2 shrink-0">
+                          {cat !== "SIN CATEGORIA" && (
+                            <span className="text-[11px] font-black tracking-widest uppercase text-slate-500">
+                              {cat}
+                            </span>
+                          )}
+                          {cat !== "SIN CATEGORIA" && sub !== "SIN SUBCATEGORIA" && (
+                            <span className="text-slate-300 font-bold">-</span>
+                          )}
+                          {sub !== "SIN SUBCATEGORIA" && (
+                            <span className="text-[11px] font-black tracking-widest uppercase text-[#0071E3]">
+                              {sub}
+                            </span>
+                          )}
+                        </div>
+                        <div className="h-px bg-slate-200/70 flex-1"></div>
+                        <button type="button" onClick={() => {
+                          const nuevas = [...pruebas];
+                          for (let i = index; i < nuevas.length; i++) {
+                            if ((nuevas[i].categoriaVisual || "SIN CATEGORIA") === cat && (nuevas[i].subcategoriaVisual || "SIN SUBCATEGORIA") === sub) {
+                              nuevas[i].categoriaVisual = "";
+                              nuevas[i].subcategoriaVisual = "";
+                            } else {
+                              break;
+                            }
+                          }
+                          setPruebas(nuevas);
+                        }} className="text-red-400 hover:text-red-600 text-[10px] ml-2 font-bold uppercase tracking-widest bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors">
+                          Quitar Grupo
+                        </button>
+                      </div>
+                    )}
+                    <div className={`flex flex-col bg-[#F5F5F7]/60 border border-slate-200/80 p-5 shadow-sm hover:border-[#0071E3]/30 transition-colors ${showHeader ? 'rounded-2xl rounded-t-lg' : 'rounded-2xl mt-4'}`}>
+                      
+                      <div className="grid grid-cols-12 gap-4 items-end w-full">
+                        <div className="col-span-2 xl:col-span-1 flex flex-col gap-1.5">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase">Código</label>
+                          <input type="text" required value={p.codigo} onChange={(e) => actualizarPrueba(index, 'codigo', e.target.value.toUpperCase())} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20" placeholder="HE-01" />
+                        </div>
+
+                        <div className={`${formData.esPaquete ? 'col-span-5' : 'col-span-4'} flex flex-col gap-1.5`}>
+                          <label className="text-[10px] font-bold text-slate-400 uppercase">Nombre</label>
+                          <textarea rows={1} required value={p.nombre} onChange={(e) => actualizarPrueba(index, 'nombre', e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 resize-y min-h-[46px]" placeholder="Ej. GLOBULOS BLANCOS" />
+                        </div>
 
                     <div className="col-span-3 flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase">Valores Referencia</label>
@@ -511,8 +568,10 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
 
 
 
-                </div>
-              ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </form>

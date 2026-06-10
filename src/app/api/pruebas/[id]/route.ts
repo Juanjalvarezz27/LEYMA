@@ -121,11 +121,13 @@ export async function PUT(
             codigo: p.codigo.toUpperCase(), 
             nombre: p.nombre.toUpperCase(), 
             precioUSD: body.esPaquete ? null : parsePrecioSeguro(p.precioUSD),
-            unidades: p.unidades, 
-            valoresReferencia: p.valoresReferencia,
+            unidades: p.unidades,
+            valoresReferencia: p.valoresReferencia || null,
             opcionesPredefinidas: p.opcionesPredefinidas || null,
             activa: true,
-            ordenVisual: p.ordenVisual 
+            ordenVisual: p.ordenVisual,
+            categoriaVisual: p.categoriaVisual || null,
+            subcategoriaVisual: p.subcategoriaVisual || null
           })),
 
           // 3. Actualizamos las pruebas que ya existían
@@ -138,7 +140,9 @@ export async function PUT(
               unidades: p.unidades, 
               valoresReferencia: p.valoresReferencia,
               opcionesPredefinidas: p.opcionesPredefinidas || null,
-              ordenVisual: p.ordenVisual 
+              ordenVisual: p.ordenVisual,
+              categoriaVisual: p.categoriaVisual || null,
+              subcategoriaVisual: p.subcategoriaVisual || null
             }
           }))
         }

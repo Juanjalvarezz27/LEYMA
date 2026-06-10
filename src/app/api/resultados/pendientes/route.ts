@@ -16,7 +16,15 @@ export async function GET() {
         estado: { select: { nombre: true } },
         detalles: {
           include: {
-            prueba: true
+            prueba: {
+              include: {
+                subcategoria: {
+                  include: {
+                    categoria: true
+                  }
+                }
+              }
+            }
           }
         }
       },

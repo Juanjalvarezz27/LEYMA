@@ -70,7 +70,9 @@ export async function POST(req: Request) {
             valoresReferencia: p.valoresReferencia || null,
             opcionesPredefinidas: p.opcionesPredefinidas || null,
             activa: true,
-            ordenVisual: index + 1
+            ordenVisual: index + 1,
+            categoriaVisual: p.categoriaVisual || null,
+            subcategoriaVisual: p.subcategoriaVisual || null
           }))
         }
       },

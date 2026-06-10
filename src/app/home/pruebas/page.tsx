@@ -507,72 +507,113 @@ export default function PruebasPage() {
                               No hay pruebas asignadas.
                             </div>
                           ) : (
-                            [...examen.pruebas].sort((a: any, b: any) => a.nombre.localeCompare(b.nombre)).map((p: any, index: number) => {
-                              const isPar = index % 2 === 0;
-                              const bgFondoFila = p.activa && examen.activa
-                                ? (isPar ? 'bg-[#E8F2FF] border-[#0071E3]/20' : 'bg-[#E8F2FF]/40 border-[#0071E3]/10')
-                                : 'bg-slate-50/50 border-slate-200/40 opacity-75';
+                            (() => {
+                              const pruebasOrdenadas = [...examen.pruebas].sort((a: any, b: any) => (a.ordenVisual || 0) - (b.ordenVisual || 0));
+                              const gruposPruebas = pruebasOrdenadas.reduce((acc: any, p: any) => {
+                                const cat = p.categoriaVisual || "SIN CATEGORIA";
+                                const sub = p.subcategoriaVisual || "SIN SUBCATEGORIA";
+                                if (!acc[cat]) acc[cat] = {};
+                                if (!acc[cat][sub]) acc[cat][sub] = [];
+                                acc[cat][sub].push(p);
+                                return acc;
+                              }, {} as Record<string, Record<string, any[]>>);
 
-                              return (
-                                <div key={p.id} className={`flex items-center px-5 py-4 rounded-2xl border transition-all shadow-[0_2px_8px_-4px_rgba(0,0,0,0.02)] hover:border-[#0071E3]/40 ${bgFondoFila}`}>
-                                  
-                                  <div className={`flex items-center gap-4 ${examen.esPaquete ? 'w-[40%]' : 'w-[35%]'}`}>
-                                    <span className={`px-2.5 py-1 rounded-md text-[10px] font-mono font-black tracking-wider shrink-0 ${p.activa && examen.activa ? 'bg-white text-[#0071E3] shadow-sm' : 'bg-red-100/50 text-red-600'}`}>
-                                      {p.codigo}
-                                    </span>
-                                    <span className={`font-black text-[14px] uppercase tracking-wide truncate pr-2 ${p.activa && examen.activa ? 'text-[#1D1D1F]' : 'text-slate-400 line-through'}`}>
-                                      {p.nombre}
-                                    </span>
-                                  </div>
-
-                                  <div className="w-[20%] flex justify-center">
-                                    {p.valoresReferencia ? <span className="text-[13px] font-bold text-[#1D1D1F] bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">{p.valoresReferencia}</span> : <span className="text-slate-300">-</span>}
-                                  </div>
-
-                                  <div className={`${examen.esPaquete ? 'w-[20%]' : 'w-[15%]'} flex justify-center`}>
-                                    {p.unidades ? <span className="text-[13px] font-bold text-[#1D1D1F] bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">{p.unidades}</span> : <span className="text-slate-300">-</span>}
-                                  </div>
-
-                                  <div className={`${examen.esPaquete ? 'w-[20%]' : 'w-[30%]'} flex items-center justify-end gap-5`}>
-                                    {/* SOLO MUESTRA PRECIO INDIVIDUAL SI NO ES PAQUETE */}
-                                    {!examen.esPaquete && (
-                                      <span className={`font-black text-[16px] ${p.activa && examen.activa ? 'text-[#1D1D1F]' : 'text-slate-400'}`}>
-                                        ${p.precioUSD?.toFixed(2) || "0.00"}
-                                      </span>
-                                    )}
-                                    
-                                    <div className="flex items-center gap-2">
-                                      {/* BOTÓN: EDITAR PRUEBA INDIVIDUAL */}
-                                      <div className="relative group/btn flex flex-col items-center">
-                                        <button onClick={() => abrirModalEditarItem(p)} disabled={!examen.activa} className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300 ${!examen.activa ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-blue-50 text-[#0071E3] hover:bg-[#0071E3] hover:text-white hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] hover:-translate-y-0.5'}`}>
-                                          <Edit2 size={14} strokeWidth={2.5}/>
-                                        </button>
-                                        {examen.activa && (
-                                          <div className="absolute -top-9 opacity-0 group-hover/btn:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[10px] font-bold px-2.5 py-1 rounded-md whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/btn:-translate-y-1">
-                                            Editar Ítem
-                                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
+                              return Object.entries(gruposPruebas).map(([cat, subs]) => (
+                                <div key={cat} className="flex flex-col gap-3 mt-2">
+                                  {Object.entries(subs).map(([sub, pruebasGrupo]) => (
+                                    <div key={sub} className="flex flex-col gap-3 mt-1">
+                                      {(cat !== "SIN CATEGORIA" || sub !== "SIN SUBCATEGORIA") && (
+                                        <div className="flex items-center gap-3 px-4 mt-1 mb-1">
+                                          <div className="flex items-center gap-2 shrink-0">
+                                            {cat !== "SIN CATEGORIA" && (
+                                              <span className="text-[11px] font-black tracking-widest uppercase text-slate-500">
+                                                {cat}
+                                              </span>
+                                            )}
+                                            {cat !== "SIN CATEGORIA" && sub !== "SIN SUBCATEGORIA" && (
+                                              <span className="text-slate-300 font-bold">-</span>
+                                            )}
+                                            {sub !== "SIN SUBCATEGORIA" && (
+                                              <span className="text-[11px] font-black tracking-widest uppercase text-[#0071E3]">
+                                                {sub}
+                                              </span>
+                                            )}
                                           </div>
-                                        )}
-                                      </div>
+                                          <div className="h-px bg-slate-200/70 flex-1"></div>
+                                        </div>
+                                      )}
+                                      
+                                      {(pruebasGrupo as any[]).map((p: any, index: number) => {
+                                    const isPar = index % 2 === 0;
+                                    const bgFondoFila = p.activa && examen.activa
+                                      ? (isPar ? 'bg-[#E8F2FF] border-[#0071E3]/20' : 'bg-[#E8F2FF]/40 border-[#0071E3]/10')
+                                      : 'bg-slate-50/50 border-slate-200/40 opacity-75';
 
-                                      {/* BOTÓN: ACTIVAR/DESACTIVAR PRUEBA INDIVIDUAL (Ajustado a red-50 y red-500) */}
-                                      <div className="relative group/btn flex flex-col items-center">
-                                        <button onClick={() => toggleEstadoPruebaIndividual(p.id, p.activa)} disabled={!examen.activa} className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300 ${!examen.activa ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : p.activa ? 'bg-red-50 text-red-500 hover:bg-red-500 hover:text-white hover:shadow-[0_4px_12px_rgba(239,68,68,0.3)] hover:-translate-y-0.5' : 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white hover:shadow-[0_4px_12px_rgba(22,163,74,0.3)] hover:-translate-y-0.5'}`}>
-                                          {p.activa ? <Ban size={14} strokeWidth={2.5}/> : <CheckCircle2 size={14} strokeWidth={2.5}/>}
-                                        </button>
-                                        {examen.activa && (
-                                          <div className="absolute -top-9 opacity-0 group-hover/btn:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[10px] font-bold px-2.5 py-1 rounded-md whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/btn:-translate-y-1">
-                                            {p.activa ? "Ocultar" : "Reactivar"}
-                                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
+                                    return (
+                                      <div key={p.id} className={`flex items-center px-5 py-4 rounded-2xl border transition-all shadow-[0_2px_8px_-4px_rgba(0,0,0,0.02)] hover:border-[#0071E3]/40 ${bgFondoFila}`}>
+                                        
+                                        <div className={`flex items-center gap-4 ${examen.esPaquete ? 'w-[40%]' : 'w-[35%]'}`}>
+                                          <span className={`px-2.5 py-1 rounded-md text-[10px] font-mono font-black tracking-wider shrink-0 ${p.activa && examen.activa ? 'bg-white text-[#0071E3] shadow-sm' : 'bg-red-100/50 text-red-600'}`}>
+                                            {p.codigo}
+                                          </span>
+                                          <span className={`font-black text-[14px] uppercase tracking-wide truncate pr-2 ${p.activa && examen.activa ? 'text-[#1D1D1F]' : 'text-slate-400 line-through'}`}>
+                                            {p.nombre}
+                                          </span>
+                                        </div>
+
+                                        <div className="w-[20%] flex justify-center">
+                                          {p.valoresReferencia ? <span className="text-[13px] font-bold text-[#1D1D1F] bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">{p.valoresReferencia}</span> : <span className="text-slate-300">-</span>}
+                                        </div>
+
+                                        <div className={`${examen.esPaquete ? 'w-[20%]' : 'w-[15%]'} flex justify-center`}>
+                                          {p.unidades ? <span className="text-[13px] font-bold text-[#1D1D1F] bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">{p.unidades}</span> : <span className="text-slate-300">-</span>}
+                                        </div>
+
+                                        <div className={`${examen.esPaquete ? 'w-[20%]' : 'w-[30%]'} flex items-center justify-end gap-5`}>
+                                          {/* SOLO MUESTRA PRECIO INDIVIDUAL SI NO ES PAQUETE */}
+                                          {!examen.esPaquete && (
+                                            <span className={`font-black text-[16px] ${p.activa && examen.activa ? 'text-[#1D1D1F]' : 'text-slate-400'}`}>
+                                              ${p.precioUSD?.toFixed(2) || "0.00"}
+                                            </span>
+                                          )}
+                                          
+                                          <div className="flex items-center gap-2">
+                                            {/* BOTÓN: EDITAR PRUEBA INDIVIDUAL */}
+                                            <div className="relative group/btn flex flex-col items-center">
+                                              <button onClick={() => abrirModalEditarItem(p)} disabled={!examen.activa} className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300 ${!examen.activa ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-blue-50 text-[#0071E3] hover:bg-[#0071E3] hover:text-white hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] hover:-translate-y-0.5'}`}>
+                                                <Edit2 size={14} strokeWidth={2.5}/>
+                                              </button>
+                                              {examen.activa && (
+                                                <div className="absolute -top-9 opacity-0 group-hover/btn:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[10px] font-bold px-2.5 py-1 rounded-md whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/btn:-translate-y-1">
+                                                  Editar Ítem
+                                                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {/* BOTÓN: ACTIVAR/DESACTIVAR PRUEBA INDIVIDUAL */}
+                                            <div className="relative group/btn flex flex-col items-center">
+                                              <button onClick={() => toggleEstadoPruebaIndividual(p.id, p.activa)} disabled={!examen.activa} className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300 ${!examen.activa ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : p.activa ? 'bg-red-50 text-red-500 hover:bg-red-500 hover:text-white hover:shadow-[0_4px_12px_rgba(239,68,68,0.3)] hover:-translate-y-0.5' : 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white hover:shadow-[0_4px_12px_rgba(22,163,74,0.3)] hover:-translate-y-0.5'}`}>
+                                                {p.activa ? <Ban size={14} strokeWidth={2.5}/> : <CheckCircle2 size={14} strokeWidth={2.5}/>}
+                                              </button>
+                                              {examen.activa && (
+                                                <div className="absolute -top-9 opacity-0 group-hover/btn:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[10px] font-bold px-2.5 py-1 rounded-md whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/btn:-translate-y-1">
+                                                  {p.activa ? "Ocultar" : "Reactivar"}
+                                                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D1D1F]"></div>
+                                                </div>
+                                              )}
+                                            </div>
                                           </div>
-                                        )}
-                                      </div>
-                                    </div>
 
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
                                   </div>
+                                ))}
                                 </div>
-                              );
-                            })
+                              ));
+                            })()
                           )}
                         </div>
                       </div>

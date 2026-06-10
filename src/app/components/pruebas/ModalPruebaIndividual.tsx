@@ -13,10 +13,12 @@ interface ModalPruebaIndividualProps {
 export default function ModalPruebaIndividual({ isOpen, onClose, onSave, itemEditar }: ModalPruebaIndividualProps) {
   const [formData, setFormData] = useState<{
     codigo: string, nombre: string, precioUSD: string, unidades: string, valoresReferencia: string,
-    opcionesPredefinidas: string[], mostrarOpciones: boolean
+    opcionesPredefinidas: string[], mostrarOpciones: boolean,
+    categoriaVisual: string, subcategoriaVisual: string
   }>({ 
     codigo: "", nombre: "", precioUSD: "", unidades: "", valoresReferencia: "",
-    opcionesPredefinidas: [], mostrarOpciones: false
+    opcionesPredefinidas: [], mostrarOpciones: false,
+    categoriaVisual: "", subcategoriaVisual: ""
   });
 
   useEffect(() => {
@@ -29,7 +31,9 @@ export default function ModalPruebaIndividual({ isOpen, onClose, onSave, itemEdi
         unidades: itemEditar.unidades || "",
         valoresReferencia: itemEditar.valoresReferencia || "",
         opcionesPredefinidas: opcs,
-        mostrarOpciones: opcs.length > 0
+        mostrarOpciones: opcs.length > 0,
+        categoriaVisual: itemEditar.categoriaVisual || "",
+        subcategoriaVisual: itemEditar.subcategoriaVisual || ""
       });
     }
   }, [itemEditar, isOpen]);
@@ -110,6 +114,17 @@ export default function ModalPruebaIndividual({ isOpen, onClose, onSave, itemEdi
             <div className="w-1/2 flex flex-col gap-1.5">
               <label className="text-[10px] font-bold text-slate-400 uppercase">Unidades</label>
               <input type="text" value={formData.unidades} onChange={(e) => setFormData({ ...formData, unidades: e.target.value })} className="w-full px-4 py-3 bg-[#F5F5F7] rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#0071E3]/20 focus:outline-none" />
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <div className="w-1/2 flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase">Categoría Visual (Opcional)</label>
+              <input type="text" value={formData.categoriaVisual} onChange={(e) => setFormData({ ...formData, categoriaVisual: e.target.value.toUpperCase() })} className="w-full px-4 py-3 bg-[#F5F5F7] rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#0071E3]/20 focus:outline-none" placeholder="Ej. ORINA" />
+            </div>
+            <div className="w-1/2 flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase">Subcategoría Visual (Opcional)</label>
+              <input type="text" value={formData.subcategoriaVisual} onChange={(e) => setFormData({ ...formData, subcategoriaVisual: e.target.value.toUpperCase() })} className="w-full px-4 py-3 bg-[#F5F5F7] rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#0071E3]/20 focus:outline-none" placeholder="Ej. ORINA COMPLETA" />
             </div>
           </div>
 

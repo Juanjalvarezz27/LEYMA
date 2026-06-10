@@ -29,7 +29,9 @@ export async function PUT(
         precioUSD: parseFloat(body.precioUSD),
         unidades: body.unidades || null,
         valoresReferencia: body.valoresReferencia || null,
-        opcionesPredefinidas: body.opcionesPredefinidas || null
+        opcionesPredefinidas: body.opcionesPredefinidas || null,
+        categoriaVisual: body.categoriaVisual || null,
+        subcategoriaVisual: body.subcategoriaVisual || null
       }
     });
 

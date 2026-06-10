@@ -81,6 +81,11 @@ export async function POST(req: Request) {
     
     return NextResponse.json(nuevaSubcategoria);
   } catch (error: any) {
-    return NextResponse.json({ error: "Error al crear el registro" }, { status: 500 });
+    console.error("Error en POST /api/pruebas:", error);
+    if (error.code === 'P2002') {
+      const target = error.meta?.target || "un campo";
+      return NextResponse.json({ error: `Error: Ya existe un registro con ese nombre o código (${target}).` }, { status: 400 });
+    }
+    return NextResponse.json({ error: error.message || "Error al crear el registro" }, { status: 500 });
   }
 }

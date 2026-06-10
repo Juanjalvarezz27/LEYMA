@@ -152,8 +152,12 @@ export async function PUT(
     
     return NextResponse.json(subcatActualizada);
   } catch (error: any) {
-    console.error("Error en PUT /api/pruebas:", error);
-    return NextResponse.json({ error: `Error al actualizar la estructura: ${(error as Error).message}` }, { status: 500 });
+    console.error("Error en PUT /api/pruebas/[id]:", error);
+    if (error.code === 'P2002') {
+      const target = error.meta?.target || "un campo";
+      return NextResponse.json({ error: `Error: Ya existe un registro con ese nombre o código (${target}).` }, { status: 400 });
+    }
+    return NextResponse.json({ error: error.message || "Error al actualizar registro" }, { status: 500 });
   }
 }
 

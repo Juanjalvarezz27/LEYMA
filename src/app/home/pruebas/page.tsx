@@ -520,7 +520,7 @@ export default function PruebasPage() {
 
                               return Object.entries(gruposPruebas).map(([cat, subs]) => (
                                 <div key={cat} className="flex flex-col gap-3 mt-2">
-                                  {Object.entries(subs).map(([sub, pruebasGrupo]) => (
+                                  {Object.entries(subs as any).map(([sub, pruebasGrupo]) => (
                                     <div key={sub} className="flex flex-col gap-3 mt-1">
                                       {(cat !== "SIN CATEGORIA" || sub !== "SIN SUBCATEGORIA") && (
                                         <div className="flex items-center gap-3 px-4 mt-1 mb-1">

@@ -218,8 +218,8 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
 
   const allSigners = new Map();
   const groupedByCategory = orden.detalles.reduce((acc: any, det: any) => {
-    const catNombre = det.prueba?.subcategoria?.categoria?.nombre || "OTROS";
-    const subcatNombre = det.prueba?.subcategoria?.nombre || "PRUEBAS INDIVIDUALES";
+    const catNombre = det.prueba?.categoriaVisual || det.prueba?.subcategoria?.categoria?.nombre || "OTROS";
+    const subcatNombre = det.prueba?.subcategoriaVisual || det.prueba?.subcategoria?.nombre || "PRUEBAS INDIVIDUALES";
     
     if (!acc[catNombre]) {
       acc[catNombre] = {
@@ -350,10 +350,12 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                       <Text style={pdfStyles.colRef}>VALORES DE REFERENCIA</Text>
                     </View>
 
-                    <Text style={pdfStyles.subcatTitle}>{subCatNombre}</Text>
+                    {subCatNombre !== "PRUEBAS INDIVIDUALES" && (
+                      <Text style={pdfStyles.subcatTitle}>{subCatNombre}</Text>
+                    )}
 
                     {detalles.map((det: any) => {
-                      const isPaquete = detalles[0]?.prueba?.subcategoria?.esPaquete;
+                      const isPaquete = subCatNombre !== "PRUEBAS INDIVIDUALES";
                       const listaValores = det.resultado?.valores || [];
                       
                       return (
@@ -361,7 +363,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                           {det.cantidad > 1 ? (
                             <View>
                               <View style={pdfStyles.row}>
-                                <Text style={pdfStyles.rowDescSub}>{det.prueba.nombre}</Text>
+                                <Text style={isPaquete ? pdfStyles.rowDescSub : pdfStyles.rowDesc}>{det.prueba.nombre}</Text>
                                 <Text style={pdfStyles.rowRes}></Text>
                                 <Text style={pdfStyles.rowUni}>{det.prueba.unidades || ''}</Text>
                                 <Text style={pdfStyles.rowRef}>{det.resultado?.valoresReferencia || det.prueba.valoresReferencia || ''}</Text>
@@ -381,7 +383,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                             </View>
                           ) : (
                             <View style={pdfStyles.row}>
-                              <Text style={pdfStyles.rowDescSub}>{det.prueba.nombre}</Text>
+                              <Text style={isPaquete ? pdfStyles.rowDescSub : pdfStyles.rowDesc}>{det.prueba.nombre}</Text>
                               <Text style={pdfStyles.rowRes}>{listaValores[0]?.valorIngresado || "-"}</Text>
                               <Text style={pdfStyles.rowUni}>{det.prueba.unidades || ''}</Text>
                               <Text style={pdfStyles.rowRef}>{det.resultado?.valoresReferencia || det.prueba.valoresReferencia || ''}</Text>

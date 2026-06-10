@@ -268,8 +268,8 @@ const ReporteDocumentServer = ({
 }: ReporteDocumentServerProps) => {
   const allSigners = new Map();
   const groupedByCategory = orden.detalles.reduce((acc: any, det: any) => {
-    const catNombre = det.prueba?.subcategoria?.categoria?.nombre || "OTROS";
-    const subcatNombre = det.prueba?.subcategoria?.nombre || "PRUEBAS INDIVIDUALES";
+    const catNombre = det.prueba?.categoriaVisual || det.prueba?.subcategoria?.categoria?.nombre || "OTROS";
+    const subcatNombre = det.prueba?.subcategoriaVisual || det.prueba?.subcategoria?.nombre || "PRUEBAS INDIVIDUALES";
 
     if (!acc[catNombre]) {
       acc[catNombre] = { subcategorias: {}, signers: new Map() };
@@ -418,13 +418,12 @@ const ReporteDocumentServer = ({
                           <Text style={pdfStyles.colRef}>VALORES DE REFERENCIA</Text>
                         </View>
 
-                        {detalles[0]?.prueba?.subcategoria?.esPaquete && (
+                        {subCatNombre !== "PRUEBAS INDIVIDUALES" && (
                           <Text style={pdfStyles.subcatTitle}>{subCatNombre}</Text>
                         )}
 
                         {detalles.map((det: any) => {
-                          const isPaquete =
-                            detalles[0]?.prueba?.subcategoria?.esPaquete;
+                          const isPaquete = subCatNombre !== "PRUEBAS INDIVIDUALES";
                           const listaValores = det.resultado?.valores || [];
 
                           return (

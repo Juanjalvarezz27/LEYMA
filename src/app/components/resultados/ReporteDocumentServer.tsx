@@ -117,10 +117,10 @@ const pdfStyles = StyleSheet.create({
     paddingBottom: 2,
     marginBottom: 3,
   },
-  colDesc: { width: "32%", fontWeight: 700, fontSize: 8.5 },
+  colDesc: { width: "28%", fontWeight: 700, fontSize: 8.5 },
   colRes: { width: "25%", fontWeight: 700, fontSize: 8.5, textAlign: "center" },
   colUni: { width: "20%", fontWeight: 700, fontSize: 8.5, textAlign: "center" },
-  colRef: { width: "23%", fontWeight: 700, fontSize: 8.5, textAlign: "center" },
+  colRef: { width: "27%", fontWeight: 700, fontSize: 8.5, textAlign: "center" },
 
   subcatTitle: {
     fontSize: 9.5,
@@ -135,10 +135,10 @@ const pdfStyles = StyleSheet.create({
     marginBottom: 4,
     paddingVertical: 4,
   },
-  rowDesc: { width: "32%", fontSize: 8.5, fontWeight: 700 },
-  rowDescSub: { width: "32%", fontSize: 8.5, fontWeight: 700, paddingLeft: 10 },
+  rowDesc: { width: "28%", fontSize: 8.5, fontWeight: 700 },
+  rowDescSub: { width: "28%", fontSize: 8.5, fontWeight: 700, paddingLeft: 10 },
   multiRowDesc: {
-    width: "32%",
+    width: "28%",
     fontSize: 8,
     fontWeight: 400,
     paddingLeft: 15,
@@ -146,7 +146,7 @@ const pdfStyles = StyleSheet.create({
   },
   rowRes: { width: "25%", fontSize: 9, fontWeight: 700, textAlign: "center", lineHeight: 1.2 },
   rowUni: { width: "20%", fontSize: 8.5, textAlign: "center", lineHeight: 1.2 },
-  rowRef: { width: "23%", fontSize: 8.5, textAlign: "center", lineHeight: 1.2 },
+  rowRef: { width: "27%", fontSize: 8.5, textAlign: "center", lineHeight: 1.2 },
 
   obsContainer: {
     marginLeft: 10,

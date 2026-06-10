@@ -172,12 +172,15 @@ export async function DELETE(
     await prisma.subcategoriaPrueba.delete({ where: { id: id } });
     return NextResponse.json({ message: "Subcategoría eliminada correctamente." });
   } catch (error: any) {
-    if (error.code === 'P2014' || error.code === 'P2003') {
+    const isForeignKeyError = error.code === 'P2014' || error.code === 'P2003' || (error.message && error.message.includes('foreign key constraint'));
+    
+    if (isForeignKeyError) {
       return NextResponse.json(
-        { error: "No puedes eliminar esta subcategoría porque algunas de sus pruebas ya tienen resultados registrados en pacientes." }, 
+        { error: "No puedes eliminar esta subcategoría porque algunas de sus pruebas ya están registradas en el historial de órdenes de pacientes." }, 
         { status: 400 }
       );
     }
-    return NextResponse.json({ error: "Error interno al eliminar la subcategoría" }, { status: 500 });
-  }
+    console.error("Error detallado al eliminar subcategoria:", error);
+      return NextResponse.json({ error: `Error interno al eliminar la subcategoría: ${error.message} (Código: ${error.code})` }, { status: 500 });
+    }
 }

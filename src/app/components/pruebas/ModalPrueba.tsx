@@ -111,9 +111,10 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
 
   const agregarAlListadoBusqueda = (item: any) => {
     if (item.tipo === 'paquete' || item.tipo === 'subcategoria') {
-      // Agregar todas sus pruebas
+      // Agregar todas sus pruebas (creando copias desvinculadas)
       const nuevasPruebas = item.pruebas.filter((p: any) => !pruebas.some((pr: any) => pr.codigo === p.codigo)).map((p: any) => ({
-        id: p.id, codigo: p.codigo, nombre: p.nombre, precioUSD: p.precioUSD ? p.precioUSD.toString() : "", 
+        id: "", // Forzamos vacío para que se cree como nueva prueba
+        codigo: p.codigo, nombre: p.nombre, precioUSD: p.precioUSD ? p.precioUSD.toString() : "", 
         unidades: p.unidades || "", valoresReferencia: p.valoresReferencia || "", 
         opcionesPredefinidas: p.opcionesPredefinidas ? p.opcionesPredefinidas.split(',').filter(Boolean) : [], 
         mostrarOpciones: !!p.opcionesPredefinidas,
@@ -137,7 +138,8 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
         setPruebas(prev => {
           const prevLimpio = (prev.length === 1 && !prev[0].codigo && !prev[0].nombre) ? [] : prev;
           return [...prevLimpio, { 
-            id: item.id, codigo: item.codigo, nombre: item.nombre, precioUSD: item.precioUSD ? item.precioUSD.toString() : "", 
+            id: "", // Forzamos vacío para que se cree como copia nueva
+            codigo: item.codigo, nombre: item.nombre, precioUSD: item.precioUSD ? item.precioUSD.toString() : "", 
             unidades: item.unidades || "", valoresReferencia: item.valoresReferencia || "", 
             opcionesPredefinidas: item.opcionesPredefinidas ? item.opcionesPredefinidas.split(',').filter(Boolean) : [], 
             mostrarOpciones: !!item.opcionesPredefinidas,

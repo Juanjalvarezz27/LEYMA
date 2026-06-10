@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     }
 
     // 2. Validar que el nombre del paquete/perfil no exista ya
-    const subcatExistente = await prisma.subcategoriaPrueba.findUnique({
+    const subcatExistente = await prisma.subcategoriaPrueba.findFirst({
       where: { nombre: body.subcategoria.toUpperCase() }
     });
     if (subcatExistente) {

@@ -40,8 +40,15 @@ export async function POST(req: Request) {
     }
 
     await prisma.$transaction(async (tx) => {
+      // Optimizacion: buscar todos los resultados actuales de una sola vez
+      const detalleIds = resultados.map((r: any) => r.detalleOrdenId);
+      const existingResultsList = await tx.resultadoPrueba.findMany({
+        where: { detalleOrdenId: { in: detalleIds } }
+      });
+      const existingResultsMap = new Map(existingResultsList.map(r => [r.detalleOrdenId, r]));
+
       for (const res of resultados) {
-        const currentRes = await tx.resultadoPrueba.findUnique({ where: { detalleOrdenId: res.detalleOrdenId } });
+        const currentRes = existingResultsMap.get(res.detalleOrdenId);
         
         // Si ya está firmado por completo y no es edición, NO LO TOCAMOS
         if (currentRes?.firmado && accion !== "EDITAR") continue;
@@ -97,8 +104,8 @@ export async function POST(req: Request) {
         data: { resultadosCompletados: allSigned }
       });
     }, {
-      maxWait: 5000,
-      timeout: 20000
+      maxWait: 15000,
+      timeout: 60000
     });
 
     return NextResponse.json({ success: true });

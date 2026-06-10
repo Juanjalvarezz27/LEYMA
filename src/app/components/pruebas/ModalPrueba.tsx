@@ -67,6 +67,14 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
   }, []);
 
   useEffect(() => {
+    if (showSearchResults && searchRef.current && searchQuery.trim() !== "") {
+      setTimeout(() => {
+        searchRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [showSearchResults, searchQuery]);
+
+  useEffect(() => {
     if (pruebaEditar) {
       setFormData({ 
         categoria: pruebaEditar.categoria.nombre,
@@ -391,11 +399,11 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                         onChange={(e) => { setSearchQuery(e.target.value); setShowSearchResults(true); }}
                         onFocus={() => setShowSearchResults(true)}
                         placeholder="Buscar prueba existente..."
-                        className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 w-64"
+                        className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 w-80"
                       />
                     </div>
                     {showSearchResults && searchQuery.trim() && (
-                      <div className="absolute top-[100%] right-0 mt-2 w-96 bg-white border border-slate-200/80 rounded-2xl shadow-xl overflow-y-auto max-h-[300px] py-1.5 z-50">
+                      <div className="absolute top-[100%] right-0 mt-2 w-[600px] max-w-[85vw] bg-white border border-slate-200/80 rounded-2xl shadow-xl overflow-y-auto max-h-[350px] py-1.5 z-50">
                         {busquedaUnificada
                           .filter(item => 
                             item.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || 

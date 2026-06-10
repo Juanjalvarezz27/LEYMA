@@ -77,11 +77,11 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
           if (d.resultado.valoresReferencia) initialValRefCustom[d.id] = d.resultado.valoresReferencia;
 
           if (d.resultado.valores && d.resultado.valores.length > 0) {
+            const arr = Array(Math.max(d.cantidad, d.resultado.valores.length)).fill("");
             d.resultado.valores.forEach((valObj: any, index: number) => {
-              if (index < d.cantidad) {
-                initialValores[d.id][index] = valObj.valorIngresado || "";
-              }
+              arr[index] = valObj.valorIngresado || "";
             });
+            initialValores[d.id] = arr;
           }
         }
       });
@@ -401,7 +401,6 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                             <div className="w-[30%] px-2 flex flex-col gap-1.5">
                               {(() => {
                                 const currentValores = valores[det.id] && valores[det.id].length > 0 ? valores[det.id] : Array(det.cantidad).fill("");
-                                const esRecuentoDiferencial = det.prueba.nombre.toUpperCase().includes("RECUENTO DIFERENCIAL");
 
                                 return currentValores.map((_, i) => {
                                   const tieneOpciones = !!det.prueba.opcionesPredefinidas;
@@ -469,13 +468,13 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                                             className={`w-full text-center text-[14px] font-black bg-white border rounded-lg py-1.5 outline-none transition-all shadow-sm focus:ring-2 focus:ring-[#0071E3]/20 ${
                                               esLectura ? 'border-green-200 text-green-700 bg-green-50/50 cursor-not-allowed' : valores[det.id]?.[i]?.trim() ? 'border-[#0071E3] text-[#0071E3]' : 'border-slate-300 text-[#1D1D1F] focus:border-[#0071E3]'
                                             }`}
-                                            placeholder={det.cantidad > 1 || esRecuentoDiferencial ? `Resultado ${i + 1}` : "-"}
+                                            placeholder={currentValores.length > 1 ? `Resultado ${i + 1}` : "-"}
                                           />
                                         )}
                                       </div>
 
                                       {/* Controles Dinámicos */}
-                                      {esRecuentoDiferencial && !esLectura && (
+                                      {!esLectura && (
                                         <div className="flex items-center gap-1 shrink-0 ml-1">
                                           {i === currentValores.length - 1 && (
                                             <button

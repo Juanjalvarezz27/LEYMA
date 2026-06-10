@@ -371,8 +371,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                               
                               {Array(Math.max(det.cantidad, listaValores.length)).fill(0).map((_, i) => {
                                 const valorMuestra = listaValores[i]?.valorIngresado || "-";
-                                const esRecuento = det.prueba.nombre.toUpperCase().includes("RECUENTO DIFERENCIAL");
-                                const titulo = det.cantidad > 1 ? `Muestra ${i + 1}` : (esRecuento ? "" : `Muestra ${i + 1}`);
+                                const titulo = det.cantidad > 1 ? `Muestra ${i + 1}` : "";
                                 return (
                                   <View key={i} style={pdfStyles.row}>
                                     <Text style={pdfStyles.multiRowDesc}>{titulo}</Text>

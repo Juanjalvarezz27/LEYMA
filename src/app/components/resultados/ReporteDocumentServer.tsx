@@ -455,8 +455,7 @@ const ReporteDocumentServer = ({
                                     .map((_: any, i: number) => {
                                       const valorMuestra =
                                         listaValores[i]?.valorIngresado || "-";
-                                      const esRecuento = det.prueba.nombre.toUpperCase().includes("RECUENTO DIFERENCIAL");
-                                      const titulo = det.cantidad > 1 ? `Muestra ${i + 1}` : (esRecuento ? "" : `Muestra ${i + 1}`);
+                                      const titulo = det.cantidad > 1 ? `Muestra ${i + 1}` : "";
                                       return (
                                         <View key={i} style={pdfStyles.row}>
                                           <Text style={pdfStyles.multiRowDesc}>

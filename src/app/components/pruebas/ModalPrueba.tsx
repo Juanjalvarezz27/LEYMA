@@ -1,5 +1,5 @@
 "use client";
-import { X, Plus, Trash2, ChevronDown, Loader2, Package, LayoutList, Search } from "lucide-react";
+import { X, Plus, Trash2, ChevronDown, Loader2, Package, LayoutList, Search, Edit2, Check } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
 
@@ -22,6 +22,8 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
   const dropdownCategoriaRef = useRef<HTMLDivElement>(null);
   const dropdownSubcategoriaRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+
+  const [editingOption, setEditingOption] = useState<{pruebaIndex: number, optionIndex: number, tempValue: string} | null>(null);
 
   // Computar listado unificado para el buscador
   const individualTestsMap = new Map();
@@ -549,22 +551,52 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                     <div className="bg-purple-50/50 p-5 rounded-2xl border border-purple-100 mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
                       <label className="text-[11px] font-black text-purple-600 uppercase tracking-widest mb-3 block">Configurar Opciones Predefinidas</label>
                       <div className="flex flex-wrap gap-2 mb-3">
-                        {p.opcionesPredefinidas.map((opc: string, idx: number) => (
-                          <div key={idx} className="flex items-center gap-1 bg-purple-100 text-purple-700 pl-2 pr-1 py-1 rounded-lg text-sm font-bold border border-purple-200 shadow-sm">
-                            <input
-                              type="text"
-                              value={opc}
-                              onChange={(e) => {
-                                const nuevas = [...pruebas];
-                                nuevas[index].opcionesPredefinidas[idx] = e.target.value;
-                                setPruebas(nuevas);
-                              }}
-                              className="bg-transparent outline-none border-none focus:ring-0 p-0 text-purple-700 min-w-[30px]"
-                              style={{ width: `${Math.max(opc.length, 3)}ch` }}
-                            />
-                            <button type="button" onClick={() => removeTag(index, 'opcionesPredefinidas', idx)} className="p-1 hover:bg-purple-200 rounded-md transition-colors"><X size={14}/></button>
-                          </div>
-                        ))}
+                        {p.opcionesPredefinidas.map((opc: string, idx: number) => {
+                          const isEditing = editingOption?.pruebaIndex === index && editingOption?.optionIndex === idx;
+                          return (
+                            <span key={idx} className="flex items-center gap-1 bg-purple-100 text-purple-700 pl-3 pr-1 py-1 rounded-lg text-sm font-bold border border-purple-200 shadow-sm">
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  value={editingOption.tempValue}
+                                  onChange={(e) => setEditingOption({...editingOption, tempValue: e.target.value})}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      if (!editingOption.tempValue.trim()) return;
+                                      const nuevas = [...pruebas];
+                                      nuevas[index].opcionesPredefinidas[idx] = editingOption.tempValue;
+                                      setPruebas(nuevas);
+                                      setEditingOption(null);
+                                      toast.success("Opción editada en la lista.");
+                                    }
+                                  }}
+                                  className="bg-white px-2 py-0.5 rounded text-sm outline-none border border-purple-300 text-purple-700 min-w-[60px]"
+                                  style={{ width: `${Math.max(editingOption.tempValue.length + 2, 8)}ch` }}
+                                />
+                              ) : (
+                                <span>{opc}</span>
+                              )}
+                              
+                              <div className="flex items-center gap-0.5 ml-1">
+                                {isEditing ? (
+                                  <button type="button" onClick={() => {
+                                    if (!editingOption.tempValue.trim()) return;
+                                    const nuevas = [...pruebas];
+                                    nuevas[index].opcionesPredefinidas[idx] = editingOption.tempValue;
+                                    setPruebas(nuevas);
+                                    setEditingOption(null);
+                                    toast.success("Opción editada en la lista. ¡Recuerda Guardar Estructura para enviarlo a la BD!");
+                                  }} className="p-1 hover:bg-green-200 text-green-700 rounded-md transition-colors" title="Guardar"><Check size={14}/></button>
+                                ) : (
+                                  <button type="button" onClick={() => setEditingOption({pruebaIndex: index, optionIndex: idx, tempValue: opc})} className="p-1 hover:bg-blue-200 text-blue-700 rounded-md transition-colors" title="Editar"><Edit2 size={14}/></button>
+                                )}
+                                <button type="button" onClick={() => removeTag(index, 'opcionesPredefinidas', idx)} className="p-1 hover:bg-purple-200 text-purple-700 rounded-md transition-colors" title="Eliminar"><X size={14}/></button>
+                              </div>
+                            </span>
+                          );
+                        })}
                       </div>
                       <div className="flex gap-2">
                         <input 

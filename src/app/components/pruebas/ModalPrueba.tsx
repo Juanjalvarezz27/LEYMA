@@ -177,20 +177,85 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
     setPruebas(nuevas);
   };
 
-  const addTag = (index: number, campo: string, valor: string) => {
+  const addTag = async (index: number, campo: string, valor: string) => {
     const trimmed = valor.trim();
     if (!trimmed) return;
     const nuevas = [...pruebas];
     if (!nuevas[index][campo].includes(trimmed)) {
       nuevas[index][campo] = [...nuevas[index][campo], trimmed];
       setPruebas(nuevas);
+
+      const p = nuevas[index];
+      if (p.id && campo === 'opcionesPredefinidas') {
+        try {
+          await fetch(`/api/pruebas/item/${p.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...p,
+              opcionesPredefinidas: p[campo].join(','),
+              precioUSD: formData.esPaquete ? 0 : (parseFloat(p.precioUSD) || 0)
+            })
+          });
+          toast.success("Opción añadida a la BD.");
+        } catch (e) {
+          toast.error("Error al guardar en BD.");
+        }
+      }
     }
   };
 
-  const removeTag = (index: number, campo: string, tagIndex: number) => {
+  const removeTag = async (index: number, campo: string, tagIndex: number) => {
     const nuevas = [...pruebas];
     nuevas[index][campo] = nuevas[index][campo].filter((_: any, i: number) => i !== tagIndex);
     setPruebas(nuevas);
+
+    const p = nuevas[index];
+    if (p.id && campo === 'opcionesPredefinidas') {
+      try {
+        await fetch(`/api/pruebas/item/${p.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...p,
+            opcionesPredefinidas: p[campo].length > 0 ? p[campo].join(',') : null,
+            precioUSD: formData.esPaquete ? 0 : (parseFloat(p.precioUSD) || 0)
+          })
+        });
+        toast.success("Opción removida de la BD.");
+      } catch (e) {
+        toast.error("Error al guardar en BD.");
+      }
+    }
+  };
+
+  const guardarEdicionOpcion = async (index: number, idx: number) => {
+    if (!editingOption || !editingOption.tempValue.trim()) return;
+    
+    const nuevas = [...pruebas];
+    const p = nuevas[index];
+    p.opcionesPredefinidas[idx] = editingOption.tempValue;
+    setPruebas(nuevas);
+    setEditingOption(null);
+
+    if (p.id) {
+      try {
+        await fetch(`/api/pruebas/item/${p.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...p,
+            opcionesPredefinidas: p.opcionesPredefinidas.join(','),
+            precioUSD: formData.esPaquete ? 0 : (parseFloat(p.precioUSD) || 0)
+          })
+        });
+        toast.success("Opción guardada correctamente en la BD.");
+      } catch (e) {
+        toast.error("Error al actualizar la BD.");
+      }
+    } else {
+      toast.success("Opción editada (aún no existe en BD).");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -564,12 +629,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                       e.preventDefault();
-                                      if (!editingOption.tempValue.trim()) return;
-                                      const nuevas = [...pruebas];
-                                      nuevas[index].opcionesPredefinidas[idx] = editingOption.tempValue;
-                                      setPruebas(nuevas);
-                                      setEditingOption(null);
-                                      toast.success("Opción editada en la lista.");
+                                      guardarEdicionOpcion(index, idx);
                                     }
                                   }}
                                   className="bg-white px-2 py-0.5 rounded text-sm outline-none border border-purple-300 text-purple-700 min-w-[60px]"
@@ -581,14 +641,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                               
                               <div className="flex items-center gap-0.5 ml-1">
                                 {isEditing ? (
-                                  <button type="button" onClick={() => {
-                                    if (!editingOption.tempValue.trim()) return;
-                                    const nuevas = [...pruebas];
-                                    nuevas[index].opcionesPredefinidas[idx] = editingOption.tempValue;
-                                    setPruebas(nuevas);
-                                    setEditingOption(null);
-                                    toast.success("Opción editada en la lista. ¡Recuerda Guardar Estructura para enviarlo a la BD!");
-                                  }} className="p-1 hover:bg-green-200 text-green-700 rounded-md transition-colors" title="Guardar"><Check size={14}/></button>
+                                  <button type="button" onClick={() => guardarEdicionOpcion(index, idx)} className="p-1 hover:bg-green-200 text-green-700 rounded-md transition-colors" title="Guardar"><Check size={14}/></button>
                                 ) : (
                                   <button type="button" onClick={() => setEditingOption({pruebaIndex: index, optionIndex: idx, tempValue: opc})} className="p-1 hover:bg-blue-200 text-blue-700 rounded-md transition-colors" title="Editar"><Edit2 size={14}/></button>
                                 )}

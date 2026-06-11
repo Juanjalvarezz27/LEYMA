@@ -550,10 +550,20 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                       <label className="text-[11px] font-black text-purple-600 uppercase tracking-widest mb-3 block">Configurar Opciones Predefinidas</label>
                       <div className="flex flex-wrap gap-2 mb-3">
                         {p.opcionesPredefinidas.map((opc: string, idx: number) => (
-                          <span key={idx} className="flex items-center gap-2 bg-purple-100 text-purple-700 pl-3 pr-1 py-1 rounded-lg text-sm font-bold border border-purple-200 shadow-sm">
-                            {opc}
+                          <div key={idx} className="flex items-center gap-1 bg-purple-100 text-purple-700 pl-2 pr-1 py-1 rounded-lg text-sm font-bold border border-purple-200 shadow-sm">
+                            <input
+                              type="text"
+                              value={opc}
+                              onChange={(e) => {
+                                const nuevas = [...pruebas];
+                                nuevas[index].opcionesPredefinidas[idx] = e.target.value;
+                                setPruebas(nuevas);
+                              }}
+                              className="bg-transparent outline-none border-none focus:ring-0 p-0 text-purple-700 min-w-[30px]"
+                              style={{ width: `${Math.max(opc.length, 3)}ch` }}
+                            />
                             <button type="button" onClick={() => removeTag(index, 'opcionesPredefinidas', idx)} className="p-1 hover:bg-purple-200 rounded-md transition-colors"><X size={14}/></button>
-                          </span>
+                          </div>
                         ))}
                       </div>
                       <div className="flex gap-2">

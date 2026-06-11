@@ -181,6 +181,24 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
       return;
     }
 
+    // Validación: Suma de porcentajes en RECUENTO DIFERENCIAL no debe exceder 100%
+    for (const d of examenesBase) {
+      if (d.prueba?.nombre?.toUpperCase().includes("RECUENTO DIFERENCIAL")) {
+        const valoresDeDetalle = valores[d.id] || [];
+        let totalPorcentaje = 0;
+        for (const valText of valoresDeDetalle) {
+          const match = valText.match(/\d+(\.\d+)?/);
+          if (match) {
+            totalPorcentaje += parseFloat(match[0]);
+          }
+        }
+        if (totalPorcentaje > 100) {
+          toast.error(`El porcentaje total en ${d.prueba.nombre} no puede exceder el 100%. (Suma actual: ${totalPorcentaje}%)`);
+          return;
+        }
+      }
+    }
+
     for (const d of examenesAValidar) {
       const valoresDeDetalle = valores[d.id];
       const itemsLength = Math.max(d.cantidad, valoresDeDetalle?.length || 0);

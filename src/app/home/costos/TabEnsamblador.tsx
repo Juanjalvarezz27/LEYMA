@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Plus, Trash2, CheckCircle2, ChevronRight, Calculator, FlaskConical, Beaker, ChevronDown, TrendingUp, X } from "lucide-react";
+import { Search, Plus, Trash2, CheckCircle2, ChevronRight, Calculator, FlaskConical, Beaker, ChevronDown, TrendingUp, X, Package } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalConfirmacion from "../../components/ui/ModalConfirmacion";
 
@@ -9,6 +9,7 @@ export default function TabEnsamblador() {
   const [examenes, setExamenes] = useState<any[]>([]);
   const [isAddInsumoModalOpen, setIsAddInsumoModalOpen] = useState(false);
   const [insumosDisponibles, setInsumosDisponibles] = useState<any[]>([]);
+  const [paquetesDisponibles, setPaquetesDisponibles] = useState<any[]>([]);
   const [selectedPrueba, setSelectedPrueba] = useState<any>(null);
   
   // Datos del ensamblador
@@ -33,10 +34,12 @@ export default function TabEnsamblador() {
   useEffect(() => {
     Promise.all([
       fetch("/api/pruebas").then(r => r.json()),
-      fetch("/api/costos/insumos").then(r => r.json())
-    ]).then(([examenesData, insumosData]) => {
+      fetch("/api/costos/insumos").then(r => r.json()),
+      fetch("/api/costos/insumos/paquetes").then(r => r.json())
+    ]).then(([examenesData, insumosData, paquetesData]) => {
       setExamenes(Array.isArray(examenesData) ? examenesData : []);
       setInsumosDisponibles(Array.isArray(insumosData) ? insumosData : []);
+      setPaquetesDisponibles(Array.isArray(paquetesData) ? paquetesData : []);
       setLoading(false);
     }).catch(() => {
       toast.error("Error al cargar datos base");
@@ -96,6 +99,41 @@ export default function TabEnsamblador() {
     setInsumosEnPreparacion(insumosEnPreparacion.map(i => 
       i.id === id ? { ...i, cantidadParaAgregar: value } : i
     ));
+  };
+
+  // Agregar todos los insumos de un paquete a la lista de preparación
+  const handleSeleccionarPaquete = (paquete: any) => {
+    let agregados = 0;
+    let omitidos = 0;
+
+    const nuevosItems = [...insumosEnPreparacion];
+
+    paquete.items.forEach((item: any) => {
+      const yaEnPreparacion = nuevosItems.find(i => i.id === item.insumo.id);
+      const yaEnReceta = receta.find(r => r.insumoId === item.insumo.id);
+
+      if (yaEnPreparacion || yaEnReceta) {
+        omitidos++;
+      } else {
+        nuevosItems.push({
+          ...item.insumo,
+          cantidadParaAgregar: item.cantidadUsada.toString(),
+        });
+        agregados++;
+      }
+    });
+
+    if (agregados === 0) {
+      return toast.info("Todos los insumos de este paquete ya están en la lista o receta.");
+    }
+
+    setInsumosEnPreparacion(nuevosItems);
+
+    if (omitidos > 0) {
+      toast.info(`Se agregaron ${agregados} insumos del paquete. ${omitidos} omitidos por estar repetidos.`);
+    } else {
+      toast.success(`Se agregaron ${agregados} insumos del paquete "${paquete.nombre}".`);
+    }
   };
 
   const handleAgregarDesdePreparacion = () => {
@@ -190,6 +228,29 @@ export default function TabEnsamblador() {
                 <X size={20} strokeWidth={2.5} />
               </button>
             </div>
+
+            {/* Sección de Paquetes */}
+            {paquetesDisponibles.length > 0 && (
+              <div className="px-6 pt-5 pb-3 border-b border-slate-100 bg-white shrink-0">
+                <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest ml-1 mb-3 flex items-center gap-2">
+                  <Package size={14} /> Paquetes Predefinidos
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {paquetesDisponibles.map(paq => (
+                    <button
+                      key={paq.id}
+                      type="button"
+                      onClick={() => handleSeleccionarPaquete(paq)}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 border border-indigo-200 rounded-xl text-sm font-bold text-indigo-700 hover:bg-indigo-100 hover:border-indigo-300 hover:shadow-md transition-all group"
+                    >
+                      <Package size={16} className="text-indigo-400 group-hover:text-indigo-600" />
+                      <span>{paq.nombre}</span>
+                      <span className="text-[10px] font-bold bg-indigo-200/60 text-indigo-600 px-1.5 py-0.5 rounded-md">{paq.items.length}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="px-6 py-5 border-b border-slate-100 bg-white shrink-0 relative z-20">
               <label className="text-[11px] font-black text-[#0071E3] uppercase tracking-widest ml-1 mb-2 block">Buscador Inteligente</label>

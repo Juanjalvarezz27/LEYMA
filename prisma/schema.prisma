@@ -257,12 +257,13 @@ model ConfiguracionLaboratorio {
 }
 
 model Insumo {
-  id               Int            @id @default(autoincrement())
-  nombre           String         @unique
-  unidadMedida     String // ej. "ml", "und", "kit"
-  costoUnitarioUSD Float
-  activo           Boolean        @default(true)
-  pruebasAsociadas PruebaInsumo[]
+  id                Int                 @id @default(autoincrement())
+  nombre            String              @unique
+  unidadMedida      String // ej. "ml", "und", "kit"
+  costoUnitarioUSD  Float
+  activo            Boolean             @default(true)
+  pruebasAsociadas  PruebaInsumo[]
+  paquetesAsociados PaqueteInsumoItem[]
 }
 
 model PruebaInsumo {
@@ -274,4 +275,24 @@ model PruebaInsumo {
   cantidadUsada Float
 
   @@unique([pruebaId, insumoId])
+}
+
+// Paquete que agrupa varios insumos con cantidades preconfiguradas
+model PaqueteInsumo {
+  id     Int                 @id @default(autoincrement())
+  nombre String              @unique
+  activo Boolean             @default(true)
+  items  PaqueteInsumoItem[]
+}
+
+// Cada insumo dentro de un paquete, con su cantidad por defecto
+model PaqueteInsumoItem {
+  id            String        @id @default(cuid())
+  paqueteId     Int
+  paquete       PaqueteInsumo @relation(fields: [paqueteId], references: [id], onDelete: Cascade)
+  insumoId      Int
+  insumo        Insumo        @relation(fields: [insumoId], references: [id], onDelete: Cascade)
+  cantidadUsada Float
+
+  @@unique([paqueteId, insumoId])
 }

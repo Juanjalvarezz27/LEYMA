@@ -34,6 +34,8 @@ export async function GET(request: Request, { params }: { params: any }) {
                     id: true,
                     nombre: true,
                     firmaUrl: true,
+                    mpps: true,
+                    col: true,
                   },
                 },
               },

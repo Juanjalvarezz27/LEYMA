@@ -17,6 +17,8 @@ export default function PerfilPage() {
     pinActual: "",
     nuevoPin: "",
     firmaUrl: "",
+    mpps: "",
+    col: "",
     claveActual: "",
     nuevaClave: "",
     confirmarClave: "",
@@ -38,6 +40,8 @@ export default function PerfilPage() {
           correo: data.correo || "",
           tienePin: !!data.pinFirma,
           firmaUrl: data.firmaUrl || "",
+          mpps: data.mpps || "",
+          col: data.col || "",
         }));
       } catch (error: any) {
         toast.error(error?.message || "No se pudo cargar la información del perfil.");
@@ -94,6 +98,8 @@ export default function PerfilPage() {
       const payload = {
         nombre: formData.nombre,
         firmaUrl: formData.firmaUrl,
+        mpps: formData.mpps,
+        col: formData.col,
         ...(formData.nuevoPin && {
           pinActual: formData.pinActual,
           nuevoPin: formData.nuevoPin
@@ -324,6 +330,30 @@ export default function PerfilPage() {
               </div>
 
               <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+
+              {/* CREDENCIALES MPPS y COL */}
+              <div className="grid grid-cols-2 gap-4 mt-6">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5 block">MPPS</label>
+                  <input
+                    type="text"
+                    value={formData.mpps}
+                    onChange={e => setFormData({...formData, mpps: e.target.value})}
+                    placeholder="Ej. 12345"
+                    className="w-full px-4 py-2 bg-[#F5F5F7] border border-slate-200/60 rounded-xl text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5 block">Colegio (Col)</label>
+                  <input
+                    type="text"
+                    value={formData.col}
+                    onChange={e => setFormData({...formData, col: e.target.value})}
+                    placeholder="Ej. 54321"
+                    className="w-full px-4 py-2 bg-[#F5F5F7] border border-slate-200/60 rounded-xl text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 transition-all"
+                  />
+                </div>
+              </div>
             </div>
 
           </div>

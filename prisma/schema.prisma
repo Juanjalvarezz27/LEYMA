@@ -89,6 +89,8 @@ model Usuario {
   clave               String
   pinFirma            String? // <-- NUEVO: PIN de 4 dígitos para firmar exámenes
   firmaUrl            String? // <-- NUEVO: Ruta o Base64 de la firma y sello digital
+  mpps                String? // Credencial MPPS
+  col                 String? // Credencial Colegio de Bioanalistas
   activo              Boolean           @default(true)
   rolId               Int
   rol                 Rol               @relation(fields: [rolId], references: [id])

@@ -223,14 +223,16 @@ export default function TabInsumos() {
         body: JSON.stringify(payload),
       });
 
-      if (res.ok) {
-        toast.success(paqueteEditId ? "Paquete actualizado" : "Paquete creado");
-        setShowPaqueteModal(false);
-        fetchPaquetes();
-      } else {
+      if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         toast.error(errorData.error || "Error al guardar el paquete");
+        return;
       }
+
+      toast.success(paqueteEditId ? "Paquete actualizado" : "Paquete creado");
+      // Refrescar datos antes de cerrar el modal
+      await fetchPaquetes();
+      setShowPaqueteModal(false);
     } catch (error: any) {
       toast.error(error?.message || "Error al guardar el paquete");
     }
@@ -307,7 +309,8 @@ export default function TabInsumos() {
       {/* Modal Crear/Editar Paquete */}
       {showPaqueteModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-white w-full max-w-3xl h-[80vh] rounded-[32px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col">
+          <div className="bg-white w-full max-w-3xl rounded-[32px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="w-full max-h-[90vh] overflow-y-auto flex flex-col [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
             {/* Header */}
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-purple-50/50 shrink-0">
               <div className="flex items-center gap-3">
@@ -380,13 +383,13 @@ export default function TabInsumos() {
             </div>
 
             {/* Lista de insumos en el paquete */}
-            <div className="flex-1 overflow-y-auto bg-slate-50/50 flex flex-col p-6 relative z-0">
-              <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <div className="bg-slate-50/50 p-6 relative z-0">
+              <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2 shrink-0">
                 Insumos en el Paquete <span className="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full text-[10px]">{paqueteItems.length}</span>
               </h4>
 
               {paqueteItems.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-slate-400 opacity-60">
+                <div className="flex-1 min-h-[200px] flex flex-col items-center justify-center text-slate-400 opacity-60">
                   <div className="w-20 h-20 rounded-full bg-white shadow-sm flex items-center justify-center mb-4 border border-slate-100">
                     <Package size={32} className="text-slate-300" strokeWidth={1.5} />
                   </div>
@@ -445,6 +448,7 @@ export default function TabInsumos() {
               >
                 <Package size={18} strokeWidth={2.5} /> {paqueteEditId ? "Actualizar Paquete" : "Crear Paquete"}
               </button>
+              </div>
             </div>
           </div>
         </div>

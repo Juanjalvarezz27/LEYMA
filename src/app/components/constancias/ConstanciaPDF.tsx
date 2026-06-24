@@ -21,7 +21,7 @@ Font.register({
 // ---------------------------------------------------------------------------
 const styles = StyleSheet.create({
   page: {
-    padding: "15mm 20mm 20mm 20mm", // Compactado padding superior
+    padding: "15mm 25mm 20mm 20mm", // Compactado padding superior
     fontFamily: "Inter", 
     fontSize: 11, // Fuente general ligeramente más pequeña
     color: "#1d1d1f",
@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
   },
   subtitleHeader: {
     fontSize: 9, // Subtítulos más pequeños
-    color: "#555555",
+    color: "#1d1d1f",
     marginTop: 2,
     fontWeight: 400,
   },
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   },
   textoFirmaSecundario: {
     fontSize: 8,
-    color: "#86868b",
+    color: "#1d1d1f",
     marginTop: 1,
     fontWeight: 400,
   }
@@ -126,8 +126,8 @@ export default function ConstanciaPDF({ orden }: { orden: any }) {
         <View style={styles.header}>
           <Image src="/Logo2.png" style={styles.logo} />
           <Text style={styles.titleLaboratorio}>LABORATORIO CLÍNICO LEYMA C.A.</Text>
-          <Text style={styles.subtitleHeader}>RIF: J-XXXXXXXX-X • R.S: XXXXXXX</Text>
-          <Text style={styles.subtitleHeader}>Trujillo, Estado Trujillo, Venezuela</Text>
+          <Text style={styles.subtitleHeader}>RIF: J - 508463315</Text>
+          <Text style={styles.subtitleHeader}>Avenida Coro, Local 4-79, sector Santa Rosa</Text>
         </View>
 
         {/* TÍTULO */}

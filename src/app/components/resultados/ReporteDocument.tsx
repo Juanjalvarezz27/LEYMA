@@ -25,7 +25,8 @@ export const pdfStyles = StyleSheet.create({
   page: {
     paddingTop: 40,
     paddingBottom: 50,
-    paddingHorizontal: 20,
+    paddingLeft: 20,
+    paddingRight: 40,
     fontFamily: 'Inter',
     fontSize: 10, 
     color: '#000'
@@ -39,7 +40,7 @@ export const pdfStyles = StyleSheet.create({
     paddingBottom: 4,
     marginBottom: 6
   },
-  topContactText: { fontSize: 7, color: '#64748B', fontWeight: 700 }, 
+  topContactText: { fontSize: 7, color: '#000000', fontWeight: 700 }, 
   topContactRight: { flexDirection: 'row', gap: 10 },
   
   header: {
@@ -86,9 +87,11 @@ export const pdfStyles = StyleSheet.create({
   catTitle: {
     fontSize: 13, 
     fontWeight: 700,
+    backgroundColor: '#BFDBFE',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
     borderBottomWidth: 1.5,
     borderBottomColor: '#000',
-    paddingBottom: 4,
     marginBottom: 8,
     textTransform: 'uppercase'
   },
@@ -111,19 +114,26 @@ export const pdfStyles = StyleSheet.create({
   colUni: { width: '15%', fontWeight: 700, fontSize: 8.5, textAlign: 'center' }, 
   colRef: { width: '26%', fontWeight: 700, fontSize: 8.5, textAlign: 'center' }, 
   
-  subcatTitle: { fontSize: 9.5, fontWeight: 700, paddingVertical: 4, paddingLeft: 5 }, 
+  subcatTitle: { 
+    fontSize: 9.5, 
+    fontWeight: 700, 
+    backgroundColor: '#DBEAFE',
+    paddingVertical: 4, 
+    paddingHorizontal: 8,
+    marginBottom: 4
+  }, 
   
   row: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4, paddingVertical: 4 },
   rowDesc: { width: '27%', fontSize: 8.5, fontWeight: 700 }, 
   rowDescSub: { width: '27%', fontSize: 8.5, fontWeight: 700, paddingLeft: 10 }, 
-  multiRowDesc: { width: '27%', fontSize: 8, fontWeight: 400, paddingLeft: 15, color: '#334155' }, 
+  multiRowDesc: { width: '27%', fontSize: 8, fontWeight: 400, paddingLeft: 15, color: '#000000' }, 
   rowRes: { width: '32%', fontSize: 9, fontWeight: 700, textAlign: 'center', lineHeight: 1.2 }, 
   rowUni: { width: '15%', fontSize: 8.5, textAlign: 'center', lineHeight: 1.2 }, 
   rowRef: { width: '26%', fontSize: 8.5, textAlign: 'center', lineHeight: 1.2 }, 
   
   obsContainer: { marginLeft: 10, marginBottom: 5, marginTop: 2, flexDirection: 'row' },
-  obsLabel: { fontSize: 8.5, fontWeight: 700, color: '#475569' }, 
-  obsText: { fontSize: 8.5, fontWeight: 400, color: '#475569' }, 
+  obsLabel: { fontSize: 8.5, fontWeight: 700, color: '#000000' }, 
+  obsText: { fontSize: 8.5, fontWeight: 400, color: '#000000' }, 
 
   // ESTILOS DE FIRMAS AL FINAL
   footerSignaturesContainer: {
@@ -161,7 +171,7 @@ export const pdfStyles = StyleSheet.create({
   },
   footerLabName: {
     fontSize: 7,
-    color: "#64748B",
+    color: "#000000",
     marginTop: 2,
     textAlign: "center",
   }, 
@@ -186,13 +196,13 @@ export const pdfStyles = StyleSheet.create({
   qrImage: { width: 45, height: 45 },
   qrLabelBox: { flexDirection: 'column', justifyContent: 'center' },
   qrTitle: { fontSize: 8.5, fontWeight: 700, color: '#1D1D1F' }, 
-  qrSubtitle: { fontSize: 7, color: '#64748B', marginTop: 1, maxWidth: 160 }, 
+  qrSubtitle: { fontSize: 7, color: '#000000', marginTop: 1, maxWidth: 160 }, 
 
   legalBox: {
     width: '50%',
     alignItems: 'flex-end',
   },
-  legalText: { fontSize: 7.5, fontWeight: 700, color: '#64748B', textAlign: 'right', textTransform: 'uppercase' } 
+  legalText: { fontSize: 7.5, fontWeight: 700, color: '#000000', textAlign: 'right', textTransform: 'uppercase' } 
 });
 
 // ---------------------------------------------------------------------------
@@ -298,11 +308,11 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
         
         {/* INFO CONTACTO SUPERIOR */}
         <View style={pdfStyles.topContact}>
-          <Text style={pdfStyles.topContactText}>DIRECCIÓN: AVENIDA CORO DETRÁS DEL HOSPITAL, TRUJILLO 3150.</Text>
+          <Text style={pdfStyles.topContactText}>DIRECCIÓN: AVENIDA CORO, LOCAL 4-79, SECTOR SANTA ROSA.</Text>
           <View style={pdfStyles.topContactRight}>
             <Text style={pdfStyles.topContactText}>TELÉFONO: 0422 - 8164371</Text>
             <Text style={pdfStyles.topContactText}>CORREO: LABORATORIOLEYMA@GMAIL.COM</Text>
-            <Text style={pdfStyles.topContactText}>RIF: J-00000000-0</Text>
+            <Text style={pdfStyles.topContactText}>RIF: J - 508463315</Text>
           </View>
         </View>
 
@@ -383,7 +393,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
               
               {/* LA TABLA DE RESULTADOS */}
               <View style={{ width: "100%" }}>
-                <Text style={pdfStyles.catTitle}>
+                <Text style={pdfStyles.catTitle} minPresenceAhead={0.2}>
                   {catNombre}
                   {bioanalistasText && (
                     <Text style={pdfStyles.catBioanalistaText}>{bioanalistasText}</Text>
@@ -435,6 +445,11 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                       <Text style={pdfStyles.footerLabName}>
                         BIOANALISTA LEYMA C.A.
                       </Text>
+                      {(bio.mpps || bio.col) && (
+                        <Text style={pdfStyles.footerLabName}>
+                          {bio.mpps ? `MPPS: ${bio.mpps}` : ""} {bio.mpps && bio.col ? " - " : ""} {bio.col ? `Col: ${bio.col}` : ""}
+                        </Text>
+                      )}
                     </View>
                   </View>
                 ))

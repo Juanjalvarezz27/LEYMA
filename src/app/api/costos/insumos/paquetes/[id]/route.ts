@@ -11,33 +11,36 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const body = await req.json();
     const { nombre, items } = body;
 
-    // Actualizar nombre si viene
-    if (nombre) {
-      await prisma.paqueteInsumo.update({
-        where: { id },
-        data: { nombre: nombre.trim().toUpperCase() },
-      });
-    }
-
-    // Reemplazar ítems si vienen
-    if (items && Array.isArray(items)) {
-      await prisma.paqueteInsumoItem.deleteMany({ where: { paqueteId: id } });
-
-      if (items.length > 0) {
-        await prisma.paqueteInsumoItem.createMany({
-          data: items.map((item: any) => ({
-            paqueteId: id,
-            insumoId: Number(item.insumoId),
-            cantidadUsada: Number(item.cantidadUsada),
-          })),
+    // Transacción atómica para evitar inconsistencias
+    const actualizado = await prisma.$transaction(async (tx) => {
+      // Actualizar nombre si viene
+      if (nombre) {
+        await tx.paqueteInsumo.update({
+          where: { id },
+          data: { nombre: nombre.trim().toUpperCase() },
         });
       }
-    }
 
-    // Devolver paquete actualizado
-    const actualizado = await prisma.paqueteInsumo.findUnique({
-      where: { id },
-      include: { items: { include: { insumo: true } } },
+      // Reemplazar ítems si vienen
+      if (items && Array.isArray(items)) {
+        await tx.paqueteInsumoItem.deleteMany({ where: { paqueteId: id } });
+
+        if (items.length > 0) {
+          await tx.paqueteInsumoItem.createMany({
+            data: items.map((item: any) => ({
+              paqueteId: id,
+              insumoId: Number(item.insumoId),
+              cantidadUsada: Number(item.cantidadUsada),
+            })),
+          });
+        }
+      }
+
+      // Retornar paquete actualizado dentro de la transacción
+      return tx.paqueteInsumo.findUnique({
+        where: { id },
+        include: { items: { include: { insumo: true } } },
+      });
     });
 
     return NextResponse.json(actualizado);

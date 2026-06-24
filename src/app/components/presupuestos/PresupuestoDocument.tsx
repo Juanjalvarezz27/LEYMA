@@ -19,7 +19,8 @@ export const pdfStyles = StyleSheet.create({
   page: {
     paddingTop: 30,
     paddingBottom: 70, 
-    paddingHorizontal: 40,
+    paddingLeft: 30,
+    paddingRight: 50,
     fontFamily: 'Inter',
     fontSize: 10, 
     color: '#1D1D1F'
@@ -32,7 +33,7 @@ export const pdfStyles = StyleSheet.create({
     paddingBottom: 4,
     marginBottom: 10,
   },
-  topContactText: { fontSize: 7, color: '#64748B', fontWeight: 700 }, 
+  topContactText: { fontSize: 7, color: '#000000', fontWeight: 700 }, 
   topContactRight: { flexDirection: 'row', gap: 10 },
   
   header: {
@@ -67,7 +68,7 @@ export const pdfStyles = StyleSheet.create({
     justifyContent: 'space-between'
   },
   patientRow: { flexDirection: 'row' },
-  patientLabel: { width: 45, fontWeight: 700, fontSize: 9, color: '#64748B' }, 
+  patientLabel: { width: 45, fontWeight: 700, fontSize: 9, color: '#000000' }, 
   patientValue: { width: 180, fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }, 
 
   table: { width: '100%', marginBottom: 15 },
@@ -92,11 +93,11 @@ export const pdfStyles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 8,
   },
-  tdCode: { width: '15%', fontSize: 8, color: '#64748B', fontWeight: 700 },
+  tdCode: { width: '15%', fontSize: 8, color: '#000000', fontWeight: 700 },
   tdName: { width: '45%', fontSize: 9, fontWeight: 700 },
   tdPrice: { width: '13%', fontSize: 9, textAlign: 'right' },
   tdTotal: { width: '13%', fontSize: 9, textAlign: 'right', fontWeight: 700 },
-  tdTotalBs: { width: '14%', fontSize: 9, textAlign: 'right', fontWeight: 700, color: '#64748B' },
+  tdTotalBs: { width: '14%', fontSize: 9, textAlign: 'right', fontWeight: 700, color: '#000000' },
 
   totalsBox: {
     width: '40%',
@@ -108,7 +109,7 @@ export const pdfStyles = StyleSheet.create({
     backgroundColor: '#F8FAFC'
   },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  totalLabel: { fontSize: 9, fontWeight: 700, color: '#64748B' },
+  totalLabel: { fontSize: 9, fontWeight: 700, color: '#000000' },
   totalValue: { fontSize: 9, fontWeight: 700, textAlign: 'right' },
   
   finalRow: { 
@@ -122,7 +123,7 @@ export const pdfStyles = StyleSheet.create({
   finalLabel: { fontSize: 11, fontWeight: 700, color: '#0071E3' },
   finalValue: { fontSize: 11, fontWeight: 700, color: '#0071E3', textAlign: 'right' },
   
-  finalValueBs: { fontSize: 8, fontWeight: 700, color: '#64748B', textAlign: 'right', marginTop: 2 },
+  finalValueBs: { fontSize: 8, fontWeight: 700, color: '#000000', textAlign: 'right', marginTop: 2 },
 
   footer: {
     position: 'absolute',
@@ -133,8 +134,8 @@ export const pdfStyles = StyleSheet.create({
     borderTopColor: '#E2E8F0',
     paddingTop: 10,
   },
-  footerNote: { fontSize: 8, color: '#64748B', textAlign: 'center', marginBottom: 2 },
-  footerLegal: { fontSize: 7, color: '#94A3B8', textAlign: 'center', fontWeight: 700 }
+  footerNote: { fontSize: 8, color: '#000000', textAlign: 'center', marginBottom: 2 },
+  footerLegal: { fontSize: 7, color: '#000000', textAlign: 'center', fontWeight: 700 }
 });
 
 const PresupuestoDocument = ({ 
@@ -164,11 +165,11 @@ const PresupuestoDocument = ({
         
         {/* INFO CONTACTO SUPERIOR */}
         <View style={pdfStyles.topContact}>
-          <Text style={pdfStyles.topContactText}>DIRECCIÓN: AV. BOLÍVAR, SECTOR CARMONA, EDIF. LEYMA.</Text>
+          <Text style={pdfStyles.topContactText}>DIRECCIÓN: AVENIDA CORO, LOCAL 4-79, SECTOR SANTA ROSA.</Text>
           <View style={pdfStyles.topContactRight}>
             <Text style={pdfStyles.topContactText}>TELÉFONO: 0412-9164371</Text>
             <Text style={pdfStyles.topContactText}>CORREO: CONTACTO@LEYMA.COM</Text>
-            <Text style={pdfStyles.topContactText}>RIF: J-00000000-0</Text>
+            <Text style={pdfStyles.topContactText}>RIF: J - 508463315</Text>
           </View>
         </View>
 

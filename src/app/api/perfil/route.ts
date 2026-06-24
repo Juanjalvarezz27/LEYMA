@@ -17,6 +17,8 @@ export async function GET(req: NextRequest) {
         correo: true,
         pinFirma: true,
         firmaUrl: true,
+        mpps: true,
+        col: true,
         rol: { select: { nombre: true } }
       }
     });
@@ -35,12 +37,15 @@ export async function PUT(req: NextRequest) {
     if (!token?.sub) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
     const body = await req.json();
-    const { nombre, claveActual, nuevaClave, pinActual, nuevoPin, firmaUrl } = body;
+    const { nombre, claveActual, nuevaClave, pinActual, nuevoPin, firmaUrl, mpps, col } = body;
 
     const usuarioActual = await prisma.usuario.findUnique({ where: { id: token.sub } });
     if (!usuarioActual) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
 
     const updateData: any = { nombre };
+
+    if (mpps !== undefined) updateData.mpps = mpps;
+    if (col !== undefined) updateData.col = col;
 
     // Validar y actualizar la Firma Digital (Imagen)
     if (firmaUrl !== undefined) updateData.firmaUrl = firmaUrl;

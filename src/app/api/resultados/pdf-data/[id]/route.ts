@@ -27,7 +27,9 @@ export async function GET(request: Request, { params }: { params: any }) {
                   select: { 
                     id: true, 
                     nombre: true, 
-                    firmaUrl: true 
+                    firmaUrl: true,
+                    mpps: true,
+                    col: true
                   } 
                 }
               } 

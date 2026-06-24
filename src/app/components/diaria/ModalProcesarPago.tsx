@@ -120,7 +120,7 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Nuevos Pagos</label>
                {restanteUSD > 0 ? (
                  <span className="px-3 py-1 bg-orange-100 text-orange-600 rounded-md text-[11px] font-bold flex items-center gap-1.5 border border-orange-200 uppercase tracking-wider">
-                   <AlertCircle size={14} /> Falta: ${restanteUSD.toFixed(2)}
+                   <AlertCircle size={14} /> Falta: ${restanteUSD.toFixed(2)} (Bs. {restanteBS.toFixed(2)})
                  </span>
                ) : (
                  <span className="px-3 py-1 bg-green-100 text-green-600 rounded-md text-[11px] font-bold flex items-center gap-1.5 border border-green-200 uppercase tracking-wider">

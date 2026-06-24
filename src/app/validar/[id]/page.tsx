@@ -16,6 +16,17 @@ export default async function ValidarPage({ params }: { params: any }) {
     include: {
       paciente: true,
       creadoPor: true,
+      detalles: {
+        include: {
+          resultado: {
+            include: {
+              procesadoPor: {
+                select: { id: true, nombre: true }
+              }
+            }
+          }
+        }
+      }
     },
   });
 
@@ -33,6 +44,18 @@ export default async function ValidarPage({ params }: { params: any }) {
   };
 
   const esVerificado = orden.resultadosCompletados;
+
+  const allSigners = new Map();
+  if (orden.detalles) {
+    orden.detalles.forEach((det: any) => {
+      if (det.resultado?.firmado && det.resultado?.procesadoPor) {
+        allSigners.set(det.resultado.procesadoPor.id, det.resultado.procesadoPor.nombre);
+      }
+    });
+  }
+  const signersArray = Array.from(allSigners.values());
+  const displaySigners = signersArray.length > 0 ? signersArray.join(" / ") : (orden.creadoPor?.nombre || "Bioanalista Titular");
+  const labelBioanalista = signersArray.length > 1 ? "Bioanalistas Responsables" : "Bioanalista Responsable";
 
   return (
     <div className="min-h-screen bg-fondo flex flex-col items-center justify-center px-4 py-8 sm:py-12 font-sans text-texto-principal">
@@ -157,10 +180,10 @@ export default async function ValidarPage({ params }: { params: any }) {
                   </div>
                   <div className="bg-fondo rounded-2xl p-4 sm:col-span-2 border border-borde/50">
                     <p className="text-[10px] font-bold text-texto-secundario uppercase tracking-widest mb-1.5">
-                      Bioanalista Responsable
+                      {labelBioanalista}
                     </p>
                     <p className="text-[15px] font-black uppercase text-texto-principal">
-                      {orden.creadoPor?.nombre || "Bioanalista Titular"}
+                      {displaySigners}
                     </p>
                   </div>
                 </div>

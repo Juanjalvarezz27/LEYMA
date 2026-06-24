@@ -22,7 +22,9 @@ export async function GET() {
                   select: { 
                     id: true, 
                     nombre: true, 
-                    firmaUrl: true 
+                    firmaUrl: true,
+                    mpps: true,
+                    col: true
                   } 
                 }
               } 

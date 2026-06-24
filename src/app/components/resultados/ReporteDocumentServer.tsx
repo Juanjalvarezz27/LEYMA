@@ -32,13 +32,24 @@ Font.register({
 // ---------------------------------------------------------------------------
 const pdfStyles = StyleSheet.create({
   page: {
-    paddingTop: 40,
-    paddingBottom: 50,
+    paddingTop: 20,
+    paddingBottom: 25,
     paddingLeft: 20,
     paddingRight: 40,
     fontFamily: "Inter",
     fontSize: 10,
     color: "#000",
+  },
+  fixedFooter: {
+    marginTop: 'auto',
+  },
+  endOfReport: {
+    textAlign: "center",
+    fontSize: 9,
+    fontWeight: 700,
+    color: "#64748b",
+    marginTop: 20,
+    marginBottom: 10,
   },
   topContact: {
     flexDirection: "column",
@@ -165,8 +176,8 @@ const pdfStyles = StyleSheet.create({
   obsText: { fontSize: 8.5, fontWeight: 400, color: "#000000" },
 
   footerSignaturesContainer: {
-    marginTop: 40,
-    paddingBottom: 20,
+    marginTop: 30,
+    paddingBottom: 5,
   },
   footerSignaturesRow: {
     flexDirection: "row",
@@ -179,9 +190,9 @@ const pdfStyles = StyleSheet.create({
   },
   footerFirmaImage: {
     width: 110,
-    height: 45,
+    height: 35,
     objectFit: "contain",
-    marginBottom: 4,
+    marginBottom: -5,
   },
   footerSignatureLine: {
     width: "100%",
@@ -210,8 +221,8 @@ const pdfStyles = StyleSheet.create({
     alignItems: "center",
     borderTopWidth: 1,
     borderTopColor: "#E2E8F0",
-    paddingTop: 10,
-    marginTop: 30,
+    paddingTop: 5,
+    marginTop: 5,
     width: "100%",
   },
   qrRow: { flexDirection: "row", alignItems: "center", gap: 10, width: "50%" },
@@ -280,19 +291,33 @@ const ReporteDocumentServer = ({
 }: ReporteDocumentServerProps) => {
   const allSigners = new Map();
   const groupedByCategory = orden.detalles.reduce((acc: any, det: any) => {
-    const catNombre = det.prueba?.categoriaVisual || det.prueba?.subcategoria?.categoria?.nombre || "OTROS";
-    const subcatNombre = det.prueba?.subcategoriaVisual || det.prueba?.subcategoria?.nombre || "PRUEBAS INDIVIDUALES";
+    const catNombreOriginal =
+      det.prueba?.categoriaVisual ||
+      det.prueba?.subcategoria?.categoria?.nombre ||
+      "OTROS";
+    const subcatNombre =
+      det.prueba?.subcategoriaVisual ||
+      det.prueba?.subcategoria?.nombre ||
+      "PRUEBAS INDIVIDUALES";
+    const bioId = (det.resultado?.firmado && det.resultado?.procesadoPor) ? det.resultado.procesadoPor.id : 'no-firmado';
+    const groupKey = `${catNombreOriginal}_${bioId}`;
 
-    if (!acc[catNombre]) {
-      acc[catNombre] = { subcategorias: {}, signers: new Map() };
+    if (!acc[groupKey]) {
+      acc[groupKey] = {
+        catNombreOriginal,
+        subcategorias: {},
+        signers: new Map(),
+      };
     }
-    if (!acc[catNombre].subcategorias[subcatNombre]) {
-      acc[catNombre].subcategorias[subcatNombre] = [];
+
+    if (!acc[groupKey].subcategorias[subcatNombre]) {
+      acc[groupKey].subcategorias[subcatNombre] = [];
     }
-    acc[catNombre].subcategorias[subcatNombre].push(det);
+
+    acc[groupKey].subcategorias[subcatNombre].push(det);
 
     if (det.resultado?.firmado && det.resultado?.procesadoPor) {
-      acc[catNombre].signers.set(
+      acc[groupKey].signers.set(
         det.resultado.procesadoPor.id,
         det.resultado.procesadoPor
       );
@@ -491,13 +516,16 @@ const ReporteDocumentServer = ({
 
         {/* CUERPO DEL REPORTE */}
         {Object.entries(groupedByCategory).map(
-          ([catNombre, catData]: [string, any]) => {
-            const bioanalistasText = catData.signers.size > 0 
-              ? ` - PROCESADO POR: ${Array.from(catData.signers.values()).map((b: any) => b.nombre).join(" / ")}` 
-              : "";
-
+          ([groupKey, catData]: [string, any]) => {
+            const catNombre = catData.catNombreOriginal;
+            const bioanalistasText =
+              catData.signers.size > 0
+                ? ` - PROCESADO POR: ${Array.from(catData.signers.values())
+                    .map((b: any) => b.nombre)
+                    .join(" / ")}`
+                : "";
             return (
-              <View key={catNombre} style={pdfStyles.categoryBlock}>
+              <View key={groupKey} style={pdfStyles.categoryBlock}>
                 <View style={{ width: "100%" }}>
                   {/* HACK: Forzar salto de página si queda poco espacio (aprox 180 puntos) */}
                   <Text style={{ fontSize: 1, color: "white" }} minPresenceAhead={180}> </Text>
@@ -549,8 +577,8 @@ const ReporteDocumentServer = ({
           }
         )}
 
-        {/* FIRMAS Y FOOTER FINAL (SIEMPRE JUNTOS) */}
-        <View wrap={false}>
+        {/* FIRMAS Y FOOTER FINAL (EN LA ÚLTIMA PÁGINA) */}
+        <View wrap={false} style={pdfStyles.fixedFooter}>
           {/* FIRMAS AL FINAL DEL DOCUMENTO */}
           <View style={pdfStyles.footerSignaturesContainer}>
             <View style={pdfStyles.footerSignaturesRow}>
@@ -560,27 +588,25 @@ const ReporteDocumentServer = ({
                     {bio.firmaUrl ? (
                       <Image src={bio.firmaUrl} style={pdfStyles.footerFirmaImage} />
                     ) : (
-                      <View style={{ height: 49 }} />
+                      <View style={{ height: 35 }} />
                     )}
                     <View style={pdfStyles.footerSignatureLine}>
                       <Text style={pdfStyles.footerBioanalista}>{bio.nombre}</Text>
-                      <Text style={pdfStyles.footerLabName}>
-                        BIOANALISTA LEYMA C.A.
-                      </Text>
-                      {(bio.mpps || bio.col) && (
+                      {(bio.mpps || bio.col) ? (
                         <Text style={pdfStyles.footerLabName}>
-                          {bio.mpps ? `MPPS: ${bio.mpps}` : ""} {bio.mpps && bio.col ? " - " : ""} {bio.col ? `Col: ${bio.col}` : ""}
+                          {bio.mpps ? `MPPS: ${bio.mpps}` : ""} {bio.mpps && bio.col ? " - " : ""} {bio.col ? `C.B.T: ${bio.col}` : ""}
                         </Text>
+                      ) : (
+                        <Text style={pdfStyles.footerLabName}>BIOANALISTA</Text>
                       )}
                     </View>
                   </View>
                 ))
               ) : (
                 <View style={pdfStyles.footerSignatureBlock}>
-                  <View style={{ height: 49 }} />
+                  <View style={{ height: 35 }} />
                   <View style={pdfStyles.footerSignatureLine}>
                     <Text style={pdfStyles.footerBioanalista}>BIOANALISTA</Text>
-                    <Text style={pdfStyles.footerLabName}>LEYMA C.A.</Text>
                   </View>
                 </View>
               )}

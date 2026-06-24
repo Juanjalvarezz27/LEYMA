@@ -33,8 +33,7 @@ export default function TabInsumos() {
 
   // Edit Mode
   const [editId, setEditId] = useState<number | null>(null);
-  const [editNombre, setEditNombre] = useState("");
-  const [editCosto, setEditCosto] = useState("");
+  const [oldCostoUnitario, setOldCostoUnitario] = useState<number | null>(null);
 
   // Modal Eliminar Insumo
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -93,22 +92,30 @@ export default function TabInsumos() {
     const costoUnitarioCalculado = costoTotal / cantidad;
  
     try {
-      const res = await fetch("/api/costos/insumos", {
-        method: "POST",
+      const url = editId ? `/api/costos/insumos/${editId}` : "/api/costos/insumos";
+      const method = editId ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nombre: nuevoNombre, unidadMedida: nuevaUnidad, costoUnitarioUSD: costoUnitarioCalculado })
       });
       if (res.ok) {
-        toast.success("Insumo registrado");
+        toast.success(editId ? "Insumo actualizado" : "Insumo registrado");
         setNuevoNombre("");
         setNuevaCantidad("");
         setNuevoCostoTotal("");
+        setEditId(null);
+        setOldCostoUnitario(null);
         setShowForm(false);
         fetchInsumos();
-        setCurrentPage(1);
+        if (!editId) setCurrentPage(1);
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        toast.error(errorData.error || `Error al ${editId ? "actualizar" : "agregar"}`);
       }
     } catch (error: any) {
-      toast.error(error?.message || "Error al agregar");
+      toast.error(error?.message || `Error al ${editId ? "actualizar" : "agregar"}`);
     }
   };
 
@@ -133,23 +140,7 @@ export default function TabInsumos() {
     }
   };
 
-  const handleGuardarEdicion = async (id: number) => {
-    if (!editNombre.trim() || !editCosto) return toast.warning("Nombre y costo requeridos");
-    try {
-      const res = await fetch(`/api/costos/insumos/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: editNombre, costoUnitarioUSD: parseFloat(editCosto) })
-      });
-      if (res.ok) {
-        toast.success("Insumo actualizado");
-        setEditId(null);
-        fetchInsumos();
-      }
-    } catch (error: any) {
-      toast.error(error?.message || "Error al actualizar");
-    }
-  };
+
 
   // --- Paquetes CRUD ---
   const abrirModalCrearPaquete = () => {
@@ -571,7 +562,15 @@ export default function TabInsumos() {
             <Package size={20} strokeWidth={2.5} /> Crear Paquete
           </button>
           <button 
-            onClick={() => setShowForm(true)}
+            onClick={() => {
+              setEditId(null);
+              setOldCostoUnitario(null);
+              setNuevoNombre("");
+              setNuevaUnidad("und");
+              setNuevaCantidad("");
+              setNuevoCostoTotal("");
+              setShowForm(true);
+            }}
             className="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-xl text-slate-600 font-bold hover:border-[#0071E3] hover:text-[#0071E3] hover:shadow-md transition-all shadow-sm"
           >
             <Plus size={20} strokeWidth={2.5} /> Agregar Nuevo Insumo
@@ -581,9 +580,9 @@ export default function TabInsumos() {
 
       {/* Formulario de agregar insumo individual */}
       {showForm && (
-        <form onSubmit={handleAgregar} className="bg-white border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-3xl p-6 md:p-8 mb-8 transform transition-all relative z-20">
+        <form id="form-insumo" onSubmit={handleAgregar} className="bg-white border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-3xl p-6 md:p-8 mb-8 transform transition-all relative z-20">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#0071E3] to-blue-400 rounded-t-3xl"></div>
-          <h3 className="font-black text-slate-800 mb-6 text-lg">Registrar Nuevo Material</h3>
+          <h3 className="font-black text-slate-800 mb-6 text-lg">{editId ? "Editar Material" : "Registrar Nuevo Material"}</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="md:col-span-1">
               <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Nombre</label>
@@ -658,25 +657,41 @@ export default function TabInsumos() {
             </div>
           </div>
           
-          {nuevaCantidad && nuevoCostoTotal && parseFloat(nuevaCantidad) > 0 && (
-            <div className="mb-8 p-5 bg-gradient-to-r from-blue-50 to-indigo-50/30 rounded-2xl border border-blue-100 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-white text-[#0071E3] flex items-center justify-center font-black shadow-sm">
-                $
+          <div className="flex flex-col sm:flex-row sm:items-stretch gap-4 mb-8">
+            {editId && oldCostoUnitario !== null && (
+              <div className="flex-1 p-5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-white text-slate-400 flex items-center justify-center font-black shadow-sm border border-slate-100">
+                  $
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Costo Unitario Actual</p>
+                  <p className="font-mono font-black text-slate-700 text-2xl leading-none">
+                    ${oldCostoUnitario.toFixed(4)} <span className="text-sm font-bold text-slate-400 ml-1">/ {nuevaUnidad}</span>
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Costo Unitario Calculado</p>
-                <p className="font-mono font-black text-[#0071E3] text-2xl leading-none">
-                  ${(parseFloat(nuevoCostoTotal) / parseFloat(nuevaCantidad)).toFixed(4)} <span className="text-sm font-bold text-slate-400 ml-1">/ {nuevaUnidad}</span>
-                </p>
+            )}
+            
+            {nuevaCantidad && nuevoCostoTotal && parseFloat(nuevaCantidad) > 0 && (
+              <div className="flex-1 p-5 bg-gradient-to-r from-blue-50 to-indigo-50/30 rounded-2xl border border-blue-100 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-white text-[#0071E3] flex items-center justify-center font-black shadow-sm">
+                  $
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Nuevo Costo Calculado</p>
+                  <p className="font-mono font-black text-[#0071E3] text-2xl leading-none">
+                    ${(parseFloat(nuevoCostoTotal) / parseFloat(nuevaCantidad)).toFixed(4)} <span className="text-sm font-bold text-slate-400 ml-1">/ {nuevaUnidad}</span>
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
           <div className="flex justify-end gap-3">
-            <button type="button" onClick={() => setShowForm(false)} className="px-6 py-3 text-slate-500 font-bold hover:bg-slate-100 rounded-xl transition">
+            <button type="button" onClick={() => { setShowForm(false); setEditId(null); setOldCostoUnitario(null); }} className="px-6 py-3 text-slate-500 font-bold hover:bg-slate-100 rounded-xl transition">
               Cancelar
             </button>
             <button type="submit" className="px-8 py-3 bg-[#0071E3] text-white font-bold rounded-xl hover:bg-blue-600 transition shadow-md shadow-blue-500/20">
-              Guardar en Inventario
+              {editId ? "Actualizar Insumo" : "Guardar en Inventario"}
             </button>
           </div>
         </form>
@@ -710,16 +725,7 @@ export default function TabInsumos() {
                         <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100 shrink-0">
                           <Box size={18} />
                         </div>
-                        {editId === insumo.id ? (
-                          <input 
-                            type="text" 
-                            value={editNombre}
-                            onChange={e => setEditNombre(e.target.value)}
-                            className="w-full px-3 py-2 bg-white border-2 border-[#0071E3] rounded-xl outline-none font-medium text-sm shadow-sm"
-                          />
-                        ) : (
-                          <span className="font-bold text-slate-700 text-[15px]">{insumo.nombre}</span>
-                        )}
+                        <span className="font-bold text-slate-700 text-[15px]">{insumo.nombre}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -728,57 +734,38 @@ export default function TabInsumos() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      {editId === insumo.id ? (
-                        <div className="flex items-center justify-end">
-                          <div className="relative">
-                            <span className="absolute left-3 top-2.5 text-slate-400 font-bold">$</span>
-                            <input 
-                              type="number" 
-                              value={editCosto}
-                              onChange={e => setEditCosto(e.target.value)}
-                              className="w-28 pl-7 pr-3 py-2 bg-white border-2 border-[#0071E3] rounded-xl outline-none font-mono text-sm shadow-sm"
-                              step="0.0001"
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="font-mono text-lg font-black text-slate-700 group-hover:text-[#0071E3] transition-colors">
-                          ${insumo.costoUnitarioUSD.toFixed(4)}
-                        </span>
-                      )}
+                      <span className="font-mono text-lg font-black text-slate-700 group-hover:text-[#0071E3] transition-colors">
+                        ${insumo.costoUnitarioUSD.toFixed(4)}
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      {editId === insumo.id ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => handleGuardarEdicion(insumo.id)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#0071E3] text-white hover:bg-blue-600 transition shadow-sm" title="Guardar cambios">
-                            <Check size={18} strokeWidth={3} />
-                          </button>
-                          <button onClick={() => setEditId(null)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 transition" title="Descartar cambios">
-                            <X size={18} strokeWidth={3} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center gap-2">
-                          <button 
-                            onClick={() => { 
-                              setEditId(insumo.id); 
-                              setEditNombre(insumo.nombre);
-                              setEditCosto(insumo.costoUnitarioUSD.toString()); 
-                            }}
-                            className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-500 hover:text-[#0071E3] hover:bg-blue-50 bg-slate-50 transition-all border border-slate-100 shadow-sm hover:shadow"
-                            title="Editar insumo"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button 
-                            onClick={() => handleEliminarRequest(insumo.id)}
-                            className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-500 hover:text-red-500 hover:bg-red-50 bg-slate-50 transition-all border border-slate-100 shadow-sm hover:shadow"
-                            title="Eliminar insumo"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      )}
+                      <div className="flex items-center justify-center gap-2">
+                        <button 
+                          onClick={() => { 
+                            setEditId(insumo.id); 
+                            setNuevoNombre(insumo.nombre);
+                            setNuevaUnidad(insumo.unidadMedida);
+                            setNuevaCantidad("");
+                            setNuevoCostoTotal("");
+                            setOldCostoUnitario(insumo.costoUnitarioUSD);
+                            setShowForm(true);
+                            setTimeout(() => {
+                              document.getElementById('form-insumo')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }, 50);
+                          }}
+                          className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-500 hover:text-[#0071E3] hover:bg-blue-50 bg-slate-50 transition-all border border-slate-100 shadow-sm hover:shadow"
+                          title="Editar insumo"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleEliminarRequest(insumo.id)}
+                          className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-500 hover:text-red-500 hover:bg-red-50 bg-slate-50 transition-all border border-slate-100 shadow-sm hover:shadow"
+                          title="Eliminar insumo"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

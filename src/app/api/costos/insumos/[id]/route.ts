@@ -8,7 +8,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const { id: idParam } = await params;
     const id = parseInt(idParam);
     const body = await req.json();
-    const { nombre, unidadMedida, costoUnitarioUSD, activo } = body;
+    const { nombre, unidadMedida, costoUnitarioUSD, cantidadComprada, costoTotalUSD, activo } = body;
     
     const actualizado = await prisma.insumo.update({
       where: { id },
@@ -16,6 +16,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         nombre,
         unidadMedida,
         costoUnitarioUSD: costoUnitarioUSD !== undefined ? Number(costoUnitarioUSD) : undefined,
+        cantidadComprada: cantidadComprada !== undefined ? (cantidadComprada ? Number(cantidadComprada) : null) : undefined,
+        costoTotalUSD: costoTotalUSD !== undefined ? (costoTotalUSD ? Number(costoTotalUSD) : null) : undefined,
         activo,
       },
     });

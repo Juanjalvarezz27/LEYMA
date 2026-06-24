@@ -263,6 +263,8 @@ model Insumo {
   nombre            String              @unique
   unidadMedida      String // ej. "ml", "und", "kit"
   costoUnitarioUSD  Float
+  cantidadComprada  Float?
+  costoTotalUSD     Float?
   activo            Boolean             @default(true)
   pruebasAsociadas  PruebaInsumo[]
   paquetesAsociados PaqueteInsumoItem[]

@@ -98,7 +98,13 @@ export default function TabInsumos() {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: nuevoNombre, unidadMedida: nuevaUnidad, costoUnitarioUSD: costoUnitarioCalculado })
+        body: JSON.stringify({ 
+          nombre: nuevoNombre, 
+          unidadMedida: nuevaUnidad, 
+          costoUnitarioUSD: costoUnitarioCalculado,
+          cantidadComprada: cantidad,
+          costoTotalUSD: costoTotal
+        })
       });
       if (res.ok) {
         toast.success(editId ? "Insumo actualizado" : "Insumo registrado");
@@ -745,8 +751,8 @@ export default function TabInsumos() {
                             setEditId(insumo.id); 
                             setNuevoNombre(insumo.nombre);
                             setNuevaUnidad(insumo.unidadMedida);
-                            setNuevaCantidad("");
-                            setNuevoCostoTotal("");
+                            setNuevaCantidad(insumo.cantidadComprada ? insumo.cantidadComprada.toString() : "");
+                            setNuevoCostoTotal(insumo.costoTotalUSD ? insumo.costoTotalUSD.toString() : "");
                             setOldCostoUnitario(insumo.costoUnitarioUSD);
                             setShowForm(true);
                             setTimeout(() => {

@@ -393,7 +393,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
               
               {/* LA TABLA DE RESULTADOS */}
               <View style={{ width: "100%" }}>
-                <Text style={pdfStyles.catTitle} minPresenceAhead={0.2}>
+                <Text style={pdfStyles.catTitle} minPresenceAhead={0.5}>
                   {catNombre}
                   {bioanalistasText && (
                     <Text style={pdfStyles.catBioanalistaText}>{bioanalistasText}</Text>

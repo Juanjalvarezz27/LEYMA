@@ -497,7 +497,7 @@ const ReporteDocumentServer = ({
             return (
               <View key={catNombre} style={pdfStyles.categoryBlock}>
                 <View style={{ width: "100%" }}>
-                  <Text style={pdfStyles.catTitle} minPresenceAhead={0.2}>
+                  <Text style={pdfStyles.catTitle} minPresenceAhead={0.5}>
                     {catNombre}
                     {bioanalistasText && (
                       <Text style={pdfStyles.catBioanalistaText}>{bioanalistasText}</Text>

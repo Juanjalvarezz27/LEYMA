@@ -18,7 +18,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { nombre, unidadMedida, costoUnitarioUSD, activo } = body;
+    const { nombre, unidadMedida, costoUnitarioUSD, cantidadComprada, costoTotalUSD, activo } = body;
     
     if (!nombre || !unidadMedida || costoUnitarioUSD === undefined) {
       return NextResponse.json({ error: "Faltan datos requeridos" }, { status: 400 });
@@ -29,6 +29,8 @@ export async function POST(req: Request) {
         nombre,
         unidadMedida,
         costoUnitarioUSD: Number(costoUnitarioUSD),
+        cantidadComprada: cantidadComprada ? Number(cantidadComprada) : null,
+        costoTotalUSD: costoTotalUSD ? Number(costoTotalUSD) : null,
         activo: activo ?? true,
       },
     });

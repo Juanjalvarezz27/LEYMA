@@ -393,11 +393,8 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
             <View key={catNombre} style={pdfStyles.categoryBlock}>
               {/* LA TABLA DE RESULTADOS */}
               <View style={{ width: "100%" }}>
-                {/* HACK: Forzar salto de página si queda poco espacio (aprox 180 puntos) */}
-                <Text style={{ fontSize: 1, color: "white" }} minPresenceAhead={180}> </Text>
-                
                 <View style={pdfStyles.catTitleView}>
-                  <Text style={pdfStyles.catTitleText}>
+                  <Text style={pdfStyles.catTitleText} minPresenceAhead={150}>
                     {catNombre}
                     {bioanalistasText && (
                       <Text style={pdfStyles.catBioanalistaText}>{bioanalistasText}</Text>
@@ -411,15 +408,14 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                       <View style={{ height: 8 }} />
                     )}
 
-                    {/* HACK: Forzar salto de página si no caben las subcategorías */}
-                    <Text style={{ fontSize: 1, color: "white", lineHeight: 0 }} minPresenceAhead={80}>{" "}</Text>
-
                     {subCatNombre !== "PRUEBAS INDIVIDUALES" && (
                       <View>
                         <View style={pdfStyles.subcatTitleView}>
-                          <Text style={pdfStyles.subcatTitleText}>{subCatNombre}</Text>
+                          <Text style={pdfStyles.subcatTitleText} minPresenceAhead={100}>
+                            {subCatNombre}
+                          </Text>
                         </View>
-                        <View style={{ height: 4 }} />
+                        <View style={{ height: 12 }} />
                       </View>
                     )}
 

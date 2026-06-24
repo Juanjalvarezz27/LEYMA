@@ -47,7 +47,7 @@ export default function TabEnsamblador() {
     });
   }, []);
 
-  const todasLasPruebas = examenes.flatMap(sub => sub.pruebas || []).map(p => ({ ...p, tipo: 'prueba' }));
+  const todasLasPruebas = examenes.filter(sub => !sub.esPaquete).flatMap(sub => sub.pruebas || []).map(p => ({ ...p, tipo: 'prueba' }));
   const todosLosPaquetes = examenes.filter(sub => sub.esPaquete === true).map(sub => ({
     id: sub.id,
     codigo: "PAQ",
@@ -392,9 +392,9 @@ export default function TabEnsamblador() {
             <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#0071E3] flex items-center justify-center shadow-sm border border-blue-100/50">
               <FlaskConical size={18} strokeWidth={2.5} />
             </div>
-            <h3 className="font-black text-slate-800 text-lg tracking-tight">Catálogo</h3>
+            <h3 className="font-black text-slate-800 text-xl tracking-tight">Catálogo</h3>
           </div>
-          <p className="text-slate-500 text-xs mb-4 font-medium leading-relaxed">Selecciona un examen para definir su estructura de reactivos y costos.</p>
+          <p className="text-slate-500 text-sm mb-4 font-medium leading-relaxed">Selecciona un examen para definir su estructura de reactivos y costos.</p>
           
           <div className="relative">
             <Search className="absolute left-3.5 top-3 text-slate-400" size={16} />

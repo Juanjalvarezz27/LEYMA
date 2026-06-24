@@ -526,7 +526,7 @@ const ReporteDocumentServer = ({
                             <View style={pdfStyles.subcatTitleView}>
                               <Text style={pdfStyles.subcatTitleText}>{subCatNombre}</Text>
                             </View>
-                            <View style={{ height: 4 }} />
+                            <View style={{ height: 12 }} />
                           </View>
                         )}
 

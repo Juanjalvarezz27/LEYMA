@@ -96,17 +96,19 @@ const pdfStyles = StyleSheet.create({
     paddingBottom: 10,
   },
 
-  catTitle: {
-    fontSize: 13,
-    fontWeight: 700,
+  catTitleView: {
     backgroundColor: "#BFDBFE",
     paddingVertical: 6,
     paddingHorizontal: 8,
     borderBottomWidth: 1.5,
     borderBottomColor: "#000",
-    marginBottom: 8,
+  },
+  catTitleText: {
+    fontSize: 13,
+    fontWeight: 700,
     textTransform: "uppercase",
   },
+
   catBioanalistaText: {
     fontSize: 8.5,
     fontWeight: 700,
@@ -118,20 +120,20 @@ const pdfStyles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#000",
     paddingBottom: 2,
-    marginBottom: 3,
   },
   colDesc: { width: "27%", fontWeight: 700, fontSize: 8.5 },
   colRes: { width: "32%", fontWeight: 700, fontSize: 8.5, textAlign: "center" },
   colUni: { width: "15%", fontWeight: 700, fontSize: 8.5, textAlign: "center" },
   colRef: { width: "26%", fontWeight: 700, fontSize: 8.5, textAlign: "center" },
 
-  subcatTitle: {
-    fontSize: 9.5,
-    fontWeight: 700,
+  subcatTitleView: {
     backgroundColor: "#DBEAFE",
     paddingVertical: 4,
     paddingHorizontal: 8,
-    marginBottom: 4,
+  },
+  subcatTitleText: {
+    fontSize: 9.5,
+    fontWeight: 700,
   },
 
   row: {
@@ -497,35 +499,47 @@ const ReporteDocumentServer = ({
             return (
               <View key={catNombre} style={pdfStyles.categoryBlock}>
                 <View style={{ width: "100%" }}>
-                  <Text style={pdfStyles.catTitle} minPresenceAhead={0.5}>
-                    {catNombre}
-                    {bioanalistasText && (
-                      <Text style={pdfStyles.catBioanalistaText}>{bioanalistasText}</Text>
-                    )}
-                  </Text>
+                  {/* HACK: Forzar salto de página si queda poco espacio (aprox 180 puntos) */}
+                  <Text style={{ fontSize: 1, color: "white" }} minPresenceAhead={180}> </Text>
+                  
+                  <View style={pdfStyles.catTitleView}>
+                    <Text style={pdfStyles.catTitleText}>
+                      {catNombre}
+                      {bioanalistasText && (
+                        <Text style={pdfStyles.catBioanalistaText}>{bioanalistasText}</Text>
+                      )}
+                    </Text>
+                  </View>
 
                   {Object.entries(catData.subcategorias).map(
-                    ([subCatNombre, detalles]: [string, any]) => (
+                    ([subCatNombre, detalles]: [string, any], index: number) => (
                       <View key={subCatNombre} style={{ marginBottom: 10 }}>
-                        <View wrap={false}>
-                          <View style={pdfStyles.tableHeader}>
-                            <Text style={pdfStyles.colDesc}>PARAMETRO</Text>
-                            <Text style={pdfStyles.colRes}>RESULTADO</Text>
-                            <Text style={pdfStyles.colUni}>UNIDADES</Text>
-                            <Text style={pdfStyles.colRef}>
-                              VALORES DE REFERENCIA
-                            </Text>
+                        {index === 0 && subCatNombre === "PRUEBAS INDIVIDUALES" && (
+                          <View style={{ height: 8 }} />
+                        )}
+
+                        {/* HACK: Forzar salto de página si no caben las subcategorías */}
+                        <Text style={{ fontSize: 1, color: "white", lineHeight: 0 }} minPresenceAhead={80}>{" "}</Text>
+
+                        {subCatNombre !== "PRUEBAS INDIVIDUALES" && (
+                          <View>
+                            <View style={pdfStyles.subcatTitleView}>
+                              <Text style={pdfStyles.subcatTitleText}>{subCatNombre}</Text>
+                            </View>
+                            <View style={{ height: 4 }} />
                           </View>
+                        )}
 
-                          {subCatNombre !== "PRUEBAS INDIVIDUALES" && (
-                            <Text style={pdfStyles.subcatTitle}>{subCatNombre}</Text>
-                          )}
-
-                          {detalles.length > 0 && renderDetalleRow(detalles[0], subCatNombre)}
+                        <View style={pdfStyles.tableHeader}>
+                          <Text style={pdfStyles.colDesc}>PARAMETRO</Text>
+                          <Text style={pdfStyles.colRes}>RESULTADO</Text>
+                          <Text style={pdfStyles.colUni}>UNIDADES</Text>
+                          <Text style={pdfStyles.colRef}>VALORES DE REFERENCIA</Text>
                         </View>
 
-                        {detalles.length > 1 &&
-                          detalles.slice(1).map((det: any) => renderDetalleRow(det, subCatNombre))}
+                        <View style={{ height: 3 }} />
+                        
+                        {detalles.map((det: any) => renderDetalleRow(det, subCatNombre))}
                       </View>
                     )
                   )}

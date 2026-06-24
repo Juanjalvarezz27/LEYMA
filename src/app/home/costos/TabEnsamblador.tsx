@@ -47,24 +47,34 @@ export default function TabEnsamblador() {
     });
   }, []);
 
-  const todasLasPruebas = examenes.flatMap(sub => sub.pruebas || []);
-  const filteredPruebas = todasLasPruebas.filter(p => 
+  const todasLasPruebas = examenes.flatMap(sub => sub.pruebas || []).map(p => ({ ...p, tipo: 'prueba' }));
+  const todosLosPaquetes = examenes.filter(sub => sub.esPaquete === true).map(sub => ({
+    id: sub.id,
+    codigo: "PAQ",
+    nombre: sub.nombre,
+    precioUSD: sub.precioUSD,
+    tipo: "paquete"
+  }));
+
+  const combinedItems = [...todasLasPruebas, ...todosLosPaquetes];
+
+  const filteredItems = combinedItems.filter(p => 
     p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.codigo.toLowerCase().includes(searchTerm.toLowerCase())
+    (p.codigo && p.codigo.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const filteredInsumosDisponibles = insumosDisponibles.filter(i =>
     i.nombre.toLowerCase().includes(searchInsumo.toLowerCase())
   );
 
-  const cargarEnsamblaje = async (pruebaId: string) => {
+  const cargarEnsamblaje = async (pruebaId: string, tipo: string = 'prueba') => {
     setIsCargandoEnsamblaje(true);
     try {
-      const res = await fetch(`/api/costos/ensamblador/${pruebaId}`);
+      const res = await fetch(`/api/costos/ensamblador/${pruebaId}?tipo=${tipo}`);
       if (!res.ok) throw new Error("Error en la solicitud");
       const data = await res.json();
       
-      setSelectedPrueba(data.prueba);
+      setSelectedPrueba({ ...data.prueba, tipo });
       const recetaCargada = data.receta.map((r: any) => ({ ...r.insumo, cantidadUsada: r.cantidadUsada, insumoId: r.insumoId }));
       setReceta(recetaCargada);
       setCostoFijoUnitario(data.costoFijoPorPrueba || 0);
@@ -187,7 +197,7 @@ export default function TabEnsamblador() {
 
   const handleGuardarEnsamble = async () => {
     try {
-      const res = await fetch(`/api/costos/ensamblador/${selectedPrueba.id}`, {
+      const res = await fetch(`/api/costos/ensamblador/${selectedPrueba.id}?tipo=${selectedPrueba.tipo || "prueba"}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -196,7 +206,7 @@ export default function TabEnsamblador() {
       });
       if (res.ok) {
         toast.success("Estructura guardada con éxito");
-        cargarEnsamblaje(selectedPrueba.id);
+        cargarEnsamblaje(selectedPrueba.id, selectedPrueba.tipo || "prueba");
       } else {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || "Error en la petición");
@@ -209,7 +219,7 @@ export default function TabEnsamblador() {
   if (loading) return <div className="p-12 text-center text-slate-400 font-medium animate-pulse">Cargando módulos...</div>;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6" style={{ minHeight: '750px' }}>
+    <div className="flex flex-col lg:flex-row gap-6 items-start min-h-[600px]">
       {/* Modal Añadir Insumos (Tipo Carrito) */}
       {isAddInsumoModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40">
@@ -376,71 +386,75 @@ export default function TabEnsamblador() {
       />
       
       {/* Sidebar: Catálogo de Exámenes */}
-      <div className="w-full lg:w-1/3 flex flex-col bg-white rounded-3xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] overflow-hidden border border-slate-100 shrink-0 h-full">
-        <div className="p-6 bg-gradient-to-b from-slate-50 to-white border-b border-slate-100 shrink-0">
+      <div className="w-full lg:w-[380px] flex flex-col bg-white rounded-3xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] overflow-hidden border border-slate-100 shrink-0 h-[450px] lg:h-[calc(100vh-48px)] lg:sticky lg:top-6">
+        <div className="p-5 bg-gradient-to-b from-slate-50 to-white border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#0071E3] flex items-center justify-center">
-              <FlaskConical size={20} strokeWidth={2.5} />
+            <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#0071E3] flex items-center justify-center shadow-sm border border-blue-100/50">
+              <FlaskConical size={18} strokeWidth={2.5} />
             </div>
-            <h3 className="font-black text-slate-800 text-xl tracking-tight">Catálogo</h3>
+            <h3 className="font-black text-slate-800 text-lg tracking-tight">Catálogo</h3>
           </div>
-          <p className="text-slate-500 text-sm mb-5 font-medium">Selecciona un examen para definir su estructura de reactivos y costos.</p>
+          <p className="text-slate-500 text-xs mb-4 font-medium leading-relaxed">Selecciona un examen para definir su estructura de reactivos y costos.</p>
           
           <div className="relative">
-            <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
+            <Search className="absolute left-3.5 top-3 text-slate-400" size={16} />
             <input
               type="text"
-              placeholder="Buscar examen..."
+              placeholder="Buscar examen o paquete..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-50 focus:border-[#0071E3] outline-none text-sm shadow-sm transition-all font-medium"
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-[#0071E3] outline-none text-sm shadow-sm transition-all font-semibold"
             />
           </div>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4 space-y-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full">
-          {filteredPruebas.map(prueba => (
+        <div className="flex-1 overflow-y-auto p-3 space-y-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full">
+          {filteredItems.map(item => (
             <button 
-              key={prueba.id}
-              onClick={() => cargarEnsamblaje(prueba.id)}
-              className={`w-full text-left p-4 rounded-2xl transition-all flex items-center justify-between group border border-transparent ${
-                selectedPrueba?.id === prueba.id 
+              key={`${item.tipo}-${item.id}`}
+              onClick={() => cargarEnsamblaje(item.id, item.tipo)}
+              className={`w-full text-left p-3 rounded-xl transition-all flex items-center justify-between group border border-transparent ${
+                selectedPrueba?.id === item.id 
                   ? "bg-[#0071E3] text-white shadow-md shadow-blue-500/20 translate-x-1" 
                   : "bg-white hover:bg-slate-50 hover:translate-x-1 hover:border-slate-100"
               }`}
             >
-              <div>
+              <div className="pr-3">
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
-                    selectedPrueba?.id === prueba.id ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-md tracking-wider uppercase ${
+                    selectedPrueba?.id === item.id ? "bg-white/20 text-white" : 
+                    item.tipo === "paquete" ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-500"
                   }`}>
-                    {prueba.codigo}
+                    {item.tipo === "paquete" ? "Paquete" : item.codigo}
                   </span>
-                  {prueba.precioUSD !== undefined && prueba.precioUSD !== null && (
-                    <span className={`text-xs font-mono font-bold px-2 py-1 rounded-lg ${
-                      selectedPrueba?.id === prueba.id ? "bg-white/10 text-white" : "bg-green-50 text-green-600"
+                  {item.precioUSD !== undefined && item.precioUSD !== null && (
+                    <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded-md ${
+                      selectedPrueba?.id === item.id ? "bg-white/10 text-white" : "bg-emerald-50 text-emerald-600"
                     }`}>
-                      ${prueba.precioUSD.toFixed(2)}
+                      ${item.precioUSD.toFixed(2)}
                     </span>
                   )}
                 </div>
-                <p className={`text-sm mt-2.5 font-bold line-clamp-2 ${
-                  selectedPrueba?.id === prueba.id ? "text-white" : "text-slate-700"
+                <p className={`text-[13px] mt-1.5 font-bold leading-snug line-clamp-2 ${
+                  selectedPrueba?.id === item.id ? "text-white" : "text-slate-700"
                 }`}>
-                  {prueba.nombre}
+                  {item.nombre}
                 </p>
               </div>
-              <ChevronRight size={18} className={selectedPrueba?.id === prueba.id ? "text-white opacity-100" : "text-slate-300 group-hover:text-[#0071E3] opacity-0 group-hover:opacity-100 transition-all"} />
+              <ChevronRight size={16} className={selectedPrueba?.id === item.id ? "text-white opacity-100 shrink-0" : "text-slate-300 group-hover:text-[#0071E3] opacity-0 group-hover:opacity-100 transition-all shrink-0"} />
             </button>
           ))}
-          {filteredPruebas.length === 0 && (
-            <div className="text-center p-8 text-slate-400 font-medium">No se encontraron exámenes</div>
+          {filteredItems.length === 0 && (
+            <div className="text-center p-6 flex flex-col items-center justify-center opacity-60">
+               <Search size={24} className="text-slate-300 mb-2" />
+               <span className="text-slate-400 font-bold text-sm">Sin resultados</span>
+            </div>
           )}
         </div>
       </div>
 
       {/* Main Area: Ensamblador */}
-      <div className="w-full lg:w-2/3 flex flex-col relative bg-white rounded-3xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden h-full">
+      <div className="w-full lg:flex-1 flex flex-col relative bg-white rounded-3xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden">
         {isCargandoEnsamblaje && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-white z-[60]">
             <div className="w-16 h-16 rounded-full border-4 border-slate-100 border-t-[#0071E3] animate-spin mb-4 shadow-sm"></div>
@@ -458,7 +472,7 @@ export default function TabEnsamblador() {
             <p className="font-medium text-slate-500">Selecciona un examen del panel izquierdo</p>
           </div>
         ) : (
-          <div className="flex flex-col h-full min-h-0">
+          <div className="flex flex-col">
             
             <div className="p-6 bg-gradient-to-br from-[#0071E3] to-blue-600 text-white relative overflow-hidden shrink-0">
               <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
@@ -480,7 +494,7 @@ export default function TabEnsamblador() {
               </div>
             </div>
 
-            <div className="p-6 flex-1 flex flex-col min-h-0">
+            <div className="p-6 flex flex-col">
               
               <div className="flex justify-between items-center mb-4 shrink-0">
                 <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
@@ -496,9 +510,9 @@ export default function TabEnsamblador() {
               </div>
 
               {/* Lista de receta actual */}
-              <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex flex-col">
                 
-                <div className="flex-1 overflow-auto rounded-2xl border border-slate-100 shadow-sm mb-4 bg-white" style={{ minHeight: '180px' }}>
+                <div className="rounded-2xl border border-slate-100 shadow-sm mb-4 bg-white">
                   <table className="w-full text-left bg-white relative">
                     <thead className="sticky top-0 bg-slate-50 shadow-sm z-10 border-b border-slate-100">
                       <tr className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
@@ -620,4 +634,3 @@ export default function TabEnsamblador() {
     </div>
   );
 }
-

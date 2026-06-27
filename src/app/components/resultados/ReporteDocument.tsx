@@ -163,8 +163,8 @@ export const pdfStyles = StyleSheet.create({
     width: 140,
   },
   footerFirmaImage: {
-    width: 110,
-    height: 35,
+    width: 135,
+    height: 45,
     objectFit: "contain",
     marginBottom: -5,
   },
@@ -405,48 +405,45 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
             ? ` - PROCESADO POR: ${Array.from(catData.signers.values()).map((b: any) => b.nombre).join(" / ")}` 
             : "";
           return (
-            <View key={groupKey} style={pdfStyles.categoryBlock}>
-              {/* LA TABLA DE RESULTADOS */}
-              <View style={{ width: "100%" }}>
-                <View style={pdfStyles.catTitleView}>
-                  <Text style={pdfStyles.catTitleText} minPresenceAhead={150}>
-                    {catNombre}
-                    {bioanalistasText && (
-                      <Text style={pdfStyles.catBioanalistaText}>{bioanalistasText}</Text>
-                    )}
-                  </Text>
-                </View>
-
-                {Object.entries(catData.subcategorias).map(([subCatNombre, detalles]: [string, any], index: number) => (
-                  <View key={subCatNombre} style={{ marginBottom: 10 }}>
-                    {index === 0 && subCatNombre === "PRUEBAS INDIVIDUALES" && (
-                      <View style={{ height: 8 }} />
-                    )}
-
-                    {subCatNombre !== "PRUEBAS INDIVIDUALES" && (
-                      <View>
-                        <View style={pdfStyles.subcatTitleView}>
-                          <Text style={pdfStyles.subcatTitleText} minPresenceAhead={100}>
-                            {subCatNombre}
-                          </Text>
-                        </View>
-                        <View style={{ height: 12 }} />
-                      </View>
-                    )}
-
-                    <View style={pdfStyles.tableHeader}>
-                      <Text style={pdfStyles.colDesc}>PARAMETRO</Text>
-                      <Text style={pdfStyles.colRes}>RESULTADO</Text>
-                      <Text style={pdfStyles.colUni}>UNIDADES</Text>
-                      <Text style={pdfStyles.colRef}>VALORES DE REFERENCIA</Text>
+            <View key={groupKey} style={{ width: "100%", marginBottom: 8, borderBottomWidth: 1, borderBottomColor: "#E2E8F0", paddingBottom: 8 }}>
+              {Object.entries(catData.subcategorias).map(([subCatNombre, detalles]: [string, any], index: number) => (
+                <View key={subCatNombre} style={{ marginBottom: 8 }}>
+                  {index === 0 && (
+                    <View style={pdfStyles.catTitleView}>
+                      <Text style={pdfStyles.catTitleText}>
+                        {catNombre}
+                        {bioanalistasText && (
+                          <Text style={pdfStyles.catBioanalistaText}>{bioanalistasText}</Text>
+                        )}
+                      </Text>
                     </View>
+                  )}
 
-                    <View style={{ height: 3 }} />
-                    
-                    {detalles.map((det: any) => renderDetalleRow(det, subCatNombre))}
+                  {index === 0 && subCatNombre === "PRUEBAS INDIVIDUALES" && (
+                    <View style={{ height: 8 }} />
+                  )}
+
+                  {subCatNombre !== "PRUEBAS INDIVIDUALES" && (
+                    <View>
+                      <View style={pdfStyles.subcatTitleView}>
+                        <Text style={pdfStyles.subcatTitleText}>{subCatNombre}</Text>
+                      </View>
+                      <View style={{ height: 8 }} />
+                    </View>
+                  )}
+
+                  <View style={pdfStyles.tableHeader}>
+                    <Text style={pdfStyles.colDesc}>PARAMETRO</Text>
+                    <Text style={pdfStyles.colRes}>RESULTADO</Text>
+                    <Text style={pdfStyles.colUni}>UNIDADES</Text>
+                    <Text style={pdfStyles.colRef}>VALORES DE REFERENCIA</Text>
                   </View>
-                ))}
-              </View>
+
+                  <View style={{ height: 3 }} />
+
+                  {(detalles as any[]).map((det: any) => renderDetalleRow(det, subCatNombre))}
+                </View>
+              ))}
             </View>
           );
         })}
@@ -462,7 +459,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                     {bio.firmaUrl ? (
                       <Image src={bio.firmaUrl} style={pdfStyles.footerFirmaImage} />
                     ) : (
-                      <View style={{ height: 35 }} />
+                      <View style={{ height: 45 }} />
                     )}
                     <View style={pdfStyles.footerSignatureLine}>
                       <Text style={pdfStyles.footerBioanalista}>{bio.nombre}</Text>
@@ -478,7 +475,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                 ))
               ) : (
                 <View style={pdfStyles.footerSignatureBlock}>
-                  <View style={{ height: 35 }} />
+                  <View style={{ height: 45 }} />
                   <View style={pdfStyles.footerSignatureLine}>
                     <Text style={pdfStyles.footerBioanalista}>BIOANALISTA</Text>
                   </View>

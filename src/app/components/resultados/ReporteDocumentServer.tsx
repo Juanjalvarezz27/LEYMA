@@ -189,8 +189,8 @@ const pdfStyles = StyleSheet.create({
     width: 140,
   },
   footerFirmaImage: {
-    width: 110,
-    height: 35,
+    width: 135,
+    height: 45,
     objectFit: "contain",
     marginBottom: -5,
   },
@@ -525,53 +525,47 @@ const ReporteDocumentServer = ({
                     .join(" / ")}`
                 : "";
             return (
-              <View key={groupKey} style={pdfStyles.categoryBlock}>
-                <View style={{ width: "100%" }}>
-                  {/* HACK: Forzar salto de página si queda poco espacio (aprox 180 puntos) */}
-                  <Text style={{ fontSize: 1, color: "white" }} minPresenceAhead={180}> </Text>
-                  
-                  <View style={pdfStyles.catTitleView}>
-                    <Text style={pdfStyles.catTitleText}>
-                      {catNombre}
-                      {bioanalistasText && (
-                        <Text style={pdfStyles.catBioanalistaText}>{bioanalistasText}</Text>
-                      )}
-                    </Text>
-                  </View>
-
-                  {Object.entries(catData.subcategorias).map(
-                    ([subCatNombre, detalles]: [string, any], index: number) => (
-                      <View key={subCatNombre} style={{ marginBottom: 10 }}>
-                        {index === 0 && subCatNombre === "PRUEBAS INDIVIDUALES" && (
-                          <View style={{ height: 8 }} />
-                        )}
-
-                        {/* HACK: Forzar salto de página si no caben las subcategorías */}
-                        <Text style={{ fontSize: 1, color: "white", lineHeight: 0 }} minPresenceAhead={80}>{" "}</Text>
-
-                        {subCatNombre !== "PRUEBAS INDIVIDUALES" && (
-                          <View>
-                            <View style={pdfStyles.subcatTitleView}>
-                              <Text style={pdfStyles.subcatTitleText}>{subCatNombre}</Text>
-                            </View>
-                            <View style={{ height: 12 }} />
-                          </View>
-                        )}
-
-                        <View style={pdfStyles.tableHeader}>
-                          <Text style={pdfStyles.colDesc}>PARAMETRO</Text>
-                          <Text style={pdfStyles.colRes}>RESULTADO</Text>
-                          <Text style={pdfStyles.colUni}>UNIDADES</Text>
-                          <Text style={pdfStyles.colRef}>VALORES DE REFERENCIA</Text>
+              <View key={groupKey} style={{ width: "100%", marginBottom: 8, borderBottomWidth: 1, borderBottomColor: "#E2E8F0", paddingBottom: 8 }}>
+                {Object.entries(catData.subcategorias).map(
+                  ([subCatNombre, detalles]: [string, any], index: number) => (
+                    <View key={subCatNombre} style={{ marginBottom: 8 }}>
+                      {index === 0 && (
+                        <View style={pdfStyles.catTitleView}>
+                          <Text style={pdfStyles.catTitleText}>
+                            {catNombre}
+                            {bioanalistasText && (
+                              <Text style={pdfStyles.catBioanalistaText}>{bioanalistasText}</Text>
+                            )}
+                          </Text>
                         </View>
+                      )}
 
-                        <View style={{ height: 3 }} />
-                        
-                        {detalles.map((det: any) => renderDetalleRow(det, subCatNombre))}
+                      {index === 0 && subCatNombre === "PRUEBAS INDIVIDUALES" && (
+                        <View style={{ height: 8 }} />
+                      )}
+
+                      {subCatNombre !== "PRUEBAS INDIVIDUALES" && (
+                        <View>
+                          <View style={pdfStyles.subcatTitleView}>
+                            <Text style={pdfStyles.subcatTitleText}>{subCatNombre}</Text>
+                          </View>
+                          <View style={{ height: 8 }} />
+                        </View>
+                      )}
+
+                      <View style={pdfStyles.tableHeader}>
+                        <Text style={pdfStyles.colDesc}>PARAMETRO</Text>
+                        <Text style={pdfStyles.colRes}>RESULTADO</Text>
+                        <Text style={pdfStyles.colUni}>UNIDADES</Text>
+                        <Text style={pdfStyles.colRef}>VALORES DE REFERENCIA</Text>
                       </View>
-                    )
-                  )}
-                </View>
+
+                      <View style={{ height: 3 }} />
+
+                      {(detalles as any[]).map((det: any) => renderDetalleRow(det, subCatNombre))}
+                    </View>
+                  )
+                )}
               </View>
             );
           }
@@ -588,7 +582,7 @@ const ReporteDocumentServer = ({
                     {bio.firmaUrl ? (
                       <Image src={bio.firmaUrl} style={pdfStyles.footerFirmaImage} />
                     ) : (
-                      <View style={{ height: 35 }} />
+                      <View style={{ height: 45 }} />
                     )}
                     <View style={pdfStyles.footerSignatureLine}>
                       <Text style={pdfStyles.footerBioanalista}>{bio.nombre}</Text>
@@ -604,7 +598,7 @@ const ReporteDocumentServer = ({
                 ))
               ) : (
                 <View style={pdfStyles.footerSignatureBlock}>
-                  <View style={{ height: 35 }} />
+                  <View style={{ height: 45 }} />
                   <View style={pdfStyles.footerSignatureLine}>
                     <Text style={pdfStyles.footerBioanalista}>BIOANALISTA</Text>
                   </View>

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
   Calendar as CalendarIcon, Search, Eye, Edit, Ban, 
-  DollarSign, Clock, CheckCircle, Wallet, RefreshCw, KeyRound, Loader2, X, MessageCircle 
+  DollarSign, Clock, CheckCircle, Wallet, RefreshCw, KeyRound, Loader2, X, MessageCircle, AlertTriangle 
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -17,7 +17,37 @@ const obtenerFechaHoyVzla = () => {
 
 export default function ListaDiariaPage() {
   const router = useRouter();
-  const [fecha, setFecha] = useState(obtenerFechaHoyVzla());
+  const searchParams = useSearchParams();
+  const fechaUrl = searchParams.get('fecha');
+
+  const [fecha, setFecha] = useState(fechaUrl || obtenerFechaHoyVzla());
+  const [globalPendientes, setGlobalPendientes] = useState<{ total: number, fechas: number } | null>(null);
+
+  useEffect(() => {
+    const fetchPendientesGlobal = async () => {
+      try {
+        const res = await fetch('/api/ordenes/pendientes');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            const fechasUnicas = new Set(data.map((o: any) => o.fechaCreacion.split('T')[0])).size;
+            setGlobalPendientes({ total: data.length, fechas: fechasUnicas });
+          } else {
+            setGlobalPendientes(null);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching global pendientes:", error);
+      }
+    };
+    fetchPendientesGlobal();
+  }, [fecha]); // Recargar al cambiar de fecha por si se procesó un pago
+
+  useEffect(() => {
+    if (fechaUrl) {
+      setFecha(fechaUrl);
+    }
+  }, [fechaUrl]);
   const [ordenes, setOrdenes] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
   
@@ -197,14 +227,30 @@ export default function ListaDiariaPage() {
           <p className="text-[#86868B] mt-2 font-medium text-[15px]">Gestión y monitoreo de órdenes del día.</p>
         </div>
         
-        <div className="flex items-center gap-3 bg-white border border-slate-200/80 p-2 rounded-2xl shadow-sm">
-          <span className="text-sm font-bold text-slate-400 uppercase tracking-widest pl-3">Fecha:</span>
-          <input 
-            type="date" 
-            value={fecha}
-            onChange={(e) => setFecha(e.target.value)}
-            className="bg-[#F5F5F7] text-[#1D1D1F] font-bold px-4 py-2 rounded-xl outline-none focus:ring-2 focus:ring-[#0071E3]/20 cursor-pointer"
-          />
+        <div className="flex items-center gap-3">
+          {globalPendientes && (
+            <div 
+              className="hidden md:flex items-center gap-2 bg-red-50 border border-red-200 px-3 py-2 rounded-xl text-red-600 shadow-sm cursor-pointer hover:bg-red-100 transition-colors animate-in fade-in"
+              onClick={() => router.push('/home')}
+              title="Ir al inicio para ver las órdenes pendientes"
+            >
+              <AlertTriangle size={18} className="animate-pulse shrink-0" />
+              <div className="flex flex-col justify-center">
+                <span className="text-[10px] font-bold uppercase tracking-wide leading-none text-red-500/80 mb-0.5">Alertas Pendientes</span>
+                <span className="text-xs font-black leading-none">{globalPendientes.total} órdenes en {globalPendientes.fechas} {globalPendientes.fechas === 1 ? 'día' : 'días'}</span>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 bg-white border border-slate-200/80 p-2 rounded-2xl shadow-sm">
+            <span className="text-sm font-bold text-slate-400 uppercase tracking-widest pl-3">Fecha:</span>
+            <input 
+              type="date" 
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              className="bg-[#F5F5F7] text-[#1D1D1F] font-bold px-4 py-2 rounded-xl outline-none focus:ring-2 focus:ring-[#0071E3]/20 cursor-pointer"
+            />
+          </div>
         </div>
       </div>
 
@@ -233,13 +279,44 @@ export default function ListaDiariaPage() {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/80 rounded-[24px] p-6 shadow-sm flex items-center gap-5">
-          <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 shrink-0">
+        <div className={`relative border rounded-[24px] p-6 flex items-center gap-5 transition-all duration-500 overflow-hidden ${
+          totalBorradores > 0 
+            ? "bg-gradient-to-br from-red-500 to-orange-500 border-transparent shadow-[0_10px_30px_rgba(239,68,68,0.4)] scale-[1.03]" 
+            : "bg-white border-slate-200/80 shadow-sm"
+        }`}>
+          
+          {/* Fondo animado solo cuando hay pendientes */}
+          {totalBorradores > 0 && (
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagonal-stripes.png')] opacity-20 mix-blend-overlay"></div>
+          )}
+          
+          <div className={`relative z-10 w-14 h-14 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+            totalBorradores > 0 
+              ? "bg-white text-red-600 shadow-lg animate-[bounce_2s_infinite]" 
+              : "bg-orange-100 text-orange-600"
+          }`}>
             <Clock size={28} strokeWidth={2.5} />
           </div>
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pendientes Pago</p>
-            <h3 className="text-4xl font-black text-[#1D1D1F] leading-none">{totalBorradores}</h3>
+          
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-1">
+              <p className={`text-[11px] font-bold uppercase tracking-widest transition-colors ${
+                totalBorradores > 0 ? "text-white/90" : "text-slate-400"
+              }`}>Pendientes Pago</p>
+              {totalBorradores > 0 && (
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                </span>
+              )}
+            </div>
+            
+            <h3 className={`text-4xl font-black leading-none transition-colors ${
+              totalBorradores > 0 ? "text-white" : "text-[#1D1D1F]"
+            }`}>
+              {totalBorradores} 
+              {totalBorradores > 0 && <span className="text-sm font-bold text-white/80 ml-2">¡ATENCIÓN!</span>}
+            </h3>
           </div>
         </div>
       </div>

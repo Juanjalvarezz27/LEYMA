@@ -101,7 +101,8 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
           </button>
         </div>
 
-        <div className="p-8 overflow-visible">
+        {/* Se agregó max-h-[80vh] y overflow-y-auto para el scroll interno */}
+        <div className="p-8 overflow-y-auto max-h-[80vh] custom-scrollbar">
           
           <div className="flex items-center justify-between bg-[#F5F5F7] border border-slate-200/60 rounded-[24px] p-6 mb-8">
             <div>
@@ -114,6 +115,42 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
               <p className="text-3xl font-black text-orange-500 leading-none">${Math.max(0, totalFacturadoUSD - pagosPreviosUSD).toFixed(2)}</p>
             </div>
           </div>
+
+          {orden.pagos && orden.pagos.length > 0 && (
+            <div className="mb-8">
+              <h3 className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mb-4">Pagos Previos Registrados</h3>
+              <div className="space-y-3">
+                {orden.pagos.map((pago: any, idx: number) => (
+                  <div key={idx} className="flex justify-between items-center bg-slate-50 border border-slate-200/60 p-4 rounded-[20px]">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-slate-100 text-slate-500">
+                        <Wallet size={18} />
+                      </div>
+                      <div>
+                        <p className="text-[15px] font-bold text-[#1D1D1F]">
+                          {formatMetodoPago(pago.metodo?.nombre || "")}
+                        </p>
+                        {pago.referencia && (
+                          <p className="text-[13px] font-medium text-slate-500">Ref: {pago.referencia}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[16px] font-black text-[#1D1D1F]">
+                        ${pago.montoUSD.toFixed(2)}
+                      </p>
+                      {pago.montoBS > 0 && (
+                        <p className="text-[13px] font-semibold text-slate-400">
+                          Bs. {pago.montoBS.toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
 
           <div className="flex justify-between items-center mb-5">
             <div className="flex items-center gap-3">
@@ -145,9 +182,9 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
                     <ChevronDown size={18} className="text-slate-400" />
                   </button>
 
-                  {/* CORRECCIÓN: bottom-full mb-2 para que se abra hacia ARRIBA */}
+                  {/* Cambiado a top-full mt-2 (hacia abajo) para evitar cortes con el scroll interno del contenedor superior */}
                   {dropdownAbierto === idx && (
-                    <div className="absolute bottom-full left-0 mb-2 w-full bg-white border border-slate-200 rounded-2xl shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.2)] overflow-hidden z-[110] py-1 animate-in slide-in-from-bottom-2 duration-200">
+                    <div className="absolute top-full left-0 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] overflow-hidden z-[110] py-1 animate-in slide-in-from-top-2 duration-200">
                       {metodosBD.map((m) => (
                         <button key={m.id} type="button" onClick={() => { actualizarPago(idx, "metodoId", m.id); setDropdownAbierto(null); }} className={`w-full text-left px-4 py-3 text-[15px] font-semibold hover:bg-slate-100 transition-colors ${pago.metodoId === m.id ? 'bg-[#0071E3] text-white hover:bg-[#0071E3]' : 'text-[#1D1D1F]'}`}>
                           {formatMetodoPago(m.nombre)}

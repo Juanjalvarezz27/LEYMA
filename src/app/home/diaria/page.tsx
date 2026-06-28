@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
   Calendar as CalendarIcon, Search, Eye, Edit, Ban, 
@@ -15,7 +15,7 @@ const obtenerFechaHoyVzla = () => {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Caracas' });
 };
 
-export default function ListaDiariaPage() {
+function ListaDiariaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fechaUrl = searchParams.get('fecha');
@@ -533,5 +533,18 @@ export default function ListaDiariaPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ListaDiariaPage() {
+  return (
+    <Suspense fallback={
+      <div className="h-full flex items-center justify-center p-10 text-slate-400">
+        <Loader2 className="animate-spin text-[#0071E3] mr-2" size={24} />
+        Cargando diaria...
+      </div>
+    }>
+      <ListaDiariaContent />
+    </Suspense>
   );
 }

@@ -26,6 +26,7 @@ function RegistroContent() {
   const [resultadosBusqueda, setResultadosBusqueda] = useState<any[]>([]);
   const [isCreandoNuevo, setIsCreandoNuevo] = useState(false);
   const [guardandoPaciente, setGuardandoPaciente] = useState(false);
+  const [guardandoOrden, setGuardandoOrden] = useState(false);
   const [formData, setFormData] = useState({
     esBebe: false, cedula: "", nombreCompleto: "", fechaNacimiento: "",
     sexo: "M", telefono: "", correo: "", direccion: "", observaciones: ""
@@ -263,7 +264,10 @@ function RegistroContent() {
       toast.error(`La orden no puede ser CERRADA con saldo pendiente.`);
       return;
     }
+    
+    if (guardandoOrden) return;
 
+    setGuardandoOrden(true);
     toast.info(editId ? "Actualizando orden..." : "Guardando orden...");
 
     const pruebasParaEnviar: any[] = [];
@@ -335,6 +339,8 @@ function RegistroContent() {
       }
     } catch (error: any) {
       toast.error(error.message || "Error al procesar la orden");
+    } finally {
+      setGuardandoOrden(false);
     }
   };
 
@@ -410,7 +416,7 @@ function RegistroContent() {
         <ResumenPago
           pruebasSeleccionadas={pruebasSeleccionadas} setPruebasSeleccionadas={setPruebasSeleccionadas}
           serviciosSeleccionados={serviciosSeleccionados}
-          tasaBCV={tasaBCV} onFinalizar={finalizarOrden}
+          tasaBCV={tasaBCV} onFinalizar={finalizarOrden} guardandoOrden={guardandoOrden}
         />
       )}
 

@@ -10,6 +10,7 @@ interface ResumenPagoProps {
   serviciosSeleccionados?: any[];
   tasaBCV: number;
   onFinalizar: (datos: any) => void;
+  guardandoOrden?: boolean;
 }
 
 export default function ResumenPago({
@@ -17,7 +18,8 @@ export default function ResumenPago({
   setPruebasSeleccionadas,
   serviciosSeleccionados = [],
   tasaBCV,
-  onFinalizar
+  onFinalizar,
+  guardandoOrden = false
 }: ResumenPagoProps) {
   const [metodosBD, setMetodosBD] = useState<any[]>([]);
   const [descuentoGeneral, setDescuentoGeneral] = useState(0);
@@ -371,9 +373,11 @@ export default function ResumenPago({
           <div className="flex flex-col sm:flex-row lg:flex-col gap-3 w-full lg:w-auto shrink-0 pl-0 lg:pl-6 mt-3 lg:mt-0">
             <button
               onClick={() => onFinalizar({ subtotalUSD, totalFinalUSD, totalFinalBS, pagos, descuentoGeneral, tipoDescGral, estado: "BORRADOR", restanteUSD })}
-              className="w-full sm:w-1/2 lg:w-56 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
+              disabled={guardandoOrden || restanteUSD <= 0.05}
+              title={restanteUSD <= 0.05 ? "No puede guardar como borrador una orden pagada en su totalidad" : ""}
+              className="w-full sm:w-1/2 lg:w-56 py-3 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
             >
-              <Save size={18} strokeWidth={2.5} /> Guardar Borrador
+              <Save size={18} strokeWidth={2.5} /> {guardandoOrden ? "Procesando..." : "Guardar Borrador"}
             </button>
             <button
               onClick={() => {
@@ -389,9 +393,10 @@ export default function ResumenPago({
                 }
                 onFinalizar({ subtotalUSD, totalFinalUSD, totalFinalBS, pagos, descuentoGeneral, tipoDescGral, estado: "CERRADA", restanteUSD });
               }}
-              className="w-full sm:w-1/2 lg:w-56 py-3 bg-[#0071E3] hover:bg-[#0077ED] text-white font-black rounded-xl shadow-[0_0_25px_rgba(0,113,227,0.3)] transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
+              disabled={guardandoOrden}
+              className="w-full sm:w-1/2 lg:w-56 py-3 bg-[#0071E3] hover:bg-[#0077ED] disabled:opacity-50 disabled:cursor-not-allowed text-white font-black rounded-xl shadow-[0_0_25px_rgba(0,113,227,0.3)] transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
             >
-              <CheckCircle size={18} strokeWidth={2.5} /> Cerrar y Procesar
+              <CheckCircle size={18} strokeWidth={2.5} /> {guardandoOrden ? "Procesando..." : "Cerrar y Procesar"}
             </button>
           </div>
         </div>

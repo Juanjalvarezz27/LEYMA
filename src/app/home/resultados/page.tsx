@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { 
   Microscope, Search, FileEdit, Clock, CheckCircle, FileText, 
-  Phone, MessageCircle, User, Calendar, ChevronLeft, ChevronRight, DollarSign, FileSignature, Lock 
+  Phone, MessageCircle, User, Calendar, ChevronLeft, ChevronRight, DollarSign, FileSignature, Lock,
+  AlertTriangle, X
 } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalCargarResultados from "../../components/resultados/ModalCargarResultados";
@@ -26,6 +27,7 @@ const obtenerFechaCaracas = (fecha: string | Date = new Date()) => {
 export default function ResultadosPage() {
   const [ordenes, setOrdenes] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [resultadosPendientes, setResultadosPendientes] = useState<{ total: number, fechas: number } | null>(null);
   
   // ESTADOS DE FILTROS
   const [busqueda, setBusqueda] = useState("");
@@ -64,6 +66,26 @@ export default function ResultadosPage() {
   useEffect(() => {
     fetchOrdenes();
   }, []);
+
+  useEffect(() => {
+    const fetchResultadosPendientes = async () => {
+      try {
+        const res = await fetch('/api/resultados/pendientes');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            const fechasUnicas = new Set(data.map((o: any) => o.fechaCreacion.split('T')[0])).size;
+            setResultadosPendientes({ total: data.length, fechas: fechasUnicas });
+          } else {
+            setResultadosPendientes(null);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching resultados pendientes:", error);
+      }
+    };
+    fetchResultadosPendientes();
+  }, [ordenes]);
 
   useEffect(() => {
     setPaginaActual(1);
@@ -162,14 +184,34 @@ export default function ResultadosPage() {
       )}
 
       {/* CABECERA */}
-      <div className="mb-8">
-        <h1 className="font-title text-4xl font-bold text-[#1D1D1F] tracking-tight flex items-center gap-3">
-          <Microscope className="text-[#0071E3]" size={36} strokeWidth={2.5} />
-          Módulo de Resultados
-        </h1>
-        <p className="text-[#86868B] mt-2 font-medium text-[15px]">
-          Gestión, transcripción y auditoría de exámenes de laboratorio.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+        <div>
+          <h1 className="font-title text-4xl font-bold text-[#1D1D1F] tracking-tight flex items-center gap-3">
+            <Microscope className="text-[#0071E3]" size={36} strokeWidth={2.5} />
+            Módulo de Resultados
+          </h1>
+          <p className="text-[#86868B] mt-2 font-medium text-[15px]">
+            Gestión, transcripción y auditoría de exámenes de laboratorio.
+          </p>
+        </div>
+
+        {resultadosPendientes && (
+          <div 
+            className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-4 py-2.5 rounded-xl text-amber-700 shadow-sm cursor-pointer hover:bg-amber-100 transition-colors animate-in fade-in max-w-fit md:self-end"
+            onClick={() => {
+              setFechaFiltro("");
+              setTabActiva("PENDIENTES");
+              toast.info("Mostrando todas las órdenes con resultados pendientes de cualquier fecha.");
+            }}
+            title="Haga clic para ver todas las órdenes con resultados pendientes de cualquier fecha"
+          >
+            <AlertTriangle size={20} className="animate-pulse shrink-0 text-amber-600" />
+            <div className="flex flex-col justify-center">
+              <span className="text-[10px] font-black uppercase tracking-wide leading-none text-amber-600/80 mb-0.5">Pendientes de Carga</span>
+              <span className="text-xs font-black leading-none">{resultadosPendientes.total} órdenes en {resultadosPendientes.fechas} {resultadosPendientes.fechas === 1 ? 'día' : 'días'}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* BARRA DE FILTROS SUPERIOR */}
@@ -195,8 +237,17 @@ export default function ResultadosPage() {
               type="date"
               value={fechaFiltro}
               onChange={(e) => setFechaFiltro(e.target.value)}
-              className="w-full pl-12 pr-4 py-3.5 bg-[#F5F5F7] border border-slate-200/60 rounded-xl text-[15px] font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 transition-all cursor-pointer"
+              className="w-full pl-12 pr-10 py-3.5 bg-[#F5F5F7] border border-slate-200/60 rounded-xl text-[15px] font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 transition-all cursor-pointer"
             />
+            {fechaFiltro && (
+              <button 
+                onClick={() => setFechaFiltro("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1"
+                title="Limpiar filtro de fecha"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
         </div>
 

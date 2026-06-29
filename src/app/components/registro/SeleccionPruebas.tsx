@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Search, Plus, Trash2, FlaskConical, Package } from "lucide-react";
+import { normalizeSearchString } from "../../../lib/stringUtils";
 
 interface SeleccionPruebasProps {
   pruebasCatalogo: any[];
@@ -24,10 +25,10 @@ export default function SeleccionPruebas({
       setResultados([]);
       return;
     }
-    const searchLower = busqueda.toLowerCase();
+    const searchLower = normalizeSearchString(busqueda);
     const filtered = pruebasCatalogo.filter(p =>
-      p.nombre.toLowerCase().startsWith(searchLower) ||
-      p.codigo.toLowerCase().startsWith(searchLower)
+      normalizeSearchString(p.nombre).startsWith(searchLower) ||
+      normalizeSearchString(p.codigo).startsWith(searchLower)
     ).slice(0, 5); 
 
     setResultados(filtered);

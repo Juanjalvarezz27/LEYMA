@@ -7,6 +7,7 @@ import ModalPruebaIndividual from "../../components/pruebas/ModalPruebaIndividua
 import ModalServicioExtra from "../../components/pruebas/ModalServicioExtra";
 import ModalConfirmacion from "../../components/ui/ModalConfirmacion";
 import useTasaBCV from "../../hooks/useTasaBcv";
+import { normalizeSearchString } from "../../../lib/stringUtils";
 
 export default function PruebasPage() {
   const [examenes, setExamenes] = useState<any[]>([]);
@@ -274,9 +275,10 @@ export default function PruebasPage() {
   const subcategoriasExistentes = Array.from(new Set(examenes.map(e => e.nombre)));
   
   const pruebasFiltradas = examenes.filter((p) => {
-    const matchBusqueda = p.nombre.toLowerCase().includes(busqueda.toLowerCase()) || 
-      p.categoria.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      p.pruebas.some((prueba: any) => prueba.codigo.toLowerCase().includes(busqueda.toLowerCase()) || prueba.nombre.toLowerCase().includes(busqueda.toLowerCase()));
+    const b = normalizeSearchString(busqueda);
+    const matchBusqueda = normalizeSearchString(p.nombre).includes(b) || 
+      normalizeSearchString(p.categoria.nombre).includes(b) ||
+      p.pruebas.some((prueba: any) => normalizeSearchString(prueba.codigo).includes(b) || normalizeSearchString(prueba.nombre).includes(b));
     const matchCategoria = filtroCategoria === "Todas" || p.categoria.nombre === filtroCategoria;
     const matchEstado = filtroEstado === "Todos" ? true : filtroEstado === "Activas" ? p.activa === true : p.activa === false;
     

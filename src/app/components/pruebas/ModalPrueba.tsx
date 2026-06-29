@@ -2,6 +2,7 @@
 import { X, Plus, Trash2, ChevronDown, Loader2, Package, LayoutList, Search, Edit2, Check } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
+import { normalizeSearchString } from "../../../lib/stringUtils";
 
 export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, categoriasExistentes, subcategoriasExistentes, catalogoExamenes = [] }: any) {
   const [formData, setFormData] = useState({ 
@@ -304,11 +305,11 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
   };
 
   const categoriasFiltradas = categoriasExistentes?.filter((c: string) => 
-    c.toLowerCase().includes(formData.categoria.toLowerCase())
+    normalizeSearchString(c).includes(normalizeSearchString(formData.categoria))
   ) || [];
 
   const subcategoriasFiltradas = subcategoriasExistentes?.filter((s: string) => 
-    s.toLowerCase().includes(formData.subcategoria.toLowerCase())
+    normalizeSearchString(s).includes(normalizeSearchString(formData.subcategoria))
   ) || [];
 
   return (
@@ -472,11 +473,12 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                     {showSearchResults && searchQuery.trim() && (
                       <div className="absolute top-[100%] right-0 mt-2 w-[600px] max-w-[85vw] bg-white border border-slate-200/80 rounded-2xl shadow-xl overflow-y-auto max-h-[350px] py-1.5 z-50">
                         {busquedaUnificada
-                          .filter(item => 
-                            item.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            (item.codigo && item.codigo.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                            (item.codigoCategoria && item.codigoCategoria.toLowerCase().includes(searchQuery.toLowerCase()))
-                          )
+                          .filter(item => {
+                            const sq = normalizeSearchString(searchQuery);
+                            return normalizeSearchString(item.nombre).includes(sq) || 
+                            (item.codigo && normalizeSearchString(item.codigo).includes(sq)) ||
+                            (item.codigoCategoria && normalizeSearchString(item.codigoCategoria).includes(sq))
+                          })
                           .slice(0, 15)
                           .map((item: any) => (
                             <button 
@@ -508,7 +510,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                               </div>
                             </button>
                         ))}
-                        {busquedaUnificada.filter(item => item.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || (item.codigo && item.codigo.toLowerCase().includes(searchQuery.toLowerCase())) || (item.codigoCategoria && item.codigoCategoria.toLowerCase().includes(searchQuery.toLowerCase()))).length === 0 && (
+                        {busquedaUnificada.filter(item => { const sq = normalizeSearchString(searchQuery); return normalizeSearchString(item.nombre).includes(sq) || (item.codigo && normalizeSearchString(item.codigo).includes(sq)) || (item.codigoCategoria && normalizeSearchString(item.codigoCategoria).includes(sq))}).length === 0 && (
                            <div className="px-4 py-3 text-sm text-slate-400 italic">No se encontraron resultados</div>
                         )}
                       </div>
@@ -529,42 +531,90 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                 const prevSub = prev ? (prev.subcategoriaVisual || "SIN SUBCATEGORIA") : null;
                 
                 const isNewGroup = cat !== prevCat || sub !== prevSub;
-                const showHeader = isNewGroup && (cat !== "SIN CATEGORIA" || sub !== "SIN SUBCATEGORIA");
+                const showHeader = isNewGroup;
 
                 return (
                   <div key={index} className="flex flex-col">
                     {showHeader && (
                       <div className="flex items-center gap-3 px-2 mt-4 mb-3">
-                        <div className="flex items-center gap-2 shrink-0">
-                          {cat !== "SIN CATEGORIA" && (
-                            <span className="text-[11px] font-black tracking-widest uppercase text-slate-500">
-                              {cat}
-                            </span>
-                          )}
-                          {cat !== "SIN CATEGORIA" && sub !== "SIN SUBCATEGORIA" && (
-                            <span className="text-slate-300 font-bold">-</span>
-                          )}
-                          {sub !== "SIN SUBCATEGORIA" && (
-                            <span className="text-[11px] font-black tracking-widest uppercase text-[#0071E3]">
-                              {sub}
-                            </span>
-                          )}
+                        <div className="flex items-center gap-2 shrink-0 bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 shadow-sm focus-within:border-[#0071E3] focus-within:ring-2 focus-within:ring-[#0071E3]/20 transition-all">
+                          <div className="flex flex-col">
+                            <span className="text-[8px] font-black tracking-widest uppercase text-slate-400 mb-0.5">Editar Categoría Visual</span>
+                            <div className="grid">
+                              <span className="invisible whitespace-pre col-start-1 row-start-1 text-[11px] font-black tracking-widest uppercase min-w-[80px]">
+                                {(cat === "SIN CATEGORIA" ? "" : cat) || "Categoría..."}
+                              </span>
+                              <input 
+                                type="text"
+                                value={cat === "SIN CATEGORIA" ? "" : cat}
+                                onChange={(e) => {
+                                  const val = e.target.value.toUpperCase();
+                                  const nuevas = [...pruebas];
+                                  for (let i = index; i < nuevas.length; i++) {
+                                    const currentCat = nuevas[i].categoriaVisual || "SIN CATEGORIA";
+                                    const currentSub = nuevas[i].subcategoriaVisual || "SIN SUBCATEGORIA";
+                                    if (currentCat === cat && currentSub === sub) {
+                                      nuevas[i].categoriaVisual = val;
+                                    } else {
+                                      break;
+                                    }
+                                  }
+                                  setPruebas(nuevas);
+                                }}
+                                className="col-start-1 row-start-1 w-full text-[11px] font-black tracking-widest uppercase text-slate-600 bg-transparent outline-none placeholder:text-slate-300 placeholder:font-medium"
+                                placeholder="Categoría..."
+                              />
+                            </div>
+                          </div>
+                          
+                          <span className="text-slate-300 font-bold mt-2">-</span>
+                          
+                          <div className="flex flex-col ml-1">
+                            <span className="text-[8px] font-black tracking-widest uppercase text-[#0071E3]/60 mb-0.5">Editar Subcategoría</span>
+                            <div className="grid">
+                              <span className="invisible whitespace-pre col-start-1 row-start-1 text-[11px] font-black tracking-widest uppercase min-w-[100px]">
+                                {(sub === "SIN SUBCATEGORIA" ? "" : sub) || "Subcategoría..."}
+                              </span>
+                              <input 
+                                type="text"
+                                value={sub === "SIN SUBCATEGORIA" ? "" : sub}
+                                onChange={(e) => {
+                                  const val = e.target.value.toUpperCase();
+                                  const nuevas = [...pruebas];
+                                  for (let i = index; i < nuevas.length; i++) {
+                                    const currentCat = nuevas[i].categoriaVisual || "SIN CATEGORIA";
+                                    const currentSub = nuevas[i].subcategoriaVisual || "SIN SUBCATEGORIA";
+                                    if (currentCat === cat && currentSub === sub) {
+                                      nuevas[i].subcategoriaVisual = val;
+                                    } else {
+                                      break;
+                                    }
+                                  }
+                                  setPruebas(nuevas);
+                                }}
+                                className="col-start-1 row-start-1 w-full text-[11px] font-black tracking-widest uppercase text-[#0071E3] bg-transparent outline-none placeholder:text-blue-200 placeholder:font-medium"
+                                placeholder="Subcategoría..."
+                              />
+                            </div>
+                          </div>
                         </div>
                         <div className="h-px bg-slate-200/70 flex-1"></div>
-                        <button type="button" onClick={() => {
-                          const nuevas = [...pruebas];
-                          for (let i = index; i < nuevas.length; i++) {
-                            if ((nuevas[i].categoriaVisual || "SIN CATEGORIA") === cat && (nuevas[i].subcategoriaVisual || "SIN SUBCATEGORIA") === sub) {
-                              nuevas[i].categoriaVisual = "";
-                              nuevas[i].subcategoriaVisual = "";
-                            } else {
-                              break;
+                        {(cat !== "SIN CATEGORIA" || sub !== "SIN SUBCATEGORIA") && (
+                          <button type="button" onClick={() => {
+                            const nuevas = [...pruebas];
+                            for (let i = index; i < nuevas.length; i++) {
+                              if ((nuevas[i].categoriaVisual || "SIN CATEGORIA") === cat && (nuevas[i].subcategoriaVisual || "SIN SUBCATEGORIA") === sub) {
+                                nuevas[i].categoriaVisual = "";
+                                nuevas[i].subcategoriaVisual = "";
+                              } else {
+                                break;
+                              }
                             }
-                          }
-                          setPruebas(nuevas);
-                        }} className="text-red-400 hover:text-red-600 text-[10px] ml-2 font-bold uppercase tracking-widest bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors">
-                          Quitar Grupo
-                        </button>
+                            setPruebas(nuevas);
+                          }} className="text-red-400 hover:text-red-600 text-[10px] ml-2 font-bold uppercase tracking-widest bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors">
+                            Quitar Grupo
+                          </button>
+                        )}
                       </div>
                     )}
                     <div className={`flex flex-col bg-[#F5F5F7]/60 border border-slate-200/80 p-5 shadow-sm hover:border-[#0071E3]/30 transition-colors ${showHeader ? 'rounded-2xl rounded-t-lg' : 'rounded-2xl mt-4'}`}>

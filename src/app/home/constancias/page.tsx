@@ -4,6 +4,7 @@ import { useState, useEffect, Fragment } from "react";
 import { Search, FileBadge, Calendar, ChevronLeft, ChevronRight, FileText, Activity, User, ChevronDown, ChevronUp, History, MessageCircle } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalConstancia from "../../components/constancias/ModalConstancia";
+import { normalizeSearchString } from "../../../lib/stringUtils";
 
 export default function ConstanciasPage() {
   const [ordenes, setOrdenes] = useState<any[]>([]);
@@ -66,10 +67,10 @@ export default function ConstanciasPage() {
     }
 
     if (busqueda) {
-      const b = busqueda.toLowerCase();
+      const b = normalizeSearchString(busqueda);
       const coincidePaciente = 
-        grupo.paciente.nombreCompleto.toLowerCase().includes(b) ||
-        (grupo.paciente.cedula && grupo.paciente.cedula.includes(b));
+        normalizeSearchString(grupo.paciente.nombreCompleto).includes(b) ||
+        (grupo.paciente.cedula && normalizeSearchString(grupo.paciente.cedula).includes(b));
       
       const coincideOrden = grupo.ordenes.some((o: any) => o.id.toString().includes(b));
       

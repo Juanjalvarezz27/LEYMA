@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Plus, Trash2, Wallet, Edit2, Check, X, ChevronLeft, ChevronRight, Search, Settings, Save } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalConfirmacion from "../../components/ui/ModalConfirmacion";
+import { normalizeSearchString } from "../../../lib/stringUtils";
 
 export default function TabCostosFijos() {
   const [costos, setCostos] = useState<any[]>([]);
@@ -156,7 +157,7 @@ export default function TabCostosFijos() {
   };
 
   // Search logic
-  const filteredCostos = costos.filter(c => c.nombre.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredCostos = costos.filter(c => normalizeSearchString(c.nombre).includes(normalizeSearchString(searchTerm)));
 
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;

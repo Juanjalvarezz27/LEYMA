@@ -176,9 +176,9 @@ export default function ResumenPago({
                   </span>
 
                   {p.tipo === "PAQUETE" && p.pruebasHijas && (
-                    <div className="mt-2 bg-[#F5F5F7]/80 rounded-xl p-2.5 w-full lg:max-w-lg">
-                       <p className="text-[13px] text-slate-500 leading-snug font-medium">
-                         <span className="font-bold text-slate-700">Incluye:</span> {p.pruebasHijas.map((ph: any) => ph.nombre).join(', ')}
+                    <div className="mt-2.5 bg-[#F5F5F7]/80 rounded-xl p-3.5 w-full lg:max-w-[90%]">
+                       <p className="text-[13px] text-slate-500 leading-relaxed font-medium">
+                         <span className="font-bold text-[#1D1D1F]">Incluye:</span> {p.pruebasHijas.map((ph: any) => ph.nombre).join(', ')}
                        </p>
                     </div>
                   )}
@@ -234,19 +234,22 @@ export default function ResumenPago({
 
       <div className="bg-[#F5F5F7]/80 rounded-[24px] p-5 lg:p-6 border border-slate-200/60">
         <div className="flex justify-between items-center mb-5 border-b border-slate-200/80 pb-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <label className="text-[12px] font-bold text-slate-500 uppercase tracking-widest block">Métodos de Pago</label>
-            {restanteUSD > 0.05 ? (
-              <span className="px-2.5 py-1 bg-orange-100 text-orange-600 rounded-md text-sm font-bold flex items-center gap-1.5 border border-orange-200">
-                <AlertCircle size={14} strokeWidth={2.5} /> Restante: ${restanteUSD.toFixed(2)} / Bs {restanteBS.toFixed(2)}
+            <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded-md text-[13px] font-bold border border-blue-100 shadow-sm">
+              Total: ${totalFinalUSD.toFixed(2)} / Bs {totalFinalBS.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+            </span>
+            {restanteBS > 0.01 ? (
+              <span className="px-2.5 py-1 bg-orange-100 text-orange-600 rounded-md text-[13px] font-bold flex items-center gap-1.5 border border-orange-200">
+                <AlertCircle size={14} strokeWidth={2.5} /> Falta: ${restanteUSD.toFixed(2)} / Bs {restanteBS.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
               </span>
             ) : (
-              <span className="px-2.5 py-1 bg-green-100 text-green-600 rounded-md text-[11px] font-bold flex items-center gap-1.5 border border-green-200 shadow-sm">
+              <span className="px-2.5 py-1 bg-green-100 text-green-600 rounded-md text-[13px] font-bold flex items-center gap-1.5 border border-green-200 shadow-sm">
                 <CheckCircle size={14} strokeWidth={2.5} /> Total Cubierto
               </span>
             )}
           </div>
-          <button onClick={agregarPago} disabled={restanteUSD <= 0.05} className="text-sm font-bold text-white disabled:text-slate-400 flex items-center gap-1.5 bg-[#0071E3] disabled:bg-slate-200 px-4 py-2 rounded-xl shadow-sm hover:bg-[#0077ED] disabled:hover:bg-slate-200 transition-all">
+          <button onClick={agregarPago} disabled={restanteBS <= 0.01} className="text-sm font-bold text-white disabled:text-slate-400 flex items-center gap-1.5 bg-[#0071E3] disabled:bg-slate-200 px-4 py-2 rounded-xl shadow-sm hover:bg-[#0077ED] disabled:hover:bg-slate-200 transition-all">
             <Plus size={16} strokeWidth={3} /> Agregar
           </button>
         </div>
@@ -373,8 +376,8 @@ export default function ResumenPago({
           <div className="flex flex-col sm:flex-row lg:flex-col gap-3 w-full lg:w-auto shrink-0 pl-0 lg:pl-6 mt-3 lg:mt-0">
             <button
               onClick={() => onFinalizar({ subtotalUSD, totalFinalUSD, totalFinalBS, pagos, descuentoGeneral, tipoDescGral, estado: "BORRADOR", restanteUSD })}
-              disabled={guardandoOrden || restanteUSD <= 0.05}
-              title={restanteUSD <= 0.05 ? "No puede guardar como borrador una orden pagada en su totalidad" : ""}
+              disabled={guardandoOrden || restanteBS <= 0.01}
+              title={restanteBS <= 0.01 ? "No puede guardar como borrador una orden pagada en su totalidad" : ""}
               className="w-full sm:w-1/2 lg:w-56 py-3 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
             >
               <Save size={18} strokeWidth={2.5} /> {guardandoOrden ? "Procesando..." : "Guardar Borrador"}

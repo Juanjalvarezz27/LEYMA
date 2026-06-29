@@ -10,6 +10,7 @@ import { toast } from "react-toastify";
 import useTasaBCV from "../../hooks/useTasaBcv";
 import ModalCierre from "../../components/cierre/ModalCierre";
 import ModalConfirmacion from "../../components/ui/ModalConfirmacion";
+import { normalizeSearchString } from "../../../lib/stringUtils";
 
 type VistaType = "HOY" | "HISTORIAL";
 type PeriodoType = "HOY" | "CUSTOM";
@@ -109,10 +110,11 @@ export default function CierreCajaPage() {
   const pacientesFiltrados = useMemo(() => {
     const lista = data?.flujoPacientes || [];
     if (!busqueda) return lista;
-    return lista.filter((p: any) =>
-      p.paciente.toLowerCase().includes(busqueda.toLowerCase()) ||
+    return lista.filter((p: any) => {
+      const b = normalizeSearchString(busqueda);
+      return normalizeSearchString(p.paciente).includes(b) ||
       p.cedula.includes(busqueda) || p.ordenId.toString().includes(busqueda)
-    );
+    });
   }, [data, busqueda]);
 
   const pacientesPaginados = useMemo(() => {

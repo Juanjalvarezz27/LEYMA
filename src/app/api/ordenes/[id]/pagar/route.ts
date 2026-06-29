@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../../../app/api/auth/[...nextauth]/route";
 
-const prisma = new PrismaClient();
 const parseId = (id: any) => isNaN(Number(id)) ? id : Number(id);
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {

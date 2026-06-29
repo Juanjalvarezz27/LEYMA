@@ -10,6 +10,7 @@ import { toast } from "react-toastify";
 
 import ModalDetalleOrden from "../../components/diaria/ModalDetalleOrden";
 import ModalProcesarPago from "../../components/diaria/ModalProcesarPago";
+import { normalizeSearchString } from "../../../lib/stringUtils";
 
 const obtenerFechaHoyVzla = () => {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Caracas' });
@@ -85,11 +86,11 @@ function ListaDiariaContent() {
 
   const ordenesFiltradas = ordenes.filter(orden => {
     const cumpleEstado = filtroEstado === "TODAS" || orden.estado.nombre === filtroEstado;
-    const busquedaLower = busqueda.toLowerCase();
+    const busquedaLower = normalizeSearchString(busqueda);
     const cumpleBusqueda = 
-      orden.paciente.nombreCompleto.toLowerCase().includes(busquedaLower) ||
-      (orden.paciente.cedula && orden.paciente.cedula.includes(busquedaLower)) ||
-      orden.id.toString().includes(busquedaLower);
+      normalizeSearchString(orden.paciente.nombreCompleto).includes(busquedaLower) ||
+      (orden.paciente.cedula && normalizeSearchString(orden.paciente.cedula).includes(busquedaLower)) ||
+      normalizeSearchString(orden.id.toString()).includes(busquedaLower);
     
     return cumpleEstado && cumpleBusqueda;
   });

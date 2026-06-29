@@ -14,6 +14,7 @@ import { toast } from "react-toastify";
 import ModalRegistrarGasto from "../../components/monedero/ModalRegistrarGasto";
 import ModalConfirmacion from "../../components/ui/ModalConfirmacion";
 import useTasaBCV from "../../hooks/useTasaBcv"; 
+import { normalizeSearchString } from "../../../lib/stringUtils";
 
 const PALETA_GASTOS = ['#EF4444', '#F59E0B', '#8B5CF6', '#F43F5E', '#D946EF'];
 const PALETA_INGRESOS = ['#10B981', '#0EA5E9', '#3B82F6', '#14B8A6', '#06B6D4']; 
@@ -130,11 +131,12 @@ export default function MonederoPage() {
     
     if (!busquedaGasto) return soloGastos;
     
-    return soloGastos.filter((g: any) => 
-      g.concepto?.toLowerCase().includes(busquedaGasto.toLowerCase()) ||
-      g.metodo?.toLowerCase().includes(busquedaGasto.toLowerCase()) ||
-      g.responsable?.toLowerCase().includes(busquedaGasto.toLowerCase())
-    );
+    return soloGastos.filter((g: any) => {
+      const bg = normalizeSearchString(busquedaGasto);
+      return normalizeSearchString(g.concepto).includes(bg) ||
+      normalizeSearchString(g.metodo).includes(bg) ||
+      normalizeSearchString(g.responsable).includes(bg)
+    });
   }, [stats, busquedaGasto]);
 
   // 2. Calcular los elementos exactos que corresponden a la página actual (Segmentación de 30 en 30)
@@ -173,11 +175,12 @@ export default function MonederoPage() {
 
     if (!busquedaDescuento) return listAgrupados;
     
-    return listAgrupados.filter((o: any) => 
-      o.paciente?.toLowerCase().includes(busquedaDescuento.toLowerCase()) ||
-      o.ordenId?.toString().includes(busquedaDescuento) ||
-      o.descuentos.some((d: any) => d.motivo?.toLowerCase().includes(busquedaDescuento.toLowerCase()) || d.detalleNombre?.toLowerCase().includes(busquedaDescuento.toLowerCase()))
-    );
+    return listAgrupados.filter((o: any) => {
+      const bd = normalizeSearchString(busquedaDescuento);
+      return normalizeSearchString(o.paciente).includes(bd) ||
+      o.ordenId?.toString().includes(bd) ||
+      o.descuentos.some((d: any) => normalizeSearchString(d.motivo).includes(bd) || normalizeSearchString(d.detalleNombre).includes(bd))
+    });
   }, [stats, busquedaDescuento]);
 
   const ordenesPaginadas = useMemo(() => {

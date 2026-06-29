@@ -9,6 +9,7 @@ import {
 import { toast } from "react-toastify";
 import ModalCargarResultados from "../../components/resultados/ModalCargarResultados";
 import ModalPreviewPDF from "../../components/resultados/ModalPreviewPDF";
+import { normalizeSearchString } from "../../../lib/stringUtils";
 
 const obtenerFechaCaracas = (fecha: string | Date = new Date()) => {
   const formatter = new Intl.DateTimeFormat('en-US', {
@@ -111,11 +112,11 @@ export default function ResultadosPage() {
     }
 
     if (busqueda) {
-      const b = busqueda.toLowerCase();
+      const b = normalizeSearchString(busqueda);
       const coincide = 
-        orden.paciente.nombreCompleto.toLowerCase().includes(b) ||
-        (orden.paciente.cedula && orden.paciente.cedula.includes(b)) ||
-        orden.id.toString().includes(b);
+        normalizeSearchString(orden.paciente.nombreCompleto).includes(b) ||
+        (orden.paciente.cedula && normalizeSearchString(orden.paciente.cedula).includes(b)) ||
+        normalizeSearchString(orden.id.toString()).includes(b);
       if (!coincide) return false;
     }
 

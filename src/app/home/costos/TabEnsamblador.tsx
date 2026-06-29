@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Search, Plus, Trash2, CheckCircle2, ChevronRight, Calculator, FlaskConical, Beaker, ChevronDown, TrendingUp, X, Package } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalConfirmacion from "../../components/ui/ModalConfirmacion";
+import { normalizeSearchString } from "../../../lib/stringUtils";
 
 export default function TabEnsamblador() {
   const [examenes, setExamenes] = useState<any[]>([]);
@@ -58,13 +59,14 @@ export default function TabEnsamblador() {
 
   const combinedItems = [...todasLasPruebas, ...todosLosPaquetes];
 
-  const filteredItems = combinedItems.filter(p => 
-    p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (p.codigo && p.codigo.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredItems = combinedItems.filter(p => {
+    const st = normalizeSearchString(searchTerm);
+    return normalizeSearchString(p.nombre).includes(st) || 
+    (p.codigo && normalizeSearchString(p.codigo).includes(st))
+  });
 
   const filteredInsumosDisponibles = insumosDisponibles.filter(i =>
-    i.nombre.toLowerCase().includes(searchInsumo.toLowerCase())
+    normalizeSearchString(i.nombre).includes(normalizeSearchString(searchInsumo))
   );
 
   const cargarEnsamblaje = async (pruebaId: string, tipo: string = 'prueba') => {

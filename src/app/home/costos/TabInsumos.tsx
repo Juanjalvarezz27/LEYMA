@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Plus, Trash2, Edit2, Check, X, Box, ChevronDown, ChevronLeft, ChevronRight, Search, Package, Beaker, ChevronUp } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalConfirmacion from "../../components/ui/ModalConfirmacion";
+import { normalizeSearchString } from "../../../lib/stringUtils";
 
 export default function TabInsumos() {
   const [insumos, setInsumos] = useState<any[]>([]);
@@ -265,11 +266,11 @@ export default function TabInsumos() {
 
   // Filtro de insumos disponibles en el modal de paquete
   const filteredInsumosParaPaquete = insumos.filter(i =>
-    i.nombre.toLowerCase().includes(paqueteSearchInsumo.toLowerCase())
+    normalizeSearchString(i.nombre).includes(normalizeSearchString(paqueteSearchInsumo))
   );
 
   // Search logic
-  const filteredInsumos = insumos.filter(i => i.nombre.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredInsumos = insumos.filter(i => normalizeSearchString(i.nombre).includes(normalizeSearchString(searchTerm)));
 
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;

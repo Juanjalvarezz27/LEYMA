@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import { renderToBuffer } from "@react-pdf/renderer";
 import QRCode from "qrcode";
 import path from "path";
 import fs from "fs";
 import React from "react";
 import ReporteDocumentServer from "../../../../components/resultados/ReporteDocumentServer";
-
-const prisma = new PrismaClient();
 
 export async function GET(request: Request, { params }: { params: any }) {
   try {

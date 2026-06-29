@@ -1,9 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import DescargarPDFButton from "./DescargarPDFButton";
-
-const prisma = new PrismaClient();
 
 export default async function ValidarPage({ params }: { params: any }) {
   const resolvedParams = await params;

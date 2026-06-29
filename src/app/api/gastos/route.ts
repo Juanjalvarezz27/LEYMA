@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
 
 // ESTO ES VITAL: Obliga a Next.js a calcular esto en tiempo real siempre, sin caché.
 export const dynamic = 'force-dynamic'; 
 
-const prisma = new PrismaClient();
 import { getCaracasTodayBounds, subtractDaysCaracas, getCaracasThisMonthBounds, getCaracasBoundsForDate, formatToCaracasDateString } from "../../../lib/dateUtils";
 
 export async function GET(req: Request) {

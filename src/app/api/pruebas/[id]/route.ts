@@ -191,7 +191,7 @@ export async function DELETE(
     
     if (isForeignKeyError) {
       return NextResponse.json(
-        { error: `No puedes eliminar esta subcategoría porque algunas de sus pruebas ya están registradas en el historial de órdenes de pacientes.: ${error?.message || 'Desconocido'}` }, 
+        { error: "No puedes eliminar esta subcategoría porque algunas de sus pruebas ya están registradas en el historial de órdenes de pacientes." }, 
         { status: 400 }
       );
     }

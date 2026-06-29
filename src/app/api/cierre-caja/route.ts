@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import { getCaracasTodayBounds, getCaracasBoundsForDate } from "../../../lib/dateUtils";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
 
 export const dynamic = 'force-dynamic';
-const prisma = new PrismaClient();
 
 export async function GET(req: Request) {
   try {

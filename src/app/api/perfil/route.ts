@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 import bcrypt from "bcryptjs";
-
-const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest) {
   try {

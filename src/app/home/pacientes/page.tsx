@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalPreviewPDF from "../../components/resultados/ModalPreviewPDF"; 
+import { normalizeSearchString } from "../../../lib/stringUtils";
 
 export default function PacientesPage() {
   const [pacientes, setPacientes] = useState<any[]>([]);
@@ -59,10 +60,10 @@ export default function PacientesPage() {
 
     // 2. Filtro por Búsqueda (Nombre, cédula o N° de orden)
     if (busqueda) {
-      const b = busqueda.toLowerCase();
+      const b = normalizeSearchString(busqueda);
       const coincidePaciente = 
-        p.nombreCompleto.toLowerCase().includes(b) ||
-        (p.cedula && p.cedula.toLowerCase().includes(b));
+        normalizeSearchString(p.nombreCompleto).includes(b) ||
+        (p.cedula && normalizeSearchString(p.cedula).includes(b));
       
       const coincideOrden = p.ordenes.some((o: any) => o.id.toString().includes(b));
 

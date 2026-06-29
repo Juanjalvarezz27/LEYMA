@@ -147,16 +147,19 @@ export default function ConstanciaPDF({ orden }: { orden: any }) {
 
         {/* LISTA DE PRUEBAS COMPACTA */}
         <View style={styles.listaPruebas}>
-          {orden.detalles.map((det: any, idx: number) => {
-            const nombreExamen = det.prueba?.subcategoria?.esPaquete
-              ? det.prueba.subcategoria.nombre
-              : det.prueba.nombre;
-            return (
-              <Text key={idx} style={styles.itemPrueba}>
-                • {nombreExamen.toUpperCase()}
-              </Text>
-            );
-          })}
+          {Array.from(
+            new Set(
+              orden.detalles.map((det: any) =>
+                det.prueba?.subcategoria?.esPaquete
+                  ? det.prueba.subcategoria.nombre
+                  : det.prueba.nombre
+              )
+            )
+          ).map((nombreExamen: any, idx: number) => (
+            <Text key={idx} style={styles.itemPrueba}>
+              • {nombreExamen.toUpperCase()}
+            </Text>
+          ))}
         </View>
 
         {/* PIE DE CUERPO */}

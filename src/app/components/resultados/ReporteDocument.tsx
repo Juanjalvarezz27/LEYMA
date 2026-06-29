@@ -246,7 +246,11 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
 
     if (det.prueba?.subcategoria?.esPaquete) {
       catNombreOriginal = `${det.prueba.subcategoria.categoria?.nombre || "PERFIL"} - ${det.prueba.subcategoria.nombre}`;
-      subcatNombre = `${det.prueba.categoriaVisual || "S/C"} - ${det.prueba.subcategoriaVisual || "S/S"}`;
+      if (det.prueba.categoriaVisual || det.prueba.subcategoriaVisual) {
+        subcatNombre = `${det.prueba.categoriaVisual || "S/C"} - ${det.prueba.subcategoriaVisual || "S/S"}`;
+      } else {
+        subcatNombre = "PRUEBAS INDIVIDUALES";
+      }
     }
 
     const bioId = (det.resultado?.firmado && det.resultado?.procesadoPor) ? det.resultado.procesadoPor.id : 'no-firmado';

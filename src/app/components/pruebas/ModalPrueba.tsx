@@ -531,22 +531,41 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                 const prevSub = prev ? (prev.subcategoriaVisual || "SIN SUBCATEGORIA") : null;
                 
                 const isNewGroup = cat !== prevCat || sub !== prevSub;
-                const showHeader = isNewGroup;
+                const hasGroup = cat !== "SIN CATEGORIA" || sub !== "SIN SUBCATEGORIA";
 
                 return (
                   <div key={index} className="flex flex-col">
-                    {showHeader && (
+                    {isNewGroup && !hasGroup && (
+                      <div className="flex justify-end px-2 mt-4 mb-1">
+                        <button type="button" onClick={() => {
+                          const nuevas = [...pruebas];
+                          for (let i = index; i < nuevas.length; i++) {
+                            if ((nuevas[i].categoriaVisual || "SIN CATEGORIA") === "SIN CATEGORIA" && (nuevas[i].subcategoriaVisual || "SIN SUBCATEGORIA") === "SIN SUBCATEGORIA") {
+                              nuevas[i].categoriaVisual = "NUEVA CATEGORIA";
+                              nuevas[i].subcategoriaVisual = "NUEVA SUBCATEGORIA";
+                            } else {
+                              break;
+                            }
+                          }
+                          setPruebas(nuevas);
+                        }} className="text-[9px] font-black text-slate-400 hover:text-[#0071E3] uppercase flex items-center gap-1 transition-colors bg-white border border-slate-200 hover:border-[#0071E3]/30 px-2 py-1 rounded-md shadow-sm">
+                          <Plus size={10} strokeWidth={4} /> Asignar Grupo
+                        </button>
+                      </div>
+                    )}
+
+                    {isNewGroup && hasGroup && (
                       <div className="flex items-center gap-3 px-2 mt-4 mb-3">
                         <div className="flex items-center gap-2 shrink-0 bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 shadow-sm focus-within:border-[#0071E3] focus-within:ring-2 focus-within:ring-[#0071E3]/20 transition-all">
                           <div className="flex flex-col">
                             <span className="text-[8px] font-black tracking-widest uppercase text-slate-400 mb-0.5">Editar Categoría Visual</span>
                             <div className="grid">
                               <span className="invisible whitespace-pre col-start-1 row-start-1 text-[11px] font-black tracking-widest uppercase min-w-[80px]">
-                                {(cat === "SIN CATEGORIA" ? "" : cat) || "Categoría..."}
+                                {cat || "Categoría..."}
                               </span>
                               <input 
                                 type="text"
-                                value={cat === "SIN CATEGORIA" ? "" : cat}
+                                value={cat}
                                 onChange={(e) => {
                                   const val = e.target.value.toUpperCase();
                                   const nuevas = [...pruebas];
@@ -563,6 +582,12 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                                 }}
                                 className="col-start-1 row-start-1 w-full text-[11px] font-black tracking-widest uppercase text-slate-600 bg-transparent outline-none placeholder:text-slate-300 placeholder:font-medium"
                                 placeholder="Categoría..."
+                                onClick={(e) => {
+                                  if (cat === "NUEVA CATEGORIA") {
+                                    const target = e.target as HTMLInputElement;
+                                    target.select();
+                                  }
+                                }}
                               />
                             </div>
                           </div>
@@ -573,11 +598,11 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                             <span className="text-[8px] font-black tracking-widest uppercase text-[#0071E3]/60 mb-0.5">Editar Subcategoría</span>
                             <div className="grid">
                               <span className="invisible whitespace-pre col-start-1 row-start-1 text-[11px] font-black tracking-widest uppercase min-w-[100px]">
-                                {(sub === "SIN SUBCATEGORIA" ? "" : sub) || "Subcategoría..."}
+                                {sub || "Subcategoría..."}
                               </span>
                               <input 
                                 type="text"
-                                value={sub === "SIN SUBCATEGORIA" ? "" : sub}
+                                value={sub}
                                 onChange={(e) => {
                                   const val = e.target.value.toUpperCase();
                                   const nuevas = [...pruebas];
@@ -594,30 +619,37 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                                 }}
                                 className="col-start-1 row-start-1 w-full text-[11px] font-black tracking-widest uppercase text-[#0071E3] bg-transparent outline-none placeholder:text-blue-200 placeholder:font-medium"
                                 placeholder="Subcategoría..."
+                                onClick={(e) => {
+                                  if (sub === "NUEVA SUBCATEGORIA") {
+                                    const target = e.target as HTMLInputElement;
+                                    target.select();
+                                  }
+                                }}
                               />
                             </div>
                           </div>
                         </div>
                         <div className="h-px bg-slate-200/70 flex-1"></div>
-                        {(cat !== "SIN CATEGORIA" || sub !== "SIN SUBCATEGORIA") && (
-                          <button type="button" onClick={() => {
-                            const nuevas = [...pruebas];
-                            for (let i = index; i < nuevas.length; i++) {
-                              if ((nuevas[i].categoriaVisual || "SIN CATEGORIA") === cat && (nuevas[i].subcategoriaVisual || "SIN SUBCATEGORIA") === sub) {
-                                nuevas[i].categoriaVisual = "";
-                                nuevas[i].subcategoriaVisual = "";
-                              } else {
-                                break;
-                              }
+                        <button type="button" onClick={() => {
+                          const nuevas = [...pruebas];
+                          const targetCat = index > 0 ? (nuevas[index - 1].categoriaVisual || "") : "";
+                          const targetSub = index > 0 ? (nuevas[index - 1].subcategoriaVisual || "") : "";
+                          
+                          for (let i = index; i < nuevas.length; i++) {
+                            if ((nuevas[i].categoriaVisual || "SIN CATEGORIA") === cat && (nuevas[i].subcategoriaVisual || "SIN SUBCATEGORIA") === sub) {
+                              nuevas[i].categoriaVisual = targetCat;
+                              nuevas[i].subcategoriaVisual = targetSub;
+                            } else {
+                              break;
                             }
-                            setPruebas(nuevas);
-                          }} className="text-red-400 hover:text-red-600 text-[10px] ml-2 font-bold uppercase tracking-widest bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors">
-                            Quitar Grupo
-                          </button>
-                        )}
+                          }
+                          setPruebas(nuevas);
+                        }} className="text-red-400 hover:text-red-600 text-[10px] ml-2 font-bold uppercase tracking-widest bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors">
+                          Quitar Grupo / Unir Arriba
+                        </button>
                       </div>
                     )}
-                    <div className={`flex flex-col bg-[#F5F5F7]/60 border border-slate-200/80 p-5 shadow-sm hover:border-[#0071E3]/30 transition-colors ${showHeader ? 'rounded-2xl rounded-t-lg' : 'rounded-2xl mt-4'}`}>
+                    <div className={`flex flex-col bg-[#F5F5F7]/60 border border-slate-200/80 p-5 shadow-sm hover:border-[#0071E3]/30 transition-colors ${hasGroup && isNewGroup ? 'rounded-2xl rounded-t-lg' : 'rounded-2xl mt-4'}`}>
                       
                       <div className="grid grid-cols-12 gap-4 items-end w-full">
                         <div className="col-span-2 xl:col-span-1 flex flex-col gap-1.5">

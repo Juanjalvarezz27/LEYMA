@@ -23,6 +23,6 @@ export async function GET() {
     return NextResponse.json(ordenesPendientes);
   } catch (error: any) {
     console.error("Error al obtener ordenes pendientes:", error);
-    return NextResponse.json({ error: "Error al cargar las órdenes pendientes" }, { status: 500 });
+    return NextResponse.json({ error: `Error al cargar las órdenes pendientes: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

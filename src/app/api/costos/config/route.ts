@@ -30,7 +30,7 @@ export async function GET() {
     });
   } catch (error: any) {
     console.error("Error en config costos:", error);
-    return NextResponse.json({ error: "Error del servidor" }, { status: 500 });
+    return NextResponse.json({ error: `Error del servidor: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }
 
@@ -52,6 +52,6 @@ export async function PUT(req: Request) {
     }
     return NextResponse.json(config);
   } catch (error: any) {
-    return NextResponse.json({ error: "Error al actualizar config" }, { status: 500 });
+    return NextResponse.json({ error: `Error al actualizar config: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

@@ -15,7 +15,7 @@ export default function TabInsumos() {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const itemsPerPage = 15;
   
   const [showForm, setShowForm] = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState("");
@@ -60,7 +60,7 @@ export default function TabInsumos() {
       const data = res.ok ? await res.json() : [];
       setInsumos(Array.isArray(data) ? data : []);
     } catch (error: any) {
-      toast.error(error?.message || "Error al cargar insumos");
+      toast.error(error?.message ? `Error al cargar insumos: ${error?.message}` : "Error al cargar insumos");
     } finally {
       setLoading(false);
     }
@@ -72,7 +72,7 @@ export default function TabInsumos() {
       const data = res.ok ? await res.json() : [];
       setPaquetes(Array.isArray(data) ? data : []);
     } catch (error: any) {
-      toast.error(error?.message || "Error al cargar paquetes");
+      toast.error(error?.message ? `Error al cargar paquetes: ${error?.message}` : "Error al cargar paquetes");
     }
   };
 
@@ -139,7 +139,7 @@ export default function TabInsumos() {
         fetchInsumos();
       }
     } catch (error: any) {
-      toast.error(error?.message || "Error al eliminar");
+      toast.error(error?.message ? `Error al eliminar: ${error?.message}` : "Error al eliminar");
     } finally {
       setIsDeleteModalOpen(false);
       setInsumoToDelete(null);
@@ -222,7 +222,7 @@ export default function TabInsumos() {
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        toast.error(errorData.error || "Error al guardar el paquete");
+        toast.error(errorData.error ? `Error al guardar el paquete: ${errorData.error}` : "Error al guardar el paquete");
         return;
       }
 
@@ -231,7 +231,7 @@ export default function TabInsumos() {
       await fetchPaquetes();
       setShowPaqueteModal(false);
     } catch (error: any) {
-      toast.error(error?.message || "Error al guardar el paquete");
+      toast.error(error?.message ? `Error al guardar el paquete: ${error?.message}` : "Error al guardar el paquete");
     }
   };
 
@@ -249,7 +249,7 @@ export default function TabInsumos() {
         fetchPaquetes();
       }
     } catch (error: any) {
-      toast.error(error?.message || "Error al eliminar el paquete");
+      toast.error(error?.message ? `Error al eliminar el paquete: ${error?.message}` : "Error al eliminar el paquete");
     } finally {
       setIsDeletePaqueteModalOpen(false);
       setPaqueteToDelete(null);
@@ -461,19 +461,6 @@ export default function TabInsumos() {
         </div>
         
         <div className="flex items-center gap-4 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64">
-            <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
-            <input
-              type="text"
-              placeholder="Buscar insumo..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-50 focus:border-[#0071E3] outline-none text-sm transition-all font-medium"
-            />
-          </div>
           <div className="text-left md:text-right bg-blue-50/50 px-5 py-3 rounded-2xl border border-blue-100/50 hidden md:block">
             <p className="text-[11px] font-black text-[#0071E3]/70 uppercase tracking-widest mb-1">Total en Inventario</p>
             <p className="text-2xl font-black text-[#0071E3] leading-none">{insumos.length}</p>
@@ -560,27 +547,44 @@ export default function TabInsumos() {
 
       {/* Botones de acción */}
       {!showForm && (
-        <div className="flex justify-end mb-6 gap-3">
-          <button 
-            onClick={abrirModalCrearPaquete}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-indigo-200 rounded-xl text-indigo-600 font-bold hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-md transition-all shadow-sm"
-          >
-            <Package size={20} strokeWidth={2.5} /> Crear Paquete
-          </button>
-          <button 
-            onClick={() => {
-              setEditId(null);
-              setOldCostoUnitario(null);
-              setNuevoNombre("");
-              setNuevaUnidad("und");
-              setNuevaCantidad("");
-              setNuevoCostoTotal("");
-              setShowForm(true);
-            }}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-xl text-slate-600 font-bold hover:border-[#0071E3] hover:text-[#0071E3] hover:shadow-md transition-all shadow-sm"
-          >
-            <Plus size={20} strokeWidth={2.5} /> Agregar Nuevo Insumo
-          </button>
+        <div className="flex flex-col md:flex-row justify-between md:justify-end items-center mb-6 gap-4">
+          {/* Barra de Búsqueda */}
+          <div className="relative w-full md:w-64 lg:w-80 md:mr-auto">
+            <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
+            <input
+              type="text"
+              placeholder="Buscar insumo..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-[#0071E3] outline-none text-sm transition-all font-medium shadow-sm"
+            />
+          </div>
+
+          <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+            <button 
+              onClick={abrirModalCrearPaquete}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-indigo-200 rounded-xl text-indigo-600 font-bold hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-md transition-all shadow-sm flex-1 md:flex-none"
+            >
+              <Package size={20} strokeWidth={2.5} /> Crear Paquete
+            </button>
+            <button 
+              onClick={() => {
+                setEditId(null);
+                setOldCostoUnitario(null);
+                setNuevoNombre("");
+                setNuevaUnidad("und");
+                setNuevaCantidad("");
+                setNuevoCostoTotal("");
+                setShowForm(true);
+              }}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-xl text-slate-600 font-bold hover:border-[#0071E3] hover:text-[#0071E3] hover:shadow-md transition-all shadow-sm flex-1 md:flex-none"
+            >
+              <Plus size={20} strokeWidth={2.5} /> Agregar Nuevo Insumo
+            </button>
+          </div>
         </div>
       )}
 

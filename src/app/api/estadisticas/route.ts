@@ -221,6 +221,6 @@ export async function GET(req: Request) {
 
   } catch (error: any) {
     console.error("Error al generar estadísticas:", error);
-    return NextResponse.json({ error: "Error interno en el servidor analítico" }, { status: 500 });
+    return NextResponse.json({ error: `Error interno en el servidor analítico: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

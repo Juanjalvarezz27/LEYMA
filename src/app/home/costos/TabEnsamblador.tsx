@@ -80,7 +80,7 @@ export default function TabEnsamblador() {
       setCostoFijoUnitario(data.costoFijoPorPrueba || 0);
       recalcularTotal(recetaCargada);
     } catch (error: any) {
-      toast.error(error?.message || "Error al cargar la receta del examen");
+      toast.error(error?.message ? `Error al cargar la receta del examen: ${error?.message}` : "Error al cargar la receta del examen");
     } finally {
       setIsCargandoEnsamblaje(false);
     }
@@ -212,7 +212,7 @@ export default function TabEnsamblador() {
         throw new Error(errorData.error || "Error en la petición");
       }
     } catch (error: any) {
-      toast.error(error?.message || "Error al guardar la estructura");
+      toast.error(error?.message ? `Error al guardar la estructura: ${error?.message}` : "Error al guardar la estructura");
     }
   };
 

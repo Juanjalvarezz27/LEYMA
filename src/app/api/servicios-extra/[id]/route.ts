@@ -25,7 +25,7 @@ export async function PUT(
     return NextResponse.json(servicio);
   } catch (error: any) {
     console.error("Error al actualizar servicio extra:", error);
-    return NextResponse.json({ error: "Error interno al actualizar" }, { status: 500 });
+    return NextResponse.json({ error: `Error interno al actualizar: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }
 
@@ -56,6 +56,6 @@ export async function DELETE(
     return NextResponse.json({ success: true, message: "Servicio eliminado correctamente" });
   } catch (error: any) {
     console.error("Error al eliminar servicio extra:", error);
-    return NextResponse.json({ error: "Error interno al eliminar (posiblemente esté en uso)" }, { status: 500 });
+    return NextResponse.json({ error: `Error interno al eliminar (posiblemente esté en uso): ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

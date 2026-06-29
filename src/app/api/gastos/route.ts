@@ -181,7 +181,7 @@ export async function GET(req: Request) {
 
   } catch (error: any) {
     console.error("Error al generar monedero:", error);
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+    return NextResponse.json({ error: `Error interno: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }
 
@@ -221,6 +221,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, gasto: nuevoGasto });
   } catch (error: any) {
     console.error("Error al registrar gasto:", error);
-    return NextResponse.json({ error: "Error interno al guardar" }, { status: 500 });
+    return NextResponse.json({ error: `Error interno al guardar: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

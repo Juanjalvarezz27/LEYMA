@@ -44,7 +44,7 @@ export default function PerfilPage() {
           col: data.col || "",
         }));
       } catch (error: any) {
-        toast.error(error?.message || "No se pudo cargar la información del perfil.");
+        toast.error(error?.message ? `No se pudo cargar la información del perfil.: ${error?.message}` : "No se pudo cargar la información del perfil.");
       } finally {
         setCargando(false);
       }
@@ -130,7 +130,7 @@ export default function PerfilPage() {
         tienePin: !!(prev.tienePin || formData.nuevoPin)
       }));
     } catch (error: any) {
-      toast.error(error.message || "Ocurrió un error al guardar.");
+      toast.error(error.message ? `Ocurrió un error al guardar.: ${error.message}` : "Ocurrió un error al guardar.");
     } finally {
       setGuardando(false);
     }

@@ -46,7 +46,7 @@ export default function TabCostosFijos() {
       const total = Array.isArray(data) ? data.reduce((sum, item) => sum + item.montoMensualUSD, 0) : 0;
       setCostoTotal(total);
     } catch (error: any) {
-      toast.error(error?.message || "Error al cargar datos");
+      toast.error(error?.message ? `Error al cargar datos: ${error?.message}` : "Error al cargar datos");
     } finally {
       setLoading(false);
     }
@@ -87,7 +87,7 @@ export default function TabCostosFijos() {
         fetchConfig();
       }
     } catch (error: any) {
-      toast.error(error?.message || "Error al guardar");
+      toast.error(error?.message ? `Error al guardar: ${error?.message}` : "Error al guardar");
     } finally {
       setSavingVolumen(false);
     }
@@ -112,7 +112,7 @@ export default function TabCostosFijos() {
         setCurrentPage(1); // Go back to first page to see the new item
       }
     } catch (error: any) {
-      toast.error(error?.message || "Error al agregar");
+      toast.error(error?.message ? `Error al agregar: ${error?.message}` : "Error al agregar");
     }
   };
 
@@ -130,7 +130,7 @@ export default function TabCostosFijos() {
         fetchData();
       }
     } catch (error: any) {
-      toast.error(error?.message || "Error al eliminar");
+      toast.error(error?.message ? `Error al eliminar: ${error?.message}` : "Error al eliminar");
     } finally {
       setIsDeleteModalOpen(false);
       setCostoToDelete(null);
@@ -151,7 +151,7 @@ export default function TabCostosFijos() {
         fetchData();
       }
     } catch (error: any) {
-      toast.error(error?.message || "Error al actualizar");
+      toast.error(error?.message ? `Error al actualizar: ${error?.message}` : "Error al actualizar");
     }
   };
 

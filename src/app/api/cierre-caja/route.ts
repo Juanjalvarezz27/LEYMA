@@ -108,7 +108,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error: any) {
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+    return NextResponse.json({ error: `Error interno: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }
 
@@ -162,7 +162,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, cierre: nuevoCierre });
   } catch (error: any) {
-    return NextResponse.json({ error: "Error al cerrar caja" }, { status: 500 });
+    return NextResponse.json({ error: `Error al cerrar caja: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }
 
@@ -186,6 +186,6 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ error: "Error al anular cierre" }, { status: 500 });
+    return NextResponse.json({ error: `Error al anular cierre: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

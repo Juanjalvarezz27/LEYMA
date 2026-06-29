@@ -22,7 +22,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     return NextResponse.json(actualizado);
   } catch (error: any) {
     console.error("Error al actualizar costo fijo:", error);
-    return NextResponse.json({ error: "Error al actualizar costo fijo" }, { status: 500 });
+    return NextResponse.json({ error: `Error al actualizar costo fijo: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }
 
@@ -33,6 +33,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     await prisma.costoFijo.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ error: "Error al eliminar costo fijo" }, { status: 500 });
+    return NextResponse.json({ error: `Error al eliminar costo fijo: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

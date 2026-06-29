@@ -57,7 +57,7 @@ export default function ResultadosPage() {
         return prev;
       });
     } catch (error: any) {
-      toast.error(error?.message || "Error al cargar las órdenes.");
+      toast.error(error?.message ? `Error al cargar las órdenes.: ${error?.message}` : "Error al cargar las órdenes.");
     } finally {
       setCargando(false);
     }

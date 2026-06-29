@@ -61,7 +61,7 @@ export default function CierreCajaPage() {
       setData(await res.json());
       setPaginaActual(1);
     } catch (error: any) {
-      toast.error(error?.message || "Error al cargar el arqueo");
+      toast.error(error?.message ? `Error al cargar el arqueo: ${error?.message}` : "Error al cargar el arqueo");
     } finally {
       setCargando(false);
     }

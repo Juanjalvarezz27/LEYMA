@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(usuario);
   } catch (error: any) {
-    return NextResponse.json({ error: "Error al obtener perfil" }, { status: 500 });
+    return NextResponse.json({ error: `Error al obtener perfil: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }
 
@@ -74,6 +74,6 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ mensaje: "Perfil actualizado correctamente" });
   } catch (error: any) {
-    return NextResponse.json({ error: "Error al actualizar perfil" }, { status: 500 });
+    return NextResponse.json({ error: `Error al actualizar perfil: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

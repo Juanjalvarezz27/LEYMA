@@ -73,7 +73,7 @@ function ListaDiariaContent() {
       const data = await res.json();
       setOrdenes(data);
     } catch (error: any) {
-      toast.error(error?.message || "Error al cargar las órdenes del día");
+      toast.error(error?.message ? `Error al cargar las órdenes del día: ${error?.message}` : "Error al cargar las órdenes del día");
     } finally {
       setCargando(false);
     }
@@ -158,7 +158,7 @@ function ListaDiariaContent() {
       setModalClave({ visible: false, ordenId: null, accion: "ANULAR", estadoDestino: "" });
       fetchOrdenes(); // Recargamos la tabla para refrescar los montos
     } catch (error: any) {
-      toast.error(error.message || "Error al procesar la solicitud.");
+      toast.error(error.message ? `Error al procesar la solicitud.: ${error.message}` : "Error al procesar la solicitud.");
     } finally {
       setProcesandoClave(false);
     }

@@ -10,6 +10,6 @@ export async function GET() {
     });
     return NextResponse.json(metodos);
   } catch (error: any) {
-    return NextResponse.json({ error: "Error al cargar métodos de pago" }, { status: 500 });
+    return NextResponse.json({ error: `Error al cargar métodos de pago: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

@@ -31,7 +31,7 @@ export default function PacientesPage() {
       const data = await res.json();
       setPacientes(data);
     } catch (error: any) {
-      toast.error(error?.message || "Error al cargar la lista de pacientes.");
+      toast.error(error?.message ? `Error al cargar la lista de pacientes.: ${error?.message}` : "Error al cargar la lista de pacientes.");
     } finally {
       setCargando(false);
     }

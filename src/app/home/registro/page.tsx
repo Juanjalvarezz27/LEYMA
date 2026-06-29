@@ -82,7 +82,7 @@ function RegistroContent() {
         
         setPruebasCatalogo(listaAplanada);
       } catch (e: any) {
-        toast.error(e?.message || "Error al cargar el catálogo de pruebas");
+        toast.error(e?.message ? `Error al cargar el catálogo de pruebas: ${e?.message}` : "Error al cargar el catálogo de pruebas");
       }
     };
     fetchCatalogo();
@@ -139,10 +139,10 @@ function RegistroContent() {
             });
 
           } else {
-            toast.error(orden.error || "Error al obtener la orden");
+            toast.error(orden.error ? `Error al obtener la orden: ${orden.error}` : "Error al obtener la orden");
           }
         } catch (error: any) {
-          toast.error(error?.message || "No se pudo cargar la orden para editar");
+          toast.error(error?.message ? `No se pudo cargar la orden para editar: ${error?.message}` : "No se pudo cargar la orden para editar");
         }
       };
       cargarOrdenParaEdicion();
@@ -183,7 +183,7 @@ function RegistroContent() {
         setIsCreandoNuevo(true);
       }
     } catch (error: any) {
-      toast.error(error?.message || "Error de conexión al buscar paciente");
+      toast.error(error?.message ? `Error de conexión al buscar paciente: ${error?.message}` : "Error de conexión al buscar paciente");
     } finally {
       setBuscando(false);
     }
@@ -338,7 +338,7 @@ function RegistroContent() {
         limpiarSeleccion();
       }
     } catch (error: any) {
-      toast.error(error.message || "Error al procesar la orden");
+      toast.error(error.message ? `Error al procesar la orden: ${error.message}` : "Error al procesar la orden");
     } finally {
       setGuardandoOrden(false);
     }

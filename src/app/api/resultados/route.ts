@@ -111,6 +111,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Error al guardar resultados:", error);
-    return NextResponse.json({ error: "Error interno al procesar los resultados" }, { status: 500 });
+    return NextResponse.json({ error: `Error interno al procesar los resultados: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

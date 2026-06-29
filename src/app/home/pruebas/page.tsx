@@ -47,7 +47,7 @@ export default function PruebasPage() {
       const data = await res.json();
       setExamenes(data);
     } catch (error: any) {
-      toast.error(error?.message || "Error al cargar el catálogo de pruebas");
+      toast.error(error?.message ? `Error al cargar el catálogo de pruebas: ${error?.message}` : "Error al cargar el catálogo de pruebas");
     } finally {
       setCargando(false);
     }
@@ -59,7 +59,7 @@ export default function PruebasPage() {
       const data = await res.json();
       setServicios(data);
     } catch (error: any) {
-      toast.error(error?.message || "Error al cargar servicios extra");
+      toast.error(error?.message ? `Error al cargar servicios extra: ${error?.message}` : "Error al cargar servicios extra");
     } finally {
       setCargandoServicios(false);
     }
@@ -135,7 +135,7 @@ export default function PruebasPage() {
         fetchExamenes();
       }
     } catch (error: any) {
-      toast.error(error?.message || "Error al cambiar estado");
+      toast.error(error?.message ? `Error al cambiar estado: ${error?.message}` : "Error al cambiar estado");
     }
   };
 
@@ -151,7 +151,7 @@ export default function PruebasPage() {
         fetchExamenes();
       }
     } catch (error: any) {
-      toast.error(error?.message || "Error al cambiar estado de la prueba");
+      toast.error(error?.message ? `Error al cambiar estado de la prueba: ${error?.message}` : "Error al cambiar estado de la prueba");
     }
   };
 
@@ -189,7 +189,7 @@ export default function PruebasPage() {
         fetchServicios();
       }
     } catch (error: any) {
-      toast.error(error?.message || "Error al cambiar estado");
+      toast.error(error?.message ? `Error al cambiar estado: ${error?.message}` : "Error al cambiar estado");
     }
   };
 

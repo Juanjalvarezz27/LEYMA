@@ -59,6 +59,6 @@ export async function GET(request: Request, { params }: { params: any }) {
     return NextResponse.json(orden);
   } catch (error: any) {
     console.error("Error al obtener datos del PDF:", error);
-    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
+    return NextResponse.json({ error: `Error interno del servidor: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

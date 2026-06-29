@@ -11,7 +11,7 @@ export async function GET() {
     return NextResponse.json(insumos);
   } catch (error: any) {
     console.error("Error al obtener insumos:", error);
-    return NextResponse.json({ error: "Error al obtener insumos" }, { status: 500 });
+    return NextResponse.json({ error: `Error al obtener insumos: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }
 
@@ -38,6 +38,6 @@ export async function POST(req: Request) {
     return NextResponse.json(nuevoInsumo, { status: 201 });
   } catch (error: any) {
     console.error("Error al crear insumo:", error);
-    return NextResponse.json({ error: "Error al crear insumo" }, { status: 500 });
+    return NextResponse.json({ error: `Error al crear insumo: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

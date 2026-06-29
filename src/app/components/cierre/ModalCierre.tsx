@@ -130,7 +130,7 @@ export default function ModalCierre({ data, tasaBCV, onClose, onSuccess }: Modal
       toast.success("Cierre de caja guardado exitosamente");
       onSuccess();
     } catch (error: any) {
-      toast.error(error.message || "Error al guardar el cierre");
+      toast.error(error.message ? `Error al guardar el cierre: ${error.message}` : "Error al guardar el cierre");
     } finally {
       setGuardandoCierre(false);
     }

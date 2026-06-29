@@ -59,6 +59,6 @@ export async function GET(req: Request) {
     return NextResponse.json(ordenes);
   } catch (error: any) {
     console.error("Error al obtener lista diaria:", error);
-    return NextResponse.json({ error: "Error al cargar las órdenes" }, { status: 500 });
+    return NextResponse.json({ error: `Error al cargar las órdenes: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

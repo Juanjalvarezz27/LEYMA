@@ -18,7 +18,7 @@ export async function GET() {
     return NextResponse.json(paquetes);
   } catch (error: any) {
     console.error("Error al obtener paquetes de insumos:", error);
-    return NextResponse.json({ error: "Error al obtener paquetes" }, { status: 500 });
+    return NextResponse.json({ error: `Error al obtener paquetes: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }
 
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Error al crear paquete de insumos:", error);
     if (error.code === "P2002") {
-      return NextResponse.json({ error: "Ya existe un paquete con ese nombre" }, { status: 400 });
+      return NextResponse.json({ error: `Ya existe un paquete con ese nombre: ${error?.message || 'Desconocido'}` }, { status: 400 });
     }
     return NextResponse.json({ error: "Error al crear el paquete" }, { status: 500 });
   }

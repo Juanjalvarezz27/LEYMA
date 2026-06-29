@@ -76,7 +76,7 @@ export default function PresupuestosPage() {
           setServiciosExtrasCatalogo(dataServicios);
         }
       } catch (e: any) {
-        toast.error(e?.message || "Error al cargar el catálogo de pruebas");
+        toast.error(e?.message ? `Error al cargar el catálogo de pruebas: ${e?.message}` : "Error al cargar el catálogo de pruebas");
       }
     };
     fetchCatalogo();

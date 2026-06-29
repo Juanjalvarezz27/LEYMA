@@ -54,6 +54,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ success: true, orden: ordenActualizada });
   } catch (error: any) {
     console.error("Error al procesar pago:", error);
-    return NextResponse.json({ error: "Error interno al procesar el pago" }, { status: 500 });
+    return NextResponse.json({ error: `Error interno al procesar el pago: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

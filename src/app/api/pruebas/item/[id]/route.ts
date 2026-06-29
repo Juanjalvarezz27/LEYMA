@@ -37,6 +37,6 @@ export async function PUT(
 
     return NextResponse.json(actualizado);
   } catch (error: any) {
-    return NextResponse.json({ error: "Error al actualizar la prueba individual" }, { status: 500 });
+    return NextResponse.json({ error: `Error al actualizar la prueba individual: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

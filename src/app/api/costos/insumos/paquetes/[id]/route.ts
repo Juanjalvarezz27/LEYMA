@@ -47,7 +47,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   } catch (error: any) {
     console.error("Error al actualizar paquete:", error);
     if (error.code === "P2002") {
-      return NextResponse.json({ error: "Ya existe un paquete con ese nombre" }, { status: 400 });
+      return NextResponse.json({ error: `Ya existe un paquete con ese nombre: ${error?.message || 'Desconocido'}` }, { status: 400 });
     }
     return NextResponse.json({ error: "Error al actualizar el paquete" }, { status: 500 });
   }
@@ -62,6 +62,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Error al eliminar paquete:", error);
-    return NextResponse.json({ error: "Error al eliminar el paquete" }, { status: 500 });
+    return NextResponse.json({ error: `Error al eliminar el paquete: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

@@ -63,7 +63,7 @@ export default function MonederoPage() {
       setPaginaActual(1); // Reiniciar a la primera página cuando cambie el período global
       setPaginaActualDescuento(1);
     } catch (error: any) {
-      toast.error(error?.message || "Error al cargar las finanzas");
+      toast.error(error?.message ? `Error al cargar las finanzas: ${error?.message}` : "Error al cargar las finanzas");
     } finally {
       setCargando(false);
     }

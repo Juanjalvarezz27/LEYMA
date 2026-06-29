@@ -26,7 +26,7 @@ export default function ConstanciasPage() {
       const data = await res.json();
       setOrdenes(data);
     } catch (error: any) {
-      toast.error(error?.message || "Error al cargar el historial de órdenes.");
+      toast.error(error?.message ? `Error al cargar el historial de órdenes.: ${error?.message}` : "Error al cargar el historial de órdenes.");
     } finally {
       setCargando(false);
     }

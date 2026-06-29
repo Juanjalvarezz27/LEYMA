@@ -45,7 +45,7 @@ export default function EstadisticasPage() {
       setStats(data);
     } catch (error: any) {
       console.error("Error al cargar métricas:", error);
-      toast.error(error?.message || "Error al cargar las métricas");
+      toast.error(error?.message ? `Error al cargar las métricas: ${error?.message}` : "Error al cargar las métricas");
     } finally {
       setCargando(false);
     }

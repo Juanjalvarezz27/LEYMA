@@ -16,7 +16,7 @@ export async function GET(req: Request) {
     return NextResponse.json(servicios);
   } catch (error: any) {
     console.error("Error al cargar servicios extra:", error);
-    return NextResponse.json({ error: "Error interno al cargar servicios" }, { status: 500 });
+    return NextResponse.json({ error: `Error interno al cargar servicios: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }
 
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Error al crear servicio extra:", error);
     if (error.code === 'P2002') {
-      return NextResponse.json({ error: "Ya existe un servicio extra con ese nombre" }, { status: 400 });
+      return NextResponse.json({ error: `Ya existe un servicio extra con ese nombre: ${error?.message || 'Desconocido'}` }, { status: 400 });
     }
     return NextResponse.json({ error: "Error interno al guardar" }, { status: 500 });
   }

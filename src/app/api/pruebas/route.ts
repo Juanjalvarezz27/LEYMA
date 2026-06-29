@@ -14,7 +14,7 @@ export async function GET() {
     });
     return NextResponse.json(examenes);
   } catch (error: any) {
-    return NextResponse.json({ error: "Error al cargar el catálogo" }, { status: 500 });
+    return NextResponse.json({ error: `Error al cargar el catálogo: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }
 

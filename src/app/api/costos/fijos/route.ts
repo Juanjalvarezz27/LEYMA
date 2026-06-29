@@ -16,7 +16,7 @@ export async function GET() {
     return NextResponse.json(costosFijos);
   } catch (error: any) {
     console.error("Error al obtener costos fijos:", error);
-    return NextResponse.json({ error: "Error al obtener costos fijos" }, { status: 500 });
+    return NextResponse.json({ error: `Error al obtener costos fijos: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }
 
@@ -40,6 +40,6 @@ export async function POST(req: Request) {
     return NextResponse.json(nuevoCosto, { status: 201 });
   } catch (error: any) {
     console.error("Error al crear costo fijo:", error);
-    return NextResponse.json({ error: "Error al crear costo fijo" }, { status: 500 });
+    return NextResponse.json({ error: `Error al crear costo fijo: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

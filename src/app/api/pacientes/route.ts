@@ -22,7 +22,7 @@ export async function GET(req: Request) {
     });
     return NextResponse.json(pacientes);
   } catch (error: any) {
-    return NextResponse.json({ error: "Error al buscar pacientes" }, { status: 500 });
+    return NextResponse.json({ error: `Error al buscar pacientes: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }
 
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("ERROR POST /api/pacientes:", error);
     if (error.code === 'P2002') {
-      return NextResponse.json({ error: "Esta cédula ya está registrada" }, { status: 400 });
+      return NextResponse.json({ error: `Esta cédula ya está registrada: ${error?.message || 'Desconocido'}` }, { status: 400 });
     }
     return NextResponse.json({ error: "Error interno al registrar paciente", details: error.message }, { status: 500 });
   }

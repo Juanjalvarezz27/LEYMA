@@ -82,7 +82,7 @@ export default function ModalRegistrarGasto({ metodosPago, tasaBCV, onClose, onS
       toast.success("Gasto registrado exitosamente.");
       onSuccess();
     } catch (error: any) {
-      toast.error(error?.message || "Ocurrió un error al procesar el gasto.");
+      toast.error(error?.message ? `Ocurrió un error al procesar el gasto.: ${error?.message}` : "Ocurrió un error al procesar el gasto.");
       setGuardando(false);
     }
   };

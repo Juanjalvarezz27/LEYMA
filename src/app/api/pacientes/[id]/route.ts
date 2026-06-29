@@ -25,6 +25,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     return NextResponse.json(pacienteActualizado);
   } catch (error: any) {
     console.error("Error al actualizar paciente:", error);
-    return NextResponse.json({ error: "Error interno al actualizar paciente" }, { status: 500 });
+    return NextResponse.json({ error: `Error interno al actualizar paciente: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

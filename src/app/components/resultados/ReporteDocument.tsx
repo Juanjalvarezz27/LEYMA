@@ -370,7 +370,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
         {/* HEADER */}
         <View style={pdfStyles.header}>
           <View style={pdfStyles.logoRow}>
-            <Image src="/Logo2.png" style={pdfStyles.logoImage} />
+            <Image src={typeof window !== "undefined" ? `${window.location.origin}/Logo2.png` : "/Logo2.png"} style={pdfStyles.logoImage} />
             <View>
               <Text style={pdfStyles.logoTitle}>LEYMA C.A.</Text>
               <Text style={pdfStyles.logoSubtitle}>LABORATORIO CLÍNICO BACTERIOLÓGICO</Text>

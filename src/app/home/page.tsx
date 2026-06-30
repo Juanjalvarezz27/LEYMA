@@ -9,7 +9,9 @@ import {
   Activity, 
   CheckCircle,
   AlertCircle,
-  Microscope
+  Microscope,
+  AlertTriangle,
+  ArrowRight
 } from "lucide-react";
 import useTasaBCV from "../hooks/useTasaBcv";
 
@@ -24,6 +26,9 @@ export default function HomeDashboardPage() {
   
   const [ordenesPendientesResultados, setOrdenesPendientesResultados] = useState<any[]>([]);
   const [cargandoResultados, setCargandoResultados] = useState(true);
+
+  const [faltaCierreAyer, setFaltaCierreAyer] = useState(false);
+  const [fechaFaltante, setFechaFaltante] = useState("");
 
   useEffect(() => {
     const opciones: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -58,8 +63,26 @@ export default function HomeDashboardPage() {
       }
     };
 
+    const fetchCierreAnterior = async () => {
+      try {
+        const res = await fetch('/api/cierre-caja/estado-anterior');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.faltaCierreAnterior && data.fechaFaltante) {
+            setFaltaCierreAyer(true);
+            const dateObj = new Date(`${data.fechaFaltante}T12:00:00`);
+            const fechaFormateada = dateObj.toLocaleDateString('es-VE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            setFechaFaltante(fechaFormateada.charAt(0).toUpperCase() + fechaFormateada.slice(1));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching estado cierre anterior:", error);
+      }
+    };
+
     fetchPendientes();
     fetchResultados();
+    fetchCierreAnterior();
   }, []);
 
   const nombreUsuario = session?.user?.name || "";
@@ -67,6 +90,29 @@ export default function HomeDashboardPage() {
   return (
     <div className="h-full flex flex-col pb-10 overflow-y-auto outline-none pr-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full animate-in fade-in duration-500">
       
+      {/* ALERTA DE CIERRE DE CAJA FALTANTE */}
+      {faltaCierreAyer && (
+        <div className="bg-red-50 border border-red-200 rounded-[32px] p-6 md:p-8 mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500 shrink-0">
+          <div className="flex items-center gap-6">
+            <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center text-red-600 shrink-0">
+              <AlertTriangle size={32} strokeWidth={2.5} />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-red-800 leading-tight mb-1">Cierre de caja pendiente</h3>
+              <p className="text-base text-red-700/80 font-medium">
+                No se ha realizado el cierre del día <span className="font-bold text-red-700">{fechaFaltante}</span>. Es necesario realizarlo para mantener el control.
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => router.push('/home/cierre')}
+            className="shrink-0 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-xl transition-all flex items-center gap-2 shadow-sm hover:shadow-md hover:-translate-y-0.5"
+          >
+            Realizar cierre ahora <ArrowRight size={20} strokeWidth={2.5} />
+          </button>
+        </div>
+      )}
+
       {/* BANNER DE BIENVENIDA */}
       <div className="relative bg-white border border-slate-200/80 rounded-[32px] p-8 md:p-12 mb-8 overflow-hidden shadow-sm shrink-0">
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-50 rounded-full blur-[100px] opacity-80 -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>

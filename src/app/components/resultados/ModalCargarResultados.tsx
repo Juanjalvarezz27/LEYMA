@@ -162,7 +162,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
     const initialSel: Record<string, boolean> = {};
     orden.detalles.forEach((d: any) => {
       if (!d.resultado?.firmado) {
-        initialSel[d.id] = true;
+        initialSel[d.id] = false;
       }
     });
     setSeleccionados(initialSel);
@@ -303,8 +303,12 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
   };
 
   const confirmarFirma = () => {
-    if (!selectedBioanalista) return toast.error("Debe seleccionar una bioanalista.");
-    if (pinFirma.length !== 4) return toast.error("El PIN debe tener 4 dígitos.");
+    if (accionActualModal === "FIRMAR") {
+      if (!selectedBioanalista) return toast.error("Debe seleccionar una bioanalista.");
+      if (pinFirma.length !== 4) return toast.error("El PIN debe tener 4 dígitos.");
+    } else {
+      if (!pinFirma) return toast.error("Debe ingresar la clave maestra.");
+    }
     procesarResultados(accionActualModal, pinFirma);
   };
 
@@ -641,36 +645,57 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
       {/* --- MINI-MODAL SUPERPUESTO (CAPA NEGRA SÓLIDA PARA OSCURECER EL MODAL PRINCIPAL) --- */}
       {showPinModal && (
         <div className="absolute inset-0 z-[150] flex items-center justify-center bg-[#1D1D1F]/80">
-          <div className="bg-white rounded-[24px] shadow-2xl p-8 border border-slate-100 flex flex-col w-full max-w-2xl mx-4 animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-[24px] shadow-2xl p-8 border border-slate-100 flex flex-col w-full max-w-2xl mx-4 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-hidden">
             
-            <div className="flex flex-col items-center border-b border-slate-100 pb-5 mb-5">
-              <div className="w-14 h-14 bg-blue-50 text-[#0071E3] rounded-full flex items-center justify-center mb-3">
-                <Lock size={28} strokeWidth={2.5} />
+            <div className="flex items-center gap-4 border-b border-slate-100 pb-4 mb-4 shrink-0">
+              <div className="w-12 h-12 bg-blue-50 text-[#0071E3] rounded-full flex items-center justify-center shrink-0">
+                <Lock size={24} strokeWidth={2.5} />
               </div>
-              <h3 className="text-xl font-black text-[#1D1D1F]">Autorización Médica</h3>
-              <p className="text-[13px] font-medium text-slate-500 text-center mt-1">
-                Seleccione los exámenes que le corresponden y valide su identidad.
-              </p>
+              <div className="flex flex-col">
+                <h3 className="text-lg font-black text-[#1D1D1F] leading-tight">Autorización Médica</h3>
+                <p className="text-xs font-medium text-slate-500 mt-0.5">
+                  Seleccione los exámenes y valide su identidad.
+                </p>
+              </div>
             </div>
             
             {/* Lista de Exámenes Agrupados (Solo al Firmar, no al Editar para no confundir) */}
             {accionActualModal === "FIRMAR" ? (
-              <div className="mb-6 bg-slate-50 border border-slate-200 rounded-xl p-5 max-h-60 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300">
-                <div className="flex justify-between items-center mb-4">
+              <div className="mb-4 bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col flex-1 min-h-[150px] overflow-hidden">
+                <div className="flex justify-between items-center mb-3 shrink-0">
                   <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest block">Exámenes a Firmar</label>
                   <button onClick={toggleSeleccionTodos} className="text-xs font-bold text-[#0071E3] hover:underline">
                     Seleccionar Todos
                   </button>
                 </div>
                 
-                <div className="space-y-5">
+                <div className="space-y-5 overflow-y-auto min-h-0 pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300">
                   {Object.entries(pendientesAgrupados).map(([cat, dets]: [string, any]) => (
                     <div key={cat} className="space-y-2">
-                      <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-1 mb-2">
-                        {cat}
-                      </h4>
+                      <div className="flex items-center border-b border-slate-200 pb-1.5 mb-2">
+                        <label className="flex items-center gap-2.5 cursor-pointer group w-full">
+                          <input
+                            type="checkbox"
+                            checked={dets.every((d: any) => seleccionados[d.id]) && dets.length > 0}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setSeleccionados(prev => {
+                                const nuevos = { ...prev };
+                                dets.forEach((d: any) => {
+                                  nuevos[d.id] = checked;
+                                });
+                                return nuevos;
+                              });
+                            }}
+                            className="w-4 h-4 rounded text-[#0071E3] border-slate-300 focus:ring-[#0071E3] cursor-pointer"
+                          />
+                          <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest group-hover:text-slate-700 transition-colors">
+                            {cat}
+                          </h4>
+                        </label>
+                      </div>
                       {dets.map((d: any) => (
-                        <label key={d.id} className="flex items-center gap-3 cursor-pointer group p-3 bg-white hover:bg-[#F5F5F7] border border-slate-200 hover:border-slate-300 rounded-xl transition-all shadow-sm">
+                        <label key={d.id} className="flex items-center gap-3 cursor-pointer group p-2.5 bg-white hover:bg-[#F5F5F7] border border-slate-200 hover:border-slate-300 rounded-lg transition-all shadow-sm">
                           <input 
                             type="checkbox" 
                             checked={seleccionados[d.id] || false} 
@@ -678,10 +703,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                             className="w-4 h-4 rounded text-[#0071E3] border-slate-300 focus:ring-[#0071E3] cursor-pointer"
                           />
                           <div className="flex flex-col">
-                            <span className="text-[14px] font-bold text-[#1D1D1F]">{d.prueba.nombre}</span>
-                            <span className="text-[11px] text-slate-400 font-medium">
-                              {d.prueba.subcategoria?.nombre}
-                            </span>
+                            <span className="text-[13px] font-bold text-[#1D1D1F] leading-tight">{d.prueba.nombre}</span>
                           </div>
                         </label>
                       ))}
@@ -690,62 +712,75 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                 </div>
               </div>
             ) : (
-              <div className="mb-6 bg-blue-50/50 border border-blue-100 rounded-xl p-4 text-center">
+              <div className="mb-6 bg-blue-50/50 border border-blue-100 rounded-xl p-4 text-center shrink-0">
                 <p className="text-sm font-medium text-blue-800">
-                  Ingrese sus credenciales para autorizar y registrar la edición de los resultados.
+                  Ingrese la <strong>Clave Maestra</strong> para autorizar y registrar la edición de estos resultados.
+                  <br/>
+                  <span className="text-xs text-blue-600 mt-1 block">Las firmas originales se mantendrán intactas.</span>
                 </p>
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-              <div className="w-full relative" ref={dropdownRef}>
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5 block">Bioanalista</label>
-                <button
-                  type="button"
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="w-full flex items-center justify-between px-4 py-3.5 bg-[#F5F5F7] border border-slate-200 rounded-xl text-[14px] font-bold text-[#1D1D1F] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 text-left"
-                >
-                  <span className="truncate">
-                    {selectedBioanalista ? bioanalistas.find(b => b.id === selectedBioanalista)?.nombre : "Seleccionar"}
-                  </span>
-                  <ChevronDown size={18} className={`text-slate-400 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
-                </button>
-                
-                {dropdownOpen && (
-                  <div className="absolute bottom-full left-0 w-full mb-1 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden py-1 z-50">
-                    <div className="max-h-40 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200">
-                      {bioanalistas.map(bio => (
-                        <button
-                          key={bio.id}
-                          type="button"
-                          onClick={() => { setSelectedBioanalista(bio.id); setDropdownOpen(false); }}
-                          className={`w-full text-left px-5 py-3 text-[14px] font-bold transition-colors ${selectedBioanalista === bio.id ? "bg-[#0071E3]/10 text-[#0071E3]" : "text-slate-600 hover:bg-slate-50"}`}
-                        >
-                          {bio.nombre}
-                        </button>
-                      ))}
+            <div className={`grid ${accionActualModal === "FIRMAR" ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"} gap-4 mb-5 shrink-0`}>
+              
+              {accionActualModal === "FIRMAR" && (
+                <div className="w-full relative" ref={dropdownRef}>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Bioanalista</label>
+                  <button
+                    type="button"
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="w-full flex items-center justify-between px-3 py-2.5 bg-[#F5F5F7] border border-slate-200 rounded-lg text-[13px] font-bold text-[#1D1D1F] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 text-left"
+                  >
+                    <span className="truncate">
+                      {selectedBioanalista ? bioanalistas.find(b => b.id === selectedBioanalista)?.nombre : "Seleccionar"}
+                    </span>
+                    <ChevronDown size={16} className={`text-slate-400 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  
+                  {dropdownOpen && (
+                    <div className="absolute bottom-full left-0 w-full mb-1 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden py-1 z-50">
+                      <div className="max-h-40 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200">
+                        {bioanalistas.map(bio => (
+                          <button
+                            key={bio.id}
+                            type="button"
+                            onClick={() => { setSelectedBioanalista(bio.id); setDropdownOpen(false); }}
+                            className={`w-full text-left px-5 py-3 text-[14px] font-bold transition-colors ${selectedBioanalista === bio.id ? "bg-[#0071E3]/10 text-[#0071E3]" : "text-slate-600 hover:bg-slate-50"}`}
+                          >
+                            {bio.nombre}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
               <div className="w-full">
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5 block text-center">PIN de Firma</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block text-center">
+                  {accionActualModal === "FIRMAR" ? "PIN de Firma" : "Clave Maestra"}
+                </label>
                 <input
                   type="password"
-                  maxLength={4}
+                  maxLength={accionActualModal === "FIRMAR" ? 4 : 50}
                   value={pinFirma}
-                  onChange={(e) => setPinFirma(e.target.value.replace(/\D/g, ""))}
+                  onChange={(e) => {
+                    if (accionActualModal === "FIRMAR") {
+                      setPinFirma(e.target.value.replace(/\D/g, ""));
+                    } else {
+                      setPinFirma(e.target.value);
+                    }
+                  }}
                   placeholder="****"
-                  className="w-full text-center tracking-[0.5em] placeholder:tracking-normal px-4 py-3.5 bg-[#F5F5F7] border border-slate-200 rounded-xl text-xl font-black text-[#1D1D1F] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20"
+                  className={`w-full text-center placeholder:tracking-normal px-3 py-2 bg-[#F5F5F7] border border-slate-200 rounded-lg text-lg font-black text-[#1D1D1F] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 ${accionActualModal === "FIRMAR" ? "tracking-[0.5em]" : "tracking-normal"}`}
                 />
               </div>
             </div>
 
-            <div className="flex gap-4 w-full border-t border-slate-100 pt-6 mt-auto">
-              <button onClick={() => setShowPinModal(false)} className="flex-1 py-3.5 text-[15px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Cancelar</button>
-              <button onClick={confirmarFirma} disabled={guardando} className="flex-1 py-3.5 text-[15px] font-bold text-white bg-[#0071E3] hover:bg-[#0077ED] rounded-xl transition-colors shadow-[0_4px_12px_rgba(0,113,227,0.25)] flex justify-center items-center gap-2 hover:-translate-y-0.5 active:translate-y-0">
-                {guardando ? <Loader2 size={20} className="animate-spin" /> : <FileSignature size={20} strokeWidth={2.5}/>}
+            <div className="flex gap-3 w-full border-t border-slate-100 pt-4 mt-auto shrink-0">
+              <button onClick={() => setShowPinModal(false)} className="flex-1 py-2.5 text-[14px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Cancelar</button>
+              <button onClick={confirmarFirma} disabled={guardando} className="flex-1 py-2.5 text-[14px] font-bold text-white bg-[#0071E3] hover:bg-[#0077ED] rounded-lg transition-colors shadow-[0_4px_12px_rgba(0,113,227,0.25)] flex justify-center items-center gap-2 hover:-translate-y-0.5 active:translate-y-0">
+                {guardando ? <Loader2 size={18} className="animate-spin" /> : <FileSignature size={18} strokeWidth={2.5}/>}
                 {accionActualModal === "FIRMAR" ? "Firmar Seleccionados" : "Confirmar Edición"}
               </button>
             </div>

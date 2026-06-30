@@ -23,8 +23,13 @@ export async function POST(req: Request) {
     let validadorId = usuarioSesion.id;
     let validacionActiva = false;
 
-    // Si la acción es FIRMAR o EDITAR, verificamos quién es la bioanalista y si su PIN es correcto
-    if (accion === "FIRMAR" || accion === "EDITAR") {
+    if (accion === "EDITAR") {
+      if (!pin) return NextResponse.json({ error: "Falta la clave maestra." }, { status: 400 });
+      if (pin !== process.env.CLAVE_MAESTRA) {
+        return NextResponse.json({ error: "Clave maestra incorrecta." }, { status: 403 });
+      }
+      validacionActiva = true;
+    } else if (accion === "FIRMAR") {
       if (!pin || !bioanalistaId) return NextResponse.json({ error: "Faltan credenciales de validación." }, { status: 400 });
       
       const bioanalista = await prisma.usuario.findFirst({ 
@@ -52,17 +57,21 @@ export async function POST(req: Request) {
         if (currentRes?.firmado && accion !== "EDITAR") continue;
 
         // Determinamos si ESTE examen específico debe ser firmado en esta pasada
-        // Si es edición, permitiremos que todos los enviados se guarden
+        // Si es edición, permitiremos que todos los enviados se guarden sin cambiar las firmas originales
         const debeFirmarEste = validacionActiva && (res.marcadoParaFirma || accion === "EDITAR");
+
+        const nextUsuarioId = accion === "EDITAR" ? (currentRes?.usuarioId || usuarioSesion.id) : (debeFirmarEste ? validadorId : (currentRes?.usuarioId || usuarioSesion.id));
+        const nextFirmado = accion === "EDITAR" ? (currentRes?.firmado ?? true) : (debeFirmarEste ? true : (currentRes?.firmado || false));
+        const nextFecha = accion === "EDITAR" ? (currentRes?.fechaProcesado || new Date()) : (debeFirmarEste ? new Date() : (currentRes?.fechaProcesado || new Date()));
 
         await tx.resultadoPrueba.upsert({
           where: { detalleOrdenId: res.detalleOrdenId },
           update: {
             observaciones: res.observaciones || null,
             valoresReferencia: res.valoresReferencia || null,
-            usuarioId: debeFirmarEste ? validadorId : (currentRes?.usuarioId || usuarioSesion.id),
-            firmado: debeFirmarEste ? true : (currentRes?.firmado || false),
-            fechaProcesado: debeFirmarEste ? new Date() : (currentRes?.fechaProcesado || new Date()),
+            usuarioId: nextUsuarioId,
+            firmado: nextFirmado,
+            fechaProcesado: nextFecha,
             valores: {
               deleteMany: {}, 
               create: res.valores.map((v: any) => ({
@@ -73,11 +82,11 @@ export async function POST(req: Request) {
           },
           create: {
             detalleOrdenId: res.detalleOrdenId,
-            usuarioId: debeFirmarEste ? validadorId : usuarioSesion.id,
-            firmado: debeFirmarEste,
+            usuarioId: nextUsuarioId,
+            firmado: nextFirmado,
             observaciones: res.observaciones || null,
             valoresReferencia: res.valoresReferencia || null,
-            fechaProcesado: new Date(),
+            fechaProcesado: nextFecha,
             valores: {
               create: res.valores.map((v: any) => ({
                 pruebaId: v.pruebaId,

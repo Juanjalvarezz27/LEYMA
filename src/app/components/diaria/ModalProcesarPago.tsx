@@ -53,7 +53,7 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
   };
 
   const procesarPagoFinal = async () => {
-    if (restanteUSD > 0.05) {
+    if (restanteUSD > 0.005) {
       toast.error(`Faltan $${restanteUSD.toFixed(2)} por cobrar.`);
       return;
     }
@@ -152,16 +152,21 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
           )}
 
 
-          <div className="flex justify-between items-center mb-5">
-            <div className="flex items-center gap-3">
-               <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Nuevos Pagos</label>
-               {restanteUSD > 0 ? (
-                 <span className="px-3 py-1 bg-orange-100 text-orange-600 rounded-md text-[11px] font-bold flex items-center gap-1.5 border border-orange-200 uppercase tracking-wider">
-                   <AlertCircle size={14} /> Falta: ${restanteUSD.toFixed(2)} (Bs. {restanteBS.toFixed(2)})
+          <div className="flex justify-between items-center mb-5 flex-wrap gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
+               <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Nuevos Pagos</label>
+               
+               <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded-md text-[13px] font-bold border border-blue-100 shadow-sm">
+                 Total a pagar: ${Math.max(0, totalFacturadoUSD - pagosPreviosUSD).toFixed(2)} / Bs {(Math.max(0, totalFacturadoUSD - pagosPreviosUSD) * orden.tasaBCV).toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+               </span>
+
+               {restanteBS > 0.01 ? (
+                 <span className="px-2.5 py-1 bg-orange-100 text-orange-600 rounded-md text-[13px] font-bold flex items-center gap-1.5 border border-orange-200 shadow-sm">
+                   <AlertCircle size={14} strokeWidth={2.5} /> Restante: ${restanteUSD.toFixed(2)} / Bs {restanteBS.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                  </span>
                ) : (
-                 <span className="px-3 py-1 bg-green-100 text-green-600 rounded-md text-[11px] font-bold flex items-center gap-1.5 border border-green-200 uppercase tracking-wider">
-                   <CheckCircle size={14} /> Cubierto
+                 <span className="px-2.5 py-1 bg-green-100 text-green-600 rounded-md text-[13px] font-bold flex items-center gap-1.5 border border-green-200 shadow-sm">
+                   <CheckCircle size={14} strokeWidth={2.5} /> Total Cubierto
                  </span>
                )}
             </div>
@@ -186,7 +191,20 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
                   {dropdownAbierto === idx && (
                     <div className="absolute top-full left-0 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] overflow-hidden z-[110] py-1 animate-in slide-in-from-top-2 duration-200">
                       {metodosBD.map((m) => (
-                        <button key={m.id} type="button" onClick={() => { actualizarPago(idx, "metodoId", m.id); setDropdownAbierto(null); }} className={`w-full text-left px-4 py-3 text-[15px] font-semibold hover:bg-slate-100 transition-colors ${pago.metodoId === m.id ? 'bg-[#0071E3] text-white hover:bg-[#0071E3]' : 'text-[#1D1D1F]'}`}>
+                        <button 
+                          key={m.id} 
+                          type="button" 
+                          onClick={() => {
+                            const esBs = ["PAGO_MOVIL", "PUNTO_VENTA", "EFECTIVO_BS"].includes(m.nombre);
+                            const nuevaMoneda = esBs ? "BS" : "USD";
+                            
+                            const nuevosPagos = [...pagos];
+                            nuevosPagos[idx] = { ...nuevosPagos[idx], metodoId: m.id, moneda: nuevaMoneda };
+                            setPagos(nuevosPagos);
+                            setDropdownAbierto(null);
+                          }} 
+                          className={`w-full text-left px-4 py-3 text-[15px] font-semibold hover:bg-slate-100 transition-colors ${pago.metodoId === m.id ? 'bg-[#0071E3] text-white hover:bg-[#0071E3]' : 'text-[#1D1D1F]'}`}
+                        >
                           {formatMetodoPago(m.nombre)}
                         </button>
                       ))}
@@ -194,8 +212,16 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
                   )}
                 </div>
 
-                <div className="flex bg-[#F5F5F7] border border-slate-200 rounded-xl overflow-hidden w-48 shrink-0 h-[48px]">
-                  <button type="button" onClick={() => actualizarPago(idx, "moneda", pago.moneda === "USD" ? "BS" : "USD")} className={`px-3 font-black text-[12px] transition-colors border-r border-slate-200 w-12 flex items-center justify-center shrink-0 ${pago.moneda === "USD" ? 'bg-[#0071E3]/10 text-[#0071E3]' : 'bg-orange-100 text-orange-600'}`}>
+                <div className="flex bg-[#F5F5F7] border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[#0071E3]/20 w-40 shrink-0">
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      const mName = metodosBD.find(m => m.id === pago.metodoId)?.nombre || "";
+                      if (["PAGO_MOVIL", "PUNTO_VENTA", "EFECTIVO_BS"].includes(mName)) return; // Force BS
+                      if (["EFECTIVO_USD", "ZELLE", "BINANCE"].includes(mName)) return; // Force USD
+                      actualizarPago(idx, "moneda", pago.moneda === "USD" ? "BS" : "USD");
+                    }} 
+                    className={`px-3 font-bold text-[13px] transition-colors border-r border-slate-200 w-12 flex items-center justify-center shrink-0 ${pago.moneda === "USD" ? 'bg-[#0071E3]/10 text-[#0071E3]' : 'bg-orange-100 text-orange-600'}`}>
                     {pago.moneda === "USD" ? "$" : "Bs"}
                   </button>
                   <input type="number" min="0" step="any" placeholder="0.00" value={pago.monto || ""} onChange={(e) => actualizarPago(idx, "monto", Number(e.target.value))} className="w-full px-3 py-2 bg-transparent text-[15px] font-bold text-[#1D1D1F] outline-none" />
@@ -214,7 +240,7 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
 
           <button 
             onClick={procesarPagoFinal}
-            disabled={guardando || restanteUSD > 0.05}
+            disabled={guardando || restanteUSD > 0.005}
             className="w-full py-4 bg-[#0071E3] hover:bg-[#0077ED] disabled:bg-slate-300 text-white font-black rounded-xl shadow-[0_4px_20px_rgba(0,113,227,0.3)] transition-all flex items-center justify-center gap-2 text-lg"
           >
             {guardando ? <><Loader2 size={22} className="animate-spin" /> Procesando...</> : <><CheckCircle size={22} /> Certificar Pago y Cerrar Orden</>}

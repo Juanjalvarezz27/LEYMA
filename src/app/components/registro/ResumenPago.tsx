@@ -175,20 +175,28 @@ export default function ResumenPago({
                     )}
                   </span>
 
-                  {p.tipo === "PAQUETE" && p.pruebasHijas && (
-                    <div className="mt-2.5 bg-[#F5F5F7]/80 rounded-xl p-3.5 w-full lg:max-w-[90%]">
-                       <p className="text-[13px] text-slate-500 leading-relaxed font-medium">
-                         <span className="font-bold text-[#1D1D1F]">Incluye:</span> {p.pruebasHijas.map((ph: any) => ph.nombre).join(', ')}
-                       </p>
-                    </div>
-                  )}
-
                   <span className="text-sm font-bold text-slate-600 mt-2">
                     {p.cantidad} x ${p.precioUSD.toFixed(2)}
                     <span className="ml-1.5 opacity-70 font-black bg-slate-100 px-1.5 py-0.5 rounded-md">
                       (Bs {(p.precioUSD * tasaBCV).toLocaleString('es-VE', {minimumFractionDigits: 2})})
                     </span>
                   </span>
+
+                  {p.tipo === "PAQUETE" && p.pruebasHijas && (
+                    <details className="mt-2.5 bg-[#F5F5F7]/80 rounded-xl w-full lg:max-w-[90%] group">
+                      <summary className="p-3.5 cursor-pointer text-[13px] font-bold text-[#1D1D1F] list-none flex items-center gap-2 select-none hover:text-[#0071E3] transition-colors">
+                        <span className="flex-1">Incluye {p.pruebasHijas.length} pruebas</span>
+                        <div className="w-5 h-5 rounded-full bg-slate-200/50 flex items-center justify-center group-open:rotate-180 transition-transform">
+                          <ChevronDown size={14} strokeWidth={3} />
+                        </div>
+                      </summary>
+                      <div className="px-3.5 pb-3.5 pt-0 border-t border-slate-200/50 mt-1">
+                         <p className="text-[13px] text-slate-500 leading-relaxed font-medium pt-2">
+                           {p.pruebasHijas.map((ph: any) => ph.nombre).join(', ')}
+                         </p>
+                      </div>
+                    </details>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-end gap-5 w-full lg:w-auto mt-3 lg:mt-0 border-t lg:border-0 border-slate-100 pt-4 lg:pt-0">
@@ -269,6 +277,41 @@ export default function ResumenPago({
                   </span>
                   <ChevronDown size={18} strokeWidth={2.5} className={`text-slate-400 transition-transform ${dropdownAbierto === idx ? 'rotate-180' : ''}`} />
                 </button>
+
+                {dropdownAbierto === idx && (
+                  <div className="absolute top-full left-0 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] overflow-hidden z-50 py-1">
+                    {metodosBD.map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => {
+                          const esBs = ["PAGO_MOVIL", "PUNTO_VENTA", "EFECTIVO_BS"].includes(m.nombre);
+                          const nuevaMoneda = esBs ? "BS" : "USD";
+                          
+                          const nuevosPagos = [...pagos];
+                          nuevosPagos[idx] = { ...nuevosPagos[idx], metodoId: m.id, moneda: nuevaMoneda };
+                          setPagos(nuevosPagos);
+                          setDropdownAbierto(null);
+                        }}
+                        className={`w-full text-left px-4 py-3 text-[13px] font-bold hover:bg-slate-50 transition-colors ${pago.metodoId === m.id ? 'bg-[#0071E3]/10 text-[#0071E3]' : 'text-[#1D1D1F]'}`}
+                      >
+                        {formatMetodoPago(m.nombre)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex bg-[#F5F5F7] border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[#0071E3]/20 w-40 lg:w-48 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const mName = metodosBD.find(m => m.id === pago.metodoId)?.nombre || "";
+                    if (["PAGO_MOVIL", "PUNTO_VENTA", "EFECTIVO_BS"].includes(mName)) return; // Force BS
+                    if (["EFECTIVO_USD", "ZELLE", "BINANCE"].includes(mName)) return; // Force USD
+                    actualizarPago(idx, "moneda", pago.moneda === "USD" ? "BS" : "USD");
+                  }}
+                  className={`px-3 font-black text-xs transition-colors border-r border-slate-200 w-12 flex items-center justify-center shrink-0
 
                 {dropdownAbierto === idx && (
                   <div className="absolute top-full left-0 mt-2 w-full bg-white/95 backdrop-blur-xl border border-slate-200 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100 py-1.5">

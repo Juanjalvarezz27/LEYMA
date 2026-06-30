@@ -19,7 +19,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         tipoDescuento: { select: { nombre: true } },
         detalles: {
           include: {
-            prueba: true,
+            prueba: {
+              include: {
+                subcategoria: {
+                  include: {
+                    categoria: true
+                  }
+                }
+              }
+            },
             tipoDescuento: { select: { nombre: true } }
           }
         },

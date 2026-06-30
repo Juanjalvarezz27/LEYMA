@@ -220,9 +220,11 @@ export default function PacientesPage() {
                           <div className="w-full">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Exámenes Realizados</p>
                             <div className="flex flex-wrap gap-2">
-                              {orden.detalles.map((det: any) => (
-                                <span key={det.id} className="text-[11px] font-bold text-slate-600 bg-[#F5F5F7] border border-slate-200 px-2.5 py-1 rounded-md">
-                                  {det.prueba?.subcategoria?.esPaquete ? det.prueba.subcategoria.nombre : det.prueba.nombre}
+                              {Array.from(new Set(orden.detalles.map((det: any) => 
+                                det.prueba?.subcategoria?.esPaquete ? det.prueba.subcategoria.nombre : det.prueba.nombre
+                              ))).map((nombreItem: any, idx: number) => (
+                                <span key={idx} className="text-[11px] font-bold text-slate-600 bg-[#F5F5F7] border border-slate-200 px-2.5 py-1 rounded-md">
+                                  {nombreItem}
                                 </span>
                               ))}
                             </div>

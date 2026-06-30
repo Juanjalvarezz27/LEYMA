@@ -89,8 +89,13 @@ export default function ModalCierre({ data, tasaBCV, onClose, onSuccess }: Modal
     ? Object.values(declaradosPorMetodo).reduce((sum, val) => sum + (parseFloat(val.bs) || 0), 0)
     : parseFloat(declaradoGlobalBS || "0");
 
+  const totalEsperadoBS = data?.desglosesCaja?.length > 0 
+    ? data.desglosesCaja.reduce((sum: number, box: any) => sum + (box.netoUSD * (tasaBCV || 1)), 0)
+    : (calculoUSD * (tasaBCV || 1));
+
   const descuadreCalculadoUSD = Math.round((totalDeclaradoDinamicamenteUSD - calculoUSD) * 100) / 100;
-  const esCuadrePerfecto = descuadreCalculadoUSD === 0;
+  const descuadreCalculadoBS = Math.round((totalDeclaradoDinamicamenteBS - totalEsperadoBS) * 100) / 100;
+  const esCuadrePerfecto = descuadreCalculadoUSD === 0 && descuadreCalculadoBS === 0;
 
   const ejecutarCierre = async () => {
     if (data?.desglosesCaja?.length > 0) {
@@ -139,7 +144,7 @@ export default function ModalCierre({ data, tasaBCV, onClose, onSuccess }: Modal
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-[#111827]/80 transition-opacity" onClick={() => !guardandoCierre && onClose()}></div>
-      <div className="relative w-full max-w-5xl bg-white rounded-[32px] shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden max-h-[90vh]">
+      <div className="relative w-full max-w-4xl bg-white rounded-[32px] shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden max-h-[90vh]">
         <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100 bg-slate-50/50 shrink-0">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
@@ -147,25 +152,25 @@ export default function ModalCierre({ data, tasaBCV, onClose, onSuccess }: Modal
             </div>
             <div>
               <h2 className="text-xl font-extrabold text-[#111827]">Cuadre de Turno</h2>
-              <p className="text-sm font-bold text-slate-500">Sistema espera global: {formatMoney(calculoUSD)}</p>
+              <p className="text-sm font-bold text-slate-500">Sistema espera global: <span className="text-emerald-600 font-black">{formatMoney(calculoUSD)}</span> / <span className="text-[#111827] font-black">{formatMoney(totalEsperadoBS, true)}</span></p>
             </div>
           </div>
           <button onClick={onClose} disabled={guardandoCierre} className="p-2 text-slate-400 hover:bg-slate-200 rounded-full transition-all"><X size={20} /></button>
         </div>
         
         <div className="p-8 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="flex flex-col gap-8">
             
-            {/* Columna Izquierda: Entradas de dinero */}
+            {/* Sección Superior: Entradas de dinero */}
             <div className="flex flex-col gap-4">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block">Declare Montos por Método</label>
               {data?.desglosesCaja?.length > 0 ? (
-                <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {data.desglosesCaja.map((box: any) => (
                     <div key={box.nombre} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl transition-all hover:border-indigo-100 hover:shadow-md hover:bg-white">
                       <div className="flex justify-between items-center mb-3">
                         <h4 className="text-sm font-extrabold text-[#111827] uppercase tracking-wide">{formatearMetodo(box.nombre)}</h4>
-                        <span className="text-xs font-bold text-slate-400">Esperado: <strong className="text-slate-600">{formatMoney(box.netoUSD)}</strong></span>
+                        <span className="text-xs font-bold text-slate-400">Esperado: <strong className="text-emerald-600">{formatMoney(box.netoUSD)}</strong> <span className="mx-0.5">/</span> <strong className="text-[#111827]">{formatMoney(box.netoUSD * (tasaBCV || 1), true)}</strong></span>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="relative">
@@ -197,45 +202,66 @@ export default function ModalCierre({ data, tasaBCV, onClose, onSuccess }: Modal
               )}
             </div>
             
-            {/* Columna Derecha: Totales y Acciones */}
-            <div className="flex flex-col gap-6">
+            {/* Sección Inferior: Resumen y Acciones */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
               
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Resumen Declarado</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-bold text-slate-600">Total en Dólares:</span>
-                    <span className="text-2xl font-black text-[#111827]">{formatMoney(totalDeclaradoDinamicamenteUSD)}</span>
+              {/* Inferior Izquierda: Resumen y Alerta */}
+              <div className="flex flex-col gap-5">
+                {(totalDeclaradoDinamicamenteUSD > 0 || totalDeclaradoDinamicamenteBS > 0 || declaradoGlobalUSD === "0" || data?.desglosesCaja?.length === 0) && (
+                  <div className={`p-5 rounded-2xl border flex items-start gap-4 ${esCuadrePerfecto ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                    {esCuadrePerfecto ? <CheckCircle size={28} className="shrink-0" /> : <AlertTriangle size={28} className="shrink-0" />}
+                    <div>
+                      <h4 className="text-base font-extrabold">{esCuadrePerfecto ? 'Cuadre Global Perfecto' : 'Descuadre Detectado en Totales'}</h4>
+                      <p className="text-sm font-bold opacity-80 mt-1">
+                        Total: <span className="text-emerald-600">{formatMoney(totalDeclaradoDinamicamenteUSD)}</span> | Dif: <span className={descuadreCalculadoUSD === 0 ? '' : 'text-emerald-600 font-bold'}>{descuadreCalculadoUSD !== 0 ? (descuadreCalculadoUSD > 0 ? '+' : '') + formatMoney(descuadreCalculadoUSD) : '$0.00'}</span> <span className="text-slate-400 font-normal">/</span> <span className={descuadreCalculadoBS === 0 ? 'text-[#111827]' : 'text-[#111827] font-extrabold'}>{descuadreCalculadoBS !== 0 ? (descuadreCalculadoBS > 0 ? '+' : '') + formatMoney(descuadreCalculadoBS, true) : 'Bs 0.00'}</span>
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-bold text-slate-600">Equivalente en Bs:</span>
-                    <span className="text-base font-black text-slate-500">{formatMoney(totalDeclaradoDinamicamenteBS, true)}</span>
+                )}
+
+                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Resumen Declarado</h3>
+                  <div className="space-y-3">
+                    {data?.desglosesCaja?.length > 0 ? data.desglosesCaja.map((box: any) => {
+                      const dec = declaradosPorMetodo[box.nombre];
+                      if (!dec || (parseFloat(dec.usd) === 0 && parseFloat(dec.bs) === 0 && !dec.usd && !dec.bs)) return null;
+                      return (
+                        <div key={box.nombre} className="flex justify-between items-center text-sm border-b border-slate-100 pb-2">
+                          <span className="font-semibold text-slate-500">{formatearMetodo(box.nombre)}</span>
+                          <span className="font-bold text-[#111827]">
+                            <span className="text-emerald-600">{formatMoney(parseFloat(dec.usd) || 0)}</span> <span className="mx-0.5 text-slate-400">/</span> <span className="text-[#111827] font-black">{formatMoney(parseFloat(dec.bs) || 0, true)}</span>
+                          </span>
+                        </div>
+                      );
+                    }) : (
+                      <div className="flex justify-between items-center text-sm border-b border-slate-100 pb-2">
+                        <span className="font-semibold text-slate-500">Global</span>
+                        <span className="font-bold text-[#111827]">
+                          <span className="text-emerald-600">{formatMoney(parseFloat(declaradoGlobalUSD) || 0)}</span> <span className="mx-0.5 text-slate-400">/</span> <span className="text-[#111827] font-black">{formatMoney(parseFloat(declaradoGlobalBS) || 0, true)}</span>
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center pt-2">
+                      <span className="text-sm font-bold text-slate-600">Total USD / BS:</span>
+                      <span className="text-xl font-black text-[#111827]"><span className="text-emerald-600">{formatMoney(totalDeclaradoDinamicamenteUSD)}</span> <span className="mx-1 text-slate-300">/</span> <span className="text-base text-[#111827]">{formatMoney(totalDeclaradoDinamicamenteBS, true)}</span></span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {(totalDeclaradoDinamicamenteUSD > 0 || totalDeclaradoDinamicamenteBS > 0 || declaradoGlobalUSD === "0" || data?.desglosesCaja?.length === 0) && (
-                <div className={`p-5 rounded-2xl border flex items-start gap-4 ${esCuadrePerfecto ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
-                  {esCuadrePerfecto ? <CheckCircle size={28} className="shrink-0" /> : <AlertTriangle size={28} className="shrink-0" />}
-                  <div>
-                    <h4 className="text-base font-extrabold">{esCuadrePerfecto ? 'Cuadre Global Perfecto' : 'Descuadre Detectado en Totales'}</h4>
-                    <p className="text-sm font-bold opacity-80 mt-1">
-                      Físico Total: {formatMoney(totalDeclaradoDinamicamenteUSD)} | Diferencia: {descuadreCalculadoUSD > 0 ? '+' : ''}{formatMoney(descuadreCalculadoUSD)}
-                    </p>
-                  </div>
+              {/* Inferior Derecha: Observaciones y Acciones */}
+              <div className="flex flex-col gap-5">
+                <div className="flex-1 flex flex-col">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Observaciones / Notas de Cierre</label>
+                  <textarea value={obsCierre} onChange={(e) => setObsCierre(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-[#111827] outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all flex-1 min-h-[120px] resize-none" placeholder="Motivo del descuadre o nota adicional para el reporte..."></textarea>
                 </div>
-              )}
 
-              <div className="flex-1 flex flex-col">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Observaciones / Notas de Cierre</label>
-                <textarea value={obsCierre} onChange={(e) => setObsCierre(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-[#111827] outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all flex-1 min-h-[120px] resize-none" placeholder="Motivo del descuadre o nota adicional para el reporte..."></textarea>
+                <button onClick={ejecutarCierre} disabled={guardandoCierre} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white text-base font-extrabold rounded-2xl transition-all shadow-xl shadow-indigo-200 flex items-center justify-center gap-2 shrink-0 mt-auto hover:scale-[1.02] active:scale-[0.98]">
+                  {guardandoCierre ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} />} Confirmar y Cerrar Turno
+                </button>
               </div>
 
-              <button onClick={ejecutarCierre} disabled={guardandoCierre} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white text-base font-extrabold rounded-2xl transition-all shadow-xl shadow-indigo-200 flex items-center justify-center gap-2 shrink-0 mt-auto hover:scale-[1.02] active:scale-[0.98]">
-                {guardandoCierre ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} />} Confirmar y Cerrar Turno
-              </button>
             </div>
-
           </div>
         </div>
       </div>

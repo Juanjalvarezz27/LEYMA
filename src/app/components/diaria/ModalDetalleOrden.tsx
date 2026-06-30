@@ -1,6 +1,6 @@
 "use client";
 
-import { X, FileText, User, Activity, Wallet, Calendar, MapPin, Mail, Stethoscope, Hash, FlaskConical, Package, Syringe } from "lucide-react";
+import { X, FileText, User, Activity, Wallet, Calendar, MapPin, Mail, Stethoscope, Hash, FlaskConical, Package, Syringe, ChevronDown } from "lucide-react";
 
 interface ModalDetalleOrdenProps {
   orden: any;
@@ -235,13 +235,7 @@ export default function ModalDetalleOrden({ orden, onClose }: ModalDetalleOrdenP
                           )}
                         </h4>
                         
-                        {item.isPaquete ? (
-                          <div className="mt-2.5 bg-[#F5F5F7]/80 rounded-xl p-3 w-full max-w-2xl">
-                             <p className="text-xs text-slate-500 leading-snug font-medium">
-                               <span className="font-bold text-slate-700">Incluye:</span> {item.pruebasHijas.map((ph: any) => ph.nombre).join(', ')}
-                             </p>
-                          </div>
-                        ) : (
+                        {!item.isPaquete && (
                           <span className="text-[#0071E3] text-[10px] font-black uppercase tracking-widest mt-1.5">
                             {item.codigo}
                           </span>
@@ -274,7 +268,22 @@ export default function ModalDetalleOrden({ orden, onClose }: ModalDetalleOrdenP
                         <p className="text-[11px] font-bold text-slate-500 mt-1">Bs {subtotalItemBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}</p>
                       </div>
                     </div>
-
+                    {/* DROP DOWN AL FONDO */}
+                    {item.isPaquete && (
+                      <details className="mt-4 bg-[#F5F5F7]/80 rounded-xl w-full group">
+                        <summary className="p-3 cursor-pointer text-xs font-bold text-slate-700 list-none flex items-center gap-2 select-none hover:text-[#0071E3] transition-colors">
+                          <span className="flex-1">Incluye {item.pruebasHijas.length} pruebas</span>
+                          <div className="w-5 h-5 rounded-full bg-slate-200/50 flex items-center justify-center group-open:rotate-180 transition-transform">
+                            <ChevronDown size={14} strokeWidth={3} />
+                          </div>
+                        </summary>
+                        <div className="px-3 pb-3 pt-0 border-t border-slate-200/50 mt-1">
+                           <p className="text-xs text-slate-500 leading-snug font-medium pt-2">
+                             {item.pruebasHijas.map((ph: any) => ph.nombre).join(', ')}
+                           </p>
+                        </div>
+                      </details>
+                    )}
                   </div>
                 );
               })}

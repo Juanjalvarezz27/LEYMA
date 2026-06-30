@@ -114,17 +114,52 @@ function RegistroContent() {
 
           if (res.ok && orden) {
             setPacienteSeleccionado(orden.paciente);
-            setPruebasSeleccionadas(orden.detalles.map((d: any) => ({
-              ...d.prueba,
-              idReal: d.prueba.id,
-              tipo: "INDIVIDUAL", 
-              cantidad: d.cantidad,
-              precioUSD: d.precioCongeladoUSD,
-              descInd: d.descuento,
-              tipoDescInd: d.tipoDescuento?.nombre || "PORCENTAJE",
-              categoriaNombre: d.prueba?.subcategoria?.categoria?.nombre || "Desconocida",
-              subcategoriaNombre: d.prueba?.subcategoria?.nombre || "Desconocida"
-            })));
+            const pruebasReconstruidas: any[] = [];
+            const paquetesMap = new Map<string, any>();
+
+            orden.detalles.forEach((d: any) => {
+              if (d.prueba?.subcategoria?.esPaquete) {
+                const subcatId = d.prueba.subcategoria.id;
+                if (!paquetesMap.has(subcatId)) {
+                  paquetesMap.set(subcatId, {
+                    tipo: "PAQUETE",
+                    id: subcatId,
+                    codigo: d.prueba.codigo.split('-')[0] || "PK",
+                    nombre: d.prueba.subcategoria.nombre,
+                    precioUSD: d.precioCongeladoUSD || 0,
+                    descInd: d.descuento || 0,
+                    tipoDescInd: d.tipoDescuento?.nombre || "PORCENTAJE",
+                    cantidad: d.cantidad || 1,
+                    pruebasHijas: [d.prueba],
+                    categoriaNombre: d.prueba.subcategoria.categoria?.nombre || "S/C",
+                    subcategoriaNombre: d.prueba.subcategoria.nombre
+                  });
+                } else {
+                  const paq = paquetesMap.get(subcatId);
+                  paq.pruebasHijas.push(d.prueba);
+                  if (d.precioCongeladoUSD > 0) {
+                    paq.precioUSD = d.precioCongeladoUSD;
+                    paq.descInd = d.descuento || 0;
+                    paq.tipoDescInd = d.tipoDescuento?.nombre || "PORCENTAJE";
+                  }
+                }
+              } else {
+                pruebasReconstruidas.push({
+                  ...d.prueba,
+                  idReal: d.prueba.id,
+                  tipo: "INDIVIDUAL", 
+                  cantidad: d.cantidad,
+                  precioUSD: d.precioCongeladoUSD,
+                  descInd: d.descuento,
+                  tipoDescInd: d.tipoDescuento?.nombre || "PORCENTAJE",
+                  categoriaNombre: d.prueba?.subcategoria?.categoria?.nombre || "Desconocida",
+                  subcategoriaNombre: d.prueba?.subcategoria?.nombre || "Desconocida"
+                });
+              }
+            });
+
+            paquetesMap.forEach(paq => pruebasReconstruidas.push(paq));
+            setPruebasSeleccionadas(pruebasReconstruidas);
 
             // Cargar servicios extra de la orden si los hay
             if (orden.serviciosExtra && orden.serviciosExtra.length > 0) {
@@ -260,7 +295,7 @@ function RegistroContent() {
   };
 
   const finalizarOrden = async (resumenData: any) => {
-    if (resumenData.estado === "CERRADA" && resumenData.restanteUSD > 0.05) {
+    if (resumenData.estado === "CERRADA" && resumenData.restanteUSD > 0.005) {
       toast.error(`La orden no puede ser CERRADA con saldo pendiente.`);
       return;
     }

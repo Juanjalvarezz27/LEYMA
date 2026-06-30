@@ -336,7 +336,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
         <View style={pdfStyles.topContact}>
           <Text style={pdfStyles.topContactText}>DIRECCIÓN: AVENIDA CORO, LOCAL 4-79, SECTOR SANTA ROSA.</Text>
           <View style={pdfStyles.topContactRight}>
-            <Text style={pdfStyles.topContactText}>TELÉFONO: 0422 - 8164371</Text>
+            <Text style={pdfStyles.topContactText}>TELÉFONO: 04220353660</Text>
             <Text style={pdfStyles.topContactText}>CORREO: LABORATORIOLEYMA@GMAIL.COM</Text>
             <Text style={pdfStyles.topContactText}>RIF: J - 508463315</Text>
           </View>

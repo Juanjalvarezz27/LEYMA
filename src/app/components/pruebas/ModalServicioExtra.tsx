@@ -53,7 +53,7 @@ export default function ModalServicioExtra({ isOpen, onClose, onSave, itemEditar
               )}
             </p>
           </div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-colors">
+          <button onClick={onClose} className="p-2 text-slate-500 bg-slate-100 hover:text-slate-700 hover:bg-slate-200 rounded-full transition-colors">
             <X size={20} strokeWidth={2.5} />
           </button>
         </div>

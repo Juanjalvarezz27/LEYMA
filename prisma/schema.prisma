@@ -137,6 +137,7 @@ model Orden {
   pagos                 Pago[]
   detalles              DetalleOrden[]
   serviciosExtra        ServicioEnOrden[]
+  notasSubcategoria     NotaSubcategoriaOrden[]
 }
 
 model DetalleOrden {
@@ -312,4 +313,14 @@ model SubcategoriaInsumo {
   cantidadUsada      Float
 
   @@unique([subcategoriaId, insumoId])
+}
+
+model NotaSubcategoriaOrden {
+  id             String @id @default(cuid())
+  ordenId        Int
+  orden          Orden  @relation(fields: [ordenId], references: [id], onDelete: Cascade)
+  subcategoria   String 
+  nota           String @db.Text
+  
+  @@unique([ordenId, subcategoria])
 }

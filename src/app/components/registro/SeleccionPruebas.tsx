@@ -148,9 +148,9 @@ export default function SeleccionPruebas({
                     </td>
                     <td className="px-4 py-3 align-middle text-center">
                       <div className="inline-flex items-center bg-[#F5F5F7] border border-slate-200 rounded-lg p-0.5">
-                        <button onClick={() => actualizarCantidad(p.id, p.cantidad - 1)} className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-[#0071E3] hover:bg-white rounded-md font-bold text-lg transition-colors">-</button>
+                        <button onClick={() => actualizarCantidad(p.id, p.cantidad - 1)} className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-[#0071E3] bg-slate-100 hover:bg-slate-200 rounded-md font-bold text-lg transition-colors">-</button>
                         <span className="text-sm font-black text-[#1D1D1F] w-6 text-center">{p.cantidad}</span>
-                        <button onClick={() => actualizarCantidad(p.id, p.cantidad + 1)} className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-[#0071E3] hover:bg-white rounded-md font-bold text-lg transition-colors">+</button>
+                        <button onClick={() => actualizarCantidad(p.id, p.cantidad + 1)} className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-[#0071E3] bg-slate-100 hover:bg-slate-200 rounded-md font-bold text-lg transition-colors">+</button>
                       </div>
                     </td>
                     <td className="px-4 py-3 align-middle text-right">
@@ -166,7 +166,7 @@ export default function SeleccionPruebas({
                       </div>
                     </td>
                     <td className="px-4 py-3 align-middle text-right">
-                      <button onClick={() => eliminarPrueba(p.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Eliminar ítem">
+                      <button onClick={() => eliminarPrueba(p.id)} className="p-2 text-slate-500 bg-slate-50 border border-slate-200 hover:text-red-600 hover:bg-red-50 hover:border-red-200 rounded-lg transition-all" title="Eliminar ítem">
                         <Trash2 size={18} strokeWidth={2.5} />
                       </button>
                     </td>

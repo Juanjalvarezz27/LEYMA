@@ -323,8 +323,8 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
             </h3>
             <p className="text-sm font-medium text-slate-500 mt-1">Organiza por Categoría y define si es un Paquete Cerrado o Ítems Individuales.</p>
           </div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
-            <X size={24} strokeWidth={2.5} />
+          <button onClick={onClose} className="p-2 text-slate-500 bg-slate-100 hover:text-slate-700 hover:bg-slate-200 rounded-full transition-colors">
+            <X size={20} strokeWidth={2.5} />
           </button>
         </div>
 
@@ -680,7 +680,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                     )}
 
                     <div className="col-span-1 flex justify-end">
-                      <button type="button" onClick={() => eliminarFila(index)} className="p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-red-500 hover:bg-red-50 transition-colors shadow-sm">
+                      <button type="button" onClick={() => eliminarFila(index)} className="p-3 bg-white border border-slate-200 text-slate-500 rounded-xl hover:text-red-500 hover:bg-red-50 transition-colors shadow-sm">
                         <Trash2 size={20} strokeWidth={2.5} />
                       </button>
                     </div>

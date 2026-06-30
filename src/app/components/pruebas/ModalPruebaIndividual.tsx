@@ -84,7 +84,7 @@ export default function ModalPruebaIndividual({ isOpen, onClose, onSave, itemEdi
               Modificando valores de <span className="font-bold text-[#0071E3]">{itemEditar.nombre}</span>
             </p>
           </div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-colors">
+          <button onClick={onClose} className="p-2 text-slate-500 bg-slate-100 hover:text-slate-700 hover:bg-slate-200 rounded-full transition-colors">
             <X size={20} strokeWidth={2.5} />
           </button>
         </div>
@@ -140,9 +140,9 @@ export default function ModalPruebaIndividual({ isOpen, onClose, onSave, itemEdi
               <label className="text-[11px] font-black text-purple-600 uppercase tracking-widest mb-3 block">Opciones Predefinidas</label>
               <div className="flex flex-wrap gap-2 mb-3">
                 {formData.opcionesPredefinidas.map((opc, idx) => (
-                  <span key={idx} className="flex items-center gap-2 bg-purple-100 text-purple-700 pl-3 pr-1 py-1 rounded-lg text-sm font-bold border border-purple-200">
+                  <span key={idx} className="flex items-center gap-2 bg-purple-200 text-purple-800 pl-3 pr-1 py-1 rounded-lg text-sm font-bold border border-purple-300">
                     {opc}
-                    <button type="button" onClick={() => removeTag('opcionesPredefinidas', idx)} className="p-1 hover:bg-purple-200 rounded-md"><X size={14}/></button>
+                    <button type="button" onClick={() => removeTag('opcionesPredefinidas', idx)} className="p-1 hover:bg-purple-300 rounded-md"><X size={14}/></button>
                   </span>
                 ))}
               </div>

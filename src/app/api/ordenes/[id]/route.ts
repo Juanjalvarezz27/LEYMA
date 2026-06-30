@@ -35,7 +35,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           include: {
             servicio: true
           }
-        }
+        },
+        notasSubcategoria: true
       }
     });
 

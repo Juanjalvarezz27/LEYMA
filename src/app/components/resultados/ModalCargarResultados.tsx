@@ -25,6 +25,8 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
   const [valores, setValores] = useState<Record<string, string[]>>({});
   const [observaciones, setObservaciones] = useState<Record<string, string>>({});
   const [obsExpandidas, setObsExpandidas] = useState<Record<string, boolean>>({});
+  const [notasSubcategoria, setNotasSubcategoria] = useState<Record<string, string>>({});
+  const [notasSubcategoriaExpandidas, setNotasSubcategoriaExpandidas] = useState<Record<string, boolean>>({});
   const [valoresReferenciaCustom, setValoresReferenciaCustom] = useState<Record<string, string>>({});
   const [openSelect, setOpenSelect] = useState<string | null>(null);
 
@@ -89,7 +91,19 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
       setObservaciones(initialObs);
       setObsExpandidas(initialExp);
       setSeleccionados(initialSel);
+      setSeleccionados(initialSel);
       setValoresReferenciaCustom(initialValRefCustom);
+
+      const initialNotasSub: Record<string, string> = {};
+      const initialNotasSubExp: Record<string, boolean> = {};
+      if (orden.notasSubcategoria && Array.isArray(orden.notasSubcategoria)) {
+        orden.notasSubcategoria.forEach((ns: any) => {
+          initialNotasSub[ns.subcategoria] = ns.nota;
+          if (ns.nota) initialNotasSubExp[ns.subcategoria] = true;
+        });
+      }
+      setNotasSubcategoria(initialNotasSub);
+      setNotasSubcategoriaExpandidas(initialNotasSubExp);
     }
   }, [orden]);
 
@@ -232,6 +246,11 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
       }))
     }));
 
+    const payloadNotasSubcategoria = Object.entries(notasSubcategoria).map(([subcategoria, nota]) => ({
+      subcategoria,
+      nota
+    }));
+
     setGuardando(true);
     try {
       const res = await fetch("/api/resultados", {
@@ -242,7 +261,8 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
           resultados: resultadosArray, 
           accion, 
           pin, 
-          bioanalistaId: selectedBioanalista 
+          bioanalistaId: selectedBioanalista,
+          notasSubcategoria: payloadNotasSubcategoria
         })
       });
 
@@ -330,7 +350,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
               </p>
             </div>
           </div>
-          <button onClick={onClose} disabled={guardando || showPinModal} className="p-3 bg-slate-50 border border-slate-200 hover:bg-slate-200 text-slate-500 rounded-full transition-all shadow-sm">
+          <button onClick={onClose} disabled={guardando || showPinModal} className="p-3 bg-slate-100 border border-slate-200 hover:bg-slate-200 text-slate-600 rounded-full transition-all shadow-sm">
             <X size={20} strokeWidth={2.5} />
           </button>
         </div>
@@ -367,11 +387,30 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                   return (
                   <div key={subCatNombre} className={`px-8 py-5 relative ${hasOpenSelectInSubcat ? 'z-50' : 'z-10'}`}>
 
-                    <div className="mb-4 border-b-2 border-[#1D1D1F] pb-2">
+                    <div className="mb-4 border-b-2 border-[#1D1D1F] pb-2 flex justify-between items-center">
                       <h4 className="text-sm font-black text-slate-600 uppercase tracking-widest">
                         {subCatNombre}
                       </h4>
+                      <button
+                        onClick={() => setNotasSubcategoriaExpandidas(prev => ({ ...prev, [subCatNombre]: !prev[subCatNombre] }))}
+                        className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest ${notasSubcategoriaExpandidas[subCatNombre] || notasSubcategoria[subCatNombre] ? 'bg-blue-100 text-[#0071E3]' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-600'}`}
+                        title="Añadir Nota a Subcategoría"
+                      >
+                        <FileSignature size={14} strokeWidth={2.5} />
+                        Nota
+                      </button>
                     </div>
+
+                    {(notasSubcategoriaExpandidas[subCatNombre] || notasSubcategoria[subCatNombre]) && (
+                      <div className="mb-4 px-2">
+                        <textarea
+                          placeholder={`Añadir nota general para ${subCatNombre}...`}
+                          value={notasSubcategoria[subCatNombre] || ""}
+                          onChange={(e) => setNotasSubcategoria(prev => ({ ...prev, [subCatNombre]: e.target.value }))}
+                          className="w-full text-sm font-medium bg-yellow-50/50 border border-yellow-200 text-yellow-900 rounded-lg p-3 outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 min-h-[60px] resize-y"
+                        />
+                      </div>
+                    )}
 
                     <div className="flex items-center text-xs font-black text-slate-800 uppercase tracking-wider mb-2 px-2">
                       <div className="w-[30%]">Parametro</div>
@@ -408,7 +447,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
                               {!esLectura && (
                                 <button
                                   onClick={() => setObsExpandidas(prev => ({ ...prev, [det.id]: !prev[det.id] }))}
-                                  className={`p-1.5 rounded-lg transition-colors ${obsExpandidas[det.id] || observaciones[det.id] ? 'bg-blue-100 text-[#0071E3]' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-600 opacity-0 group-hover:opacity-100'}`}
+                                  className={`p-1.5 rounded-lg transition-colors ${obsExpandidas[det.id] || observaciones[det.id] ? 'bg-blue-100 text-[#0071E3]' : 'text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}
                                   title="Añadir Observación"
                                 >
                                   <FileSignature size={14} strokeWidth={2.5} />
@@ -580,7 +619,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
           </button>
           
           {!orden.resultadosCompletados && (
-            <button onClick={() => procesarResultados("GUARDAR")} disabled={guardando} className="px-6 py-3.5 text-[15px] font-bold text-[#0071E3] bg-[#0071E3]/10 border border-[#0071E3]/20 hover:bg-[#0071E3]/20 rounded-2xl transition-colors flex items-center gap-2">
+            <button onClick={() => procesarResultados("GUARDAR")} disabled={guardando} className="px-6 py-3.5 text-[15px] font-bold text-[#0071E3] bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-2xl transition-colors flex items-center gap-2">
               <Save size={18} strokeWidth={2.5} /> Guardar Transcripción
             </button>
           )}

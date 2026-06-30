@@ -456,6 +456,20 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                   </View>
 
                   {(detalles as any[]).slice(1).map((det: any) => renderDetalleRow(det, subCatNombre))}
+
+                  {(() => {
+                    const notaObj = orden.notasSubcategoria?.find((ns: any) => ns.subcategoria === subCatNombre);
+                    if (notaObj && notaObj.nota) {
+                      return (
+                        <View style={{ marginTop: 4, paddingLeft: 8, paddingRight: 8, marginBottom: 8 }}>
+                          <Text style={{ fontSize: 9, fontStyle: 'italic', color: '#475569' }}>
+                            Nota: {notaObj.nota}
+                          </Text>
+                        </View>
+                      );
+                    }
+                    return null;
+                  })()}
                 </View>
               ))}
             </View>

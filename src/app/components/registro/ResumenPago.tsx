@@ -312,33 +312,6 @@ export default function ResumenPago({
                     actualizarPago(idx, "moneda", pago.moneda === "USD" ? "BS" : "USD");
                   }}
                   className={`px-3 font-black text-xs transition-colors border-r border-slate-200 w-12 flex items-center justify-center shrink-0
-
-                {dropdownAbierto === idx && (
-                  <div className="absolute top-full left-0 mt-2 w-full bg-white/95 backdrop-blur-xl border border-slate-200 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100 py-1.5">
-                    {metodosBD.map((m) => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => {
-                          actualizarPago(idx, "metodoId", m.id);
-                          setDropdownAbierto(null);
-                        }}
-                        className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-colors flex items-center justify-between
-                        ${pago.metodoId === m.id ? 'bg-[#0071E3] text-white' : 'text-[#1D1D1F] hover:bg-slate-100'}`}
-                      >
-                        {formatMetodoPago(m.nombre)}
-                        {pago.metodoId === m.id && <CheckCircle size={16} strokeWidth={2.5} />}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex bg-[#F5F5F7] border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[#0071E3]/20 w-40 lg:w-48 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => actualizarPago(idx, "moneda", pago.moneda === "USD" ? "BS" : "USD")}
-                  className={`px-3 font-black text-xs transition-colors border-r border-slate-200 w-12 flex items-center justify-center shrink-0
                   ${pago.moneda === "USD" ? 'bg-[#0071E3]/10 text-[#0071E3]' : 'bg-orange-100 text-orange-600'}`}
                 >
                   {pago.moneda === "USD" ? "$" : "Bs"}
@@ -379,7 +352,7 @@ export default function ResumenPago({
           <div className="flex items-center gap-4 w-full lg:w-auto border-b lg:border-b-0 lg:border-r border-white/10 pb-5 lg:pb-0 lg:pr-8">
             <div className="flex flex-col gap-2">
               <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Desc. General</span>
-              <div className="flex bg-white/10 p-1 rounded-lg w-fit">
+              <div className="flex bg-white/20 p-1 rounded-lg w-fit">
                 <button
                   onClick={() => { setTipoDescGral("PORCENTAJE"); setDescuentoGeneral(0); }}
                   className={`px-4 py-1.5 rounded-md text-xs font-black transition-colors ${tipoDescGral === "PORCENTAJE" ? 'bg-white text-black' : 'text-white/60 hover:text-white'}`}
@@ -421,7 +394,7 @@ export default function ResumenPago({
               onClick={() => onFinalizar({ subtotalUSD, totalFinalUSD, totalFinalBS, pagos, descuentoGeneral, tipoDescGral, estado: "BORRADOR", restanteUSD })}
               disabled={guardandoOrden || restanteBS <= 0.01}
               title={restanteBS <= 0.01 ? "No puede guardar como borrador una orden pagada en su totalidad" : ""}
-              className="w-full sm:w-1/2 lg:w-56 py-3 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
+              className="w-full sm:w-1/2 lg:w-56 py-3 bg-white/20 hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
             >
               <Save size={18} strokeWidth={2.5} /> {guardandoOrden ? "Procesando..." : "Guardar Borrador"}
             </button>

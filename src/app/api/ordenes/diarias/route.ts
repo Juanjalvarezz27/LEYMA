@@ -47,7 +47,8 @@ export async function GET(req: Request) {
         pagos: {
           include: { metodo: true }
         },
-        creadoPor: { select: { nombre: true } }
+        creadoPor: { select: { nombre: true } },
+        notasSubcategoria: true
       },
       orderBy: {
         fechaCreacion: 'desc' 

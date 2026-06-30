@@ -169,7 +169,7 @@ export default function ModalPreviewPresupuesto({
         </div>
         <button
           onClick={onClose}
-          className="p-2 bg-white/10 hover:bg-red-500 text-white rounded-full transition-colors"
+          className="p-2 bg-slate-800 hover:bg-red-500 text-white rounded-full transition-colors shadow-md"
         >
           <X size={20} strokeWidth={2.5} />
         </button>

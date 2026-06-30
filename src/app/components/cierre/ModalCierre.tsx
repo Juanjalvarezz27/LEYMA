@@ -155,7 +155,7 @@ export default function ModalCierre({ data, tasaBCV, onClose, onSuccess }: Modal
               <p className="text-sm font-bold text-slate-500">Sistema espera global: <span className="text-emerald-600 font-black">{formatMoney(calculoUSD)}</span> / <span className="text-[#111827] font-black">{formatMoney(totalEsperadoBS, true)}</span></p>
             </div>
           </div>
-          <button onClick={onClose} disabled={guardandoCierre} className="p-2 text-slate-400 hover:bg-slate-200 rounded-full transition-all"><X size={20} /></button>
+          <button onClick={onClose} disabled={guardandoCierre} className="p-2 text-slate-500 bg-slate-100 hover:text-slate-700 hover:bg-slate-200 rounded-full transition-all"><X size={20} strokeWidth={2.5} /></button>
         </div>
         
         <div className="p-8 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full">

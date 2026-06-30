@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     if (!usuarioSesion) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
 
     const body = await req.json();
-    const { ordenId, resultados, accion, pin, bioanalistaId } = body; 
+    const { ordenId, resultados, accion, pin, bioanalistaId, notasSubcategoria } = body; 
 
     if (!ordenId || !resultados || resultados.length === 0) {
       return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
@@ -101,6 +101,27 @@ export async function POST(req: Request) {
         where: { id: ordenId },
         data: { resultadosCompletados: allSigned }
       });
+
+      // Procesar notas por subcategoría si vienen en el payload
+      if (notasSubcategoria && notasSubcategoria.length > 0) {
+        for (const ns of notasSubcategoria) {
+          if (!ns.nota || ns.nota.trim() === '') {
+            // Si la nota está vacía, la eliminamos si existe
+            await tx.notaSubcategoriaOrden.deleteMany({
+              where: { ordenId: ordenId, subcategoria: ns.subcategoria }
+            });
+          } else {
+            // Si tiene texto, hacemos upsert
+            await tx.notaSubcategoriaOrden.upsert({
+              where: { 
+                ordenId_subcategoria: { ordenId: ordenId, subcategoria: ns.subcategoria } 
+              },
+              update: { nota: ns.nota },
+              create: { ordenId: ordenId, subcategoria: ns.subcategoria, nota: ns.nota }
+            });
+          }
+        }
+      }
     }, {
       maxWait: 15000,
       timeout: 60000

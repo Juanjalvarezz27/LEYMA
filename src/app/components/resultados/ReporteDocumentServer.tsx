@@ -33,7 +33,7 @@ Font.register({
 const pdfStyles = StyleSheet.create({
   page: {
     paddingTop: 20,
-    paddingBottom: 40,
+    paddingBottom: 15,
     paddingLeft: 20,
     paddingRight: 40,
     fontFamily: "Inter",
@@ -52,16 +52,27 @@ const pdfStyles = StyleSheet.create({
     marginBottom: 10,
   },
   topContact: {
-    flexDirection: "column",
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    gap: 3,
     borderBottomWidth: 1,
     borderBottomColor: "#E2E8F0",
     paddingBottom: 4,
     marginBottom: 6,
   },
+  topContactLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6
+  },
+  topContactRightBox: {
+    flexDirection: "column",
+    alignItems: "flex-end",
+    gap: 3,
+  },
+
   topContactText: { fontSize: 7, color: "#000000", fontWeight: 700 },
-  topContactRight: { flexDirection: "row", gap: 10 },
+  topContactRight: { flexDirection: "row", gap: 4 },
 
   header: {
     flexDirection: "row",
@@ -69,8 +80,8 @@ const pdfStyles = StyleSheet.create({
     alignItems: "center",
     borderBottomWidth: 1.5,
     borderBottomColor: "#000",
-    paddingBottom: 8,
-    marginBottom: 10,
+    paddingBottom: 4,
+    marginBottom: 6,
   },
   logoRow: { flexDirection: "row", alignItems: "center" },
   logoImage: { width: 50, height: 50, objectFit: "contain", marginRight: 12 },
@@ -85,8 +96,8 @@ const pdfStyles = StyleSheet.create({
     flexDirection: "row",
     borderBottomWidth: 1.5,
     borderBottomColor: "#000",
-    paddingBottom: 8,
-    marginBottom: 10,
+    paddingBottom: 4,
+    marginBottom: 6,
   },
   patientColLeft: { width: "55%", paddingRight: 10 },
   patientColRight: {
@@ -95,9 +106,9 @@ const pdfStyles = StyleSheet.create({
     borderLeftColor: "#E2E8F0",
     paddingLeft: 15,
   },
-  patientRow: { flexDirection: "row", marginBottom: 3 },
-  patientLabel: { width: 85, fontWeight: 700, fontSize: 10.5 },
-  patientValue: { flex: 1, fontSize: 10.5, textTransform: "uppercase" },
+  patientRow: { flexDirection: "row", marginBottom: 1 },
+  patientLabel: { width: 85, fontWeight: 700, fontSize: 9 },
+  patientValue: { flex: 1, fontSize: 9, textTransform: "uppercase" },
 
   categoryBlock: {
     width: "100%",
@@ -109,19 +120,19 @@ const pdfStyles = StyleSheet.create({
 
   catTitleView: {
     backgroundColor: "#BFDBFE",
-    paddingVertical: 6,
+    paddingVertical: 3,
     paddingHorizontal: 8,
     borderBottomWidth: 1.5,
     borderBottomColor: "#000",
   },
   catTitleText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 700,
     textTransform: "uppercase",
   },
 
   catBioanalistaText: {
-    fontSize: 8.5,
+    fontSize: 12,
     fontWeight: 700,
     color: "#000",
     letterSpacing: 0.5,
@@ -139,19 +150,19 @@ const pdfStyles = StyleSheet.create({
 
   subcatTitleView: {
     backgroundColor: "#DBEAFE",
-    paddingVertical: 4,
+    paddingVertical: 2,
     paddingHorizontal: 8,
   },
   subcatTitleText: {
-    fontSize: 9.5,
+    fontSize: 10.5,
     fontWeight: 700,
   },
 
   row: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginBottom: 4,
-    paddingVertical: 4,
+    marginBottom: 2,
+    paddingVertical: 2,
   },
   rowDesc: { width: "27%", fontSize: 8.5, fontWeight: 700 },
   rowDescSub: { width: "27%", fontSize: 8.5, fontWeight: 700, paddingLeft: 10 },
@@ -177,7 +188,7 @@ const pdfStyles = StyleSheet.create({
 
   footerSignaturesContainer: {
     marginTop: 30,
-    paddingBottom: 5,
+    paddingBottom: 0,
   },
   footerSignaturesRow: {
     flexDirection: "row",
@@ -432,15 +443,29 @@ const ReporteDocumentServer = ({
     <Document>
       <Page size="LETTER" style={pdfStyles.page}>
 
-        {/* INFO CONTACTO SUPERIOR */}
+        {/* INFO CONTACTO SUPERIOR Y QR */}
         <View style={pdfStyles.topContact}>
-          <Text style={pdfStyles.topContactText}>
-            DIRECCIÓN: AVENIDA CORO, LOCAL 4-79, SECTOR SANTA ROSA.
-          </Text>
-          <View style={pdfStyles.topContactRight}>
-            <Text style={pdfStyles.topContactText}>TELÉFONO: 04220353660</Text>
-            <Text style={pdfStyles.topContactText}>CORREO: LABORATORIOLEYMA@GMAIL.COM</Text>
-            <Text style={pdfStyles.topContactText}>RIF: J - 508463315</Text>
+          <View style={pdfStyles.topContactLeft}>
+            {qrCodeUrl ? (
+              <Image src={qrCodeUrl} style={{ width: 35, height: 35 }} />
+            ) : <View style={{ width: 35, height: 35 }} />}
+            <View style={{ flexDirection: 'column', justifyContent: 'center' }}>
+              <Text style={{ fontSize: 7.5, fontWeight: 700, color: '#1D1D1F' }}>DOC. VERIFICADO</Text>
+              <Text style={{ fontSize: 7, color: '#000000', marginTop: 1, maxWidth: 150 }}>
+                Escanee para validar la{"\n"}autenticidad de resultados.
+              </Text>
+            </View>
+          </View>
+          
+          <View style={pdfStyles.topContactRightBox}>
+            <Text style={pdfStyles.topContactText}>
+              DIRECCIÓN: AVENIDA CORO, LOCAL 4-79, SECTOR SANTA ROSA.
+            </Text>
+            <View style={pdfStyles.topContactRight}>
+              <Text style={pdfStyles.topContactText}>TELÉFONO: 04220353660</Text>
+              <Text style={pdfStyles.topContactText}>CORREO: LABORATORIOLEYMA@GMAIL.COM</Text>
+              <Text style={pdfStyles.topContactText}>RIF: J - 508463315</Text>
+            </View>
           </View>
         </View>
 
@@ -636,30 +661,6 @@ const ReporteDocumentServer = ({
                   </View>
                 </View>
               )}
-            </View>
-          </View>
-
-          {/* FOOTER */}
-          <View style={pdfStyles.footerContent}>
-            <View style={pdfStyles.qrRow}>
-              {qrCodeUrl ? (
-                <Image src={qrCodeUrl} style={pdfStyles.qrImage} />
-              ) : (
-                <View style={pdfStyles.qrImage} />
-              )}
-              <View style={pdfStyles.qrLabelBox}>
-                <Text style={pdfStyles.qrTitle}>DOC. VERIFICADO</Text>
-                <Text style={pdfStyles.qrSubtitle}>
-                  Escanee este código para validar la autenticidad en el
-                  servidor de LEYMA C.A.
-                </Text>
-              </View>
-            </View>
-            <View style={pdfStyles.legalBox}>
-              <Text style={pdfStyles.legalText}>
-                ESTE REPORTE ES UN DOCUMENTO ELECTRÓNICO OFICIAL{"\n"}
-                GENERADO POR EL SISTEMA LEYMA C.A.
-              </Text>
             </View>
           </View>
         </View>

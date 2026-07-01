@@ -160,7 +160,7 @@ export async function GET(req: Request) {
       where: { orden: whereBase }
     });
 
-    const pruebaIds = pruebasAgrupadas.map(p => p.pruebaId).filter(Boolean) as number[];
+    const pruebaIds = pruebasAgrupadas.map(p => p.pruebaId).filter(Boolean) as string[];
     const pruebasDb = await prisma.prueba.findMany({
       where: { id: { in: pruebaIds } },
       select: { 

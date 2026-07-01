@@ -43,10 +43,14 @@ export default function ResultadosPage() {
   const [ordenSeleccionada, setOrdenSeleccionada] = useState<any | null>(null);
   const [ordenPDF, setOrdenPDF] = useState<any | null>(null);
 
-  const fetchOrdenes = async () => {
+  const fetchOrdenes = async (b = busqueda, f = fechaFiltro) => {
     setCargando(true);
     try {
-      const res = await fetch("/api/resultados/lista");
+      const query = new URLSearchParams();
+      if (b) query.append("busqueda", b);
+      if (f) query.append("fecha", f);
+      
+      const res = await fetch(`/api/resultados/lista?${query.toString()}`);
       if (!res.ok) throw new Error("Error de red");
       const data = await res.json();
       setOrdenes(data);
@@ -65,8 +69,11 @@ export default function ResultadosPage() {
   };
 
   useEffect(() => {
-    fetchOrdenes();
-  }, []);
+    const timer = setTimeout(() => {
+      fetchOrdenes(busqueda, fechaFiltro);
+    }, 400); // Debounce de 400ms para evitar múltiples llamadas al escribir
+    return () => clearTimeout(timer);
+  }, [busqueda, fechaFiltro]);
 
   useEffect(() => {
     const fetchResultadosPendientes = async () => {

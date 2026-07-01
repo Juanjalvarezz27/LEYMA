@@ -21,18 +21,46 @@ export async function GET(req: Request) {
           lte: fechaFin
         }
       },
-      include: {
-        paciente: true,
+      select: {
+        id: true,
+        fechaCreacion: true,
+        subtotalUSD: true,
+        descuentoGeneral: true,
+        totalUSD: true,
+        totalBS: true,
+        tasaBCV: true,
+        paciente: {
+          select: {
+            nombreCompleto: true,
+            cedula: true,
+            fechaNacimiento: true,
+            esBebe: true,
+            sexo: true,
+            telefono: true,
+            correo: true,
+            direccion: true,
+            observaciones: true
+          }
+        },
         estado: { select: { nombre: true } },
         tipoDescuento: { select: { nombre: true } }, 
         detalles: {
-          include: {
+          select: {
+            id: true,
+            cantidad: true,
+            precioCongeladoUSD: true,
+            descuento: true,
             tipoDescuento: { select: { nombre: true } },
             prueba: {
-              include: {
+              select: {
+                nombre: true,
+                codigo: true,
                 subcategoria: {
-                  include: {
-                    categoria: true
+                  select: {
+                    id: true,
+                    nombre: true,
+                    esPaquete: true,
+                    categoria: { select: { nombre: true } }
                   }
                 }
               }
@@ -40,15 +68,29 @@ export async function GET(req: Request) {
           }
         },
         serviciosExtra: {
-          include: {
-            servicio: true
+          select: {
+            id: true,
+            cantidad: true,
+            precioCongeladoUSD: true,
+            servicio: { select: { nombre: true } }
           }
         },
         pagos: {
-          include: { metodo: true }
+          select: {
+            id: true,
+            montoUSD: true,
+            montoBS: true,
+            referencia: true,
+            metodo: { select: { nombre: true } }
+          }
         },
         creadoPor: { select: { nombre: true } },
-        notasSubcategoria: true
+        notasSubcategoria: {
+          select: {
+            subcategoria: true,
+            nota: true
+          }
+        }
       },
       orderBy: {
         fechaCreacion: 'desc' 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { 
   Users, Search, History, Phone, Calendar, ChevronLeft, ChevronRight, 
-  Activity, FileText, CheckCircle, Clock, X, Eye, MessageCircle, Lock 
+  Activity, FileText, CheckCircle, Clock, X, Eye, MessageCircle, Lock, Loader2 
 } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalPreviewPDF from "../../components/resultados/ModalPreviewPDF"; 
@@ -18,19 +18,31 @@ export default function PacientesPage() {
   const [fechaFiltro, setFechaFiltro] = useState<string>(""); 
   
   const [paginaActual, setPaginaActual] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [totalResultados, setTotalResultados] = useState(0);
   const itemsPorPagina = 30;
 
   // Estados para Modales
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState<any | null>(null);
+  const [cargandoHistorialId, setCargandoHistorialId] = useState<string | null>(null);
   const [ordenPDF, setOrdenPDF] = useState<any | null>(null);
 
   const fetchPacientes = async () => {
     setCargando(true);
     try {
-      const res = await fetch("/api/pacientes/directorio");
+      const query = new URLSearchParams({
+        page: paginaActual.toString(),
+        limit: itemsPorPagina.toString(),
+        q: busqueda,
+        fecha: fechaFiltro
+      });
+      const res = await fetch(`/api/pacientes/directorio?${query.toString()}`);
       if (!res.ok) throw new Error("Error de red");
-      const data = await res.json();
-      setPacientes(data);
+      
+      const responseData = await res.json();
+      setPacientes(responseData.data);
+      setTotalPaginas(responseData.meta.totalPages);
+      setTotalResultados(responseData.meta.total);
     } catch (error: any) {
       toast.error(error?.message ? `Error al cargar la lista de pacientes.: ${error?.message}` : "Error al cargar la lista de pacientes.");
     } finally {
@@ -38,46 +50,33 @@ export default function PacientesPage() {
     }
   };
 
+  // Efecto con Debounce para búsqueda
   useEffect(() => {
-    fetchPacientes();
-  }, []);
+    const delayDebounceFn = setTimeout(() => {
+      fetchPacientes();
+    }, 400);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [busqueda, fechaFiltro, paginaActual]);
 
   // Reiniciar a la página 1 al buscar o cambiar la fecha
   useEffect(() => {
     setPaginaActual(1);
   }, [busqueda, fechaFiltro]);
 
-  // LÓGICA DE FILTRADO COMBINADO (Fecha + Búsqueda)
-  const pacientesFiltrados = pacientes.filter(p => {
-    // 1. Filtro por Fecha (El paciente debe tener al menos una visita ese día)
-    if (fechaFiltro) {
-      const tieneOrdenEnFecha = p.ordenes.some((o: any) => {
-        const fechaOrden = new Date(o.fechaCreacion).toLocaleDateString('en-CA', { timeZone: 'America/Caracas' });
-        return fechaOrden === fechaFiltro;
-      });
-      if (!tieneOrdenEnFecha) return false;
+  const fetchHistorialCompleto = async (paciente: any) => {
+    setCargandoHistorialId(paciente.id);
+    try {
+      const res = await fetch(`/api/pacientes/${paciente.id}/historial`);
+      if (!res.ok) throw new Error("Error al cargar el historial");
+      const data = await res.json();
+      setPacienteSeleccionado(data);
+    } catch (error: any) {
+      toast.error(error?.message || "Ocurrió un error al cargar el historial clínico.");
+    } finally {
+      setCargandoHistorialId(null);
     }
-
-    // 2. Filtro por Búsqueda (Nombre, cédula o N° de orden)
-    if (busqueda) {
-      const b = normalizeSearchString(busqueda);
-      const coincidePaciente = 
-        normalizeSearchString(p.nombreCompleto).includes(b) ||
-        (p.cedula && normalizeSearchString(p.cedula).includes(b));
-      
-      const coincideOrden = p.ordenes.some((o: any) => o.id.toString().includes(b));
-
-      if (!coincidePaciente && !coincideOrden) return false;
-    }
-
-    return true;
-  });
-
-  // PAGINACIÓN
-  const totalPaginas = Math.ceil(pacientesFiltrados.length / itemsPorPagina);
-  const indiceUltimoItem = paginaActual * itemsPorPagina;
-  const indicePrimerItem = indiceUltimoItem - itemsPorPagina;
-  const pacientesPaginados = pacientesFiltrados.slice(indicePrimerItem, indiceUltimoItem);
+  };
 
   const formatFecha = (dateString: string) => {
     const d = new Date(dateString);
@@ -300,7 +299,7 @@ export default function PacientesPage() {
         </div>
 
         <div className="ml-auto flex items-center gap-2 text-slate-500 font-bold text-sm bg-slate-100 px-4 py-3 rounded-xl shrink-0">
-          <Activity size={18} /> Total: {pacientesFiltrados.length}
+          <Activity size={18} /> Total: {totalResultados}
         </div>
       </div>
 
@@ -320,13 +319,20 @@ export default function PacientesPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {cargando ? (
-                <tr><td colSpan={6} className="text-center py-10 text-slate-400 font-medium">Cargando directorio...</td></tr>
-              ) : pacientesPaginados.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-10">
+                    <div className="flex flex-col items-center justify-center gap-2 text-[#0071E3]">
+                      <Loader2 size={32} className="animate-spin" />
+                      <span className="font-bold text-sm">Cargando directorio...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : pacientes.length === 0 ? (
                 <tr><td colSpan={6} className="text-center py-10 text-slate-400 font-medium">No se encontraron pacientes registrados con los filtros actuales.</td></tr>
               ) : (
-                pacientesPaginados.map((paciente) => {
-                  const numOrdenes = paciente.ordenes.length;
-                  const ultimaOrden = paciente.ordenes[0];
+                pacientes.map((paciente) => {
+                  const numOrdenes = paciente.totalVisitas || 0;
+                  const ultimaOrden = paciente.ordenes && paciente.ordenes.length > 0 ? paciente.ordenes[0] : null;
                   
                   return (
                     <tr key={paciente.id} className="hover:bg-slate-50/50 transition-colors">
@@ -379,10 +385,11 @@ export default function PacientesPage() {
                           {/* BOTÓN VER HISTORIAL */}
                           <div className="relative group/ver flex flex-col items-center">
                             <button 
-                              onClick={() => setPacienteSeleccionado(paciente)}
-                              className="flex items-center justify-center w-10 h-10 bg-slate-100 text-[#0071E3] hover:bg-[#0071E3] hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] hover:-translate-y-0.5"
+                              onClick={() => fetchHistorialCompleto(paciente)}
+                              disabled={cargandoHistorialId === paciente.id}
+                              className="flex items-center justify-center w-10 h-10 bg-slate-100 text-[#0071E3] hover:bg-[#0071E3] hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-slate-100 disabled:hover:text-[#0071E3]"
                             >
-                              <Eye size={18} strokeWidth={2.5} />
+                              {cargandoHistorialId === paciente.id ? <Loader2 size={18} className="animate-spin" /> : <Eye size={18} strokeWidth={2.5} />}
                             </button>
                             <div className="absolute -top-10 opacity-0 group-hover/ver:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/ver:-translate-y-1">
                               Ver Historial
@@ -419,7 +426,7 @@ export default function PacientesPage() {
           <div className="mt-8 mb-4 flex justify-center items-center gap-4 bg-[#F5F5F7] border border-slate-200/80 p-2 rounded-2xl w-fit mx-auto">
             <button
               onClick={() => setPaginaActual(prev => Math.max(prev - 1, 1))}
-              disabled={paginaActual === 1}
+              disabled={paginaActual === 1 || cargando}
               className="p-2 rounded-xl text-slate-600 hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all"
             >
               <ChevronLeft size={20} strokeWidth={2.5} />
@@ -431,7 +438,7 @@ export default function PacientesPage() {
 
             <button
               onClick={() => setPaginaActual(prev => Math.min(prev + 1, totalPaginas))}
-              disabled={paginaActual === totalPaginas}
+              disabled={paginaActual === totalPaginas || cargando}
               className="p-2 rounded-xl text-slate-600 hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all"
             >
               <ChevronRight size={20} strokeWidth={2.5} />

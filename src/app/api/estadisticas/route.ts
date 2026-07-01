@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCaracasTodayBounds, subtractDaysCaracas, getCaracasThisMonthBounds, getCaracasBoundsForDate, formatToCaracasDateString } from "../../../lib/dateUtils";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -9,7 +11,7 @@ export async function GET(req: Request) {
     const inicioStr = searchParams.get("inicio");
     const finStr = searchParams.get("fin");
 
-    const ahora = new Date(); // Utilizado abajo para la edad, se deja
+    const ahora = new Date();
     let fechaInicio = new Date();
     let fechaFin = new Date(); 
 
@@ -39,39 +41,44 @@ export async function GET(req: Request) {
       fechaFin = new Date("2100-01-01T00:00:00Z");
     }
 
-    const ordenes = await prisma.orden.findMany({
-      where: {
-        fechaCreacion: { 
-          gte: fechaInicio,
-          lte: fechaFin
-        },
-        estado: { nombre: { not: "ANULADA" } }
-      },
-      include: {
-        paciente: true,
-        estado: true,
-        detalles: {
-          include: {
-            resultado: true,
-            prueba: {
-              include: {
-                subcategoria: {
-                  include: {
-                    categoria: true
-                  }
-                }
-              }
-            }
-          }
-        }
+    const whereBase = {
+      fechaCreacion: { gte: fechaInicio, lte: fechaFin },
+      estado: { nombre: { not: "ANULADA" } }
+    };
+
+    // 1. KPIs con Aggregate Nativo (Cero carga en memoria)
+    const [totalOrdenes, ordenesCompletadas, totalPruebasAgg] = await Promise.all([
+      prisma.orden.count({ where: whereBase }),
+      prisma.orden.count({ where: { ...whereBase, resultadosCompletados: true } }),
+      prisma.detalleOrden.aggregate({
+        _sum: { cantidad: true },
+        where: { orden: whereBase }
+      })
+    ]);
+
+    const totalPruebasProcesadas = totalPruebasAgg._sum.cantidad || 0;
+    const tasaProcesamiento = totalOrdenes > 0 ? Math.round((ordenesCompletadas / totalOrdenes) * 100) : 0;
+
+    // Pacientes únicos con Raw SQL (Muy rápido)
+    const pacientesRaw: any[] = await prisma.$queryRaw`
+      SELECT COUNT(DISTINCT o."pacienteId")::integer as count 
+      FROM "Orden" o
+      JOIN "EstadoOrden" e ON o."estadoId" = e.id
+      WHERE o."fechaCreacion" >= ${fechaInicio} AND o."fechaCreacion" <= ${fechaFin} AND e.nombre != 'ANULADA'
+    `;
+    const pacientesUnicos = pacientesRaw.length > 0 ? pacientesRaw[0].count : 0;
+
+    // 2. Extracción Micro de Demografía, Estados y Fechas (Ultra ligero)
+    const microOrdenes = await prisma.orden.findMany({
+      where: whereBase,
+      select: {
+        fechaCreacion: true,
+        estado: { select: { nombre: true } },
+        paciente: { select: { sexo: true, fechaNacimiento: true, esBebe: true } },
+        detalles: { select: { cantidad: true } } // Solo cantidad para la grafica
       },
       orderBy: { fechaCreacion: "asc" }
     });
-
-    let totalOrdenes = ordenes.length;
-    let ordenesCompletadas = 0;
-    let totalPruebasProcesadas = 0;
-    const pacientesUnicosSet = new Set<string>();
 
     const distribucionSexo = { M: 0, F: 0 };
     const distribucionEdad = {
@@ -80,22 +87,18 @@ export async function GET(req: Request) {
       "Adultos (13-59)": 0,
       "Mayor (60+)": 0
     };
-
-    const conteoCategorias: Record<string, number> = {};
-    const conteoPruebas: Record<string, number> = {};
-    const conteoTendencia: Record<string, { ordenes: number; pruebas: number }> = {};
-    
     const conteoEstados: Record<string, number> = {};
-
+    
+    // Tendencia
+    const conteoTendencia: Record<string, { ordenes: number; pruebas: number }> = {};
     const diasDelPeriodo: string[] = [];
     const mesesSet = new Set<string>();
-    let temporalDate = new Date(fechaInicio);
     
-    // Si el rango es mayor a 60 días, agrupamos por meses
     const diferenciaDias = Math.ceil((fechaFin.getTime() - fechaInicio.getTime()) / (1000 * 3600 * 24));
     const agruparPorMes = diferenciaDias > 60;
     
     if (!agruparPorMes) {
+      let temporalDate = new Date(fechaInicio);
       while (temporalDate <= fechaFin) {
         const key = formatToCaracasDateString(temporalDate);
         if (!diasDelPeriodo.includes(key)) diasDelPeriodo.push(key);
@@ -104,30 +107,34 @@ export async function GET(req: Request) {
       }
     }
 
-    ordenes.forEach((orden) => {
-      if (orden.resultadosCompletados) ordenesCompletadas++;
-      
+    microOrdenes.forEach((orden) => {
+      // Tendencia
       let fechaKey = formatToCaracasDateString(orden.fechaCreacion);
       if (agruparPorMes) {
         const [y, m] = fechaKey.split("-");
         fechaKey = `${y}-${m}`;
         mesesSet.add(fechaKey);
       }
-      pacientesUnicosSet.add(orden.pacienteId);
-
+      
       if (!conteoTendencia[fechaKey]) {
         conteoTendencia[fechaKey] = { ordenes: 0, pruebas: 0 };
       }
-
       conteoTendencia[fechaKey].ordenes += 1;
+      
+      let pruebasEnOrden = 0;
+      orden.detalles.forEach(d => { pruebasEnOrden += d.cantidad; });
+      conteoTendencia[fechaKey].pruebas += pruebasEnOrden;
 
+      // Estados
       const estadoNombre = orden.estado?.nombre || "Desconocido";
       conteoEstados[estadoNombre] = (conteoEstados[estadoNombre] || 0) + 1;
 
+      // Sexo
       if (orden.paciente.sexo === "M" || orden.paciente.sexo === "F") {
         distribucionSexo[orden.paciente.sexo] += 1;
       }
 
+      // Edad
       const nacimiento = new Date(orden.paciente.fechaNacimiento);
       let edad = ahora.getFullYear() - nacimiento.getFullYear();
       const m = ahora.getMonth() - nacimiento.getMonth();
@@ -144,20 +151,42 @@ export async function GET(req: Request) {
       } else {
         distribucionEdad["Mayor (60+)"] += 1;
       }
-
-      orden.detalles.forEach((detalle) => {
-        totalPruebasProcesadas += detalle.cantidad;
-
-        conteoTendencia[fechaKey].pruebas += detalle.cantidad;
-
-        const catNombre = detalle.prueba?.subcategoria?.categoria?.nombre || "OTROS";
-        conteoCategorias[catNombre] = (conteoCategorias[catNombre] || 0) + detalle.cantidad;
-
-        const pruebaNombre = detalle.prueba?.nombre || "DESCONOCIDO";
-        conteoPruebas[pruebaNombre] = (conteoPruebas[pruebaNombre] || 0) + detalle.cantidad;
-      });
     });
 
+    // 3. Categorías y Pruebas con GroupBy Nativo
+    const pruebasAgrupadas = await prisma.detalleOrden.groupBy({
+      by: ['pruebaId'],
+      _sum: { cantidad: true },
+      where: { orden: whereBase }
+    });
+
+    const pruebaIds = pruebasAgrupadas.map(p => p.pruebaId).filter(Boolean) as number[];
+    const pruebasDb = await prisma.prueba.findMany({
+      where: { id: { in: pruebaIds } },
+      select: { 
+        id: true, 
+        nombre: true, 
+        subcategoria: { select: { categoria: { select: { nombre: true } } } } 
+      }
+    });
+
+    const mapaPruebas = new Map(pruebasDb.map(p => [p.id, p]));
+    const conteoCategorias: Record<string, number> = {};
+    const conteoPruebas: Record<string, number> = {};
+
+    pruebasAgrupadas.forEach(agg => {
+      if (!agg.pruebaId) return;
+      const prueba = mapaPruebas.get(agg.pruebaId);
+      const cantidad = agg._sum.cantidad || 0;
+      
+      const pruebaNombre = prueba?.nombre || "DESCONOCIDO";
+      conteoPruebas[pruebaNombre] = (conteoPruebas[pruebaNombre] || 0) + cantidad;
+
+      const catNombre = prueba?.subcategoria?.categoria?.nombre || "OTROS";
+      conteoCategorias[catNombre] = (conteoCategorias[catNombre] || 0) + cantidad;
+    });
+
+    // 4. Formateo de gráficas para el Frontend
     let graficoTendencia: any[] = [];
     if (agruparPorMes) {
       const mesesNombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
@@ -165,8 +194,8 @@ export async function GET(req: Request) {
         const [year, month] = fechaKey.split("-");
         return {
           label: `${mesesNombres[parseInt(month, 10) - 1]} ${year}`,
-          Pacientes: conteoTendencia[fechaKey].ordenes,
-          Pruebas: conteoTendencia[fechaKey].pruebas
+          Pacientes: conteoTendencia[fechaKey]?.ordenes || 0,
+          Pruebas: conteoTendencia[fechaKey]?.pruebas || 0
         };
       });
     } else {
@@ -184,7 +213,6 @@ export async function GET(req: Request) {
       { name: "Masculino", value: distribucionSexo.M },
       { name: "Femenino", value: distribucionSexo.F }
     ];
-
     const graficoEdad = Object.entries(distribucionEdad).map(([name, value]) => ({ name, value }));
     const graficoCategorias = Object.entries(conteoCategorias).map(([name, value]) => ({ name, value }));
     const graficoEstados = Object.entries(conteoEstados).map(([name, value]) => ({ name, value }));
@@ -198,13 +226,10 @@ export async function GET(req: Request) {
       .sort((a, b) => b.cantidad - a.cantidad)
       .slice(0, 5);
 
-    // NUEVO KPI: Tasa de Procesamiento (Órdenes Completadas / Total)
-    const tasaProcesamiento = totalOrdenes > 0 ? Math.round((ordenesCompletadas / totalOrdenes) * 100) : 0;
-
     return NextResponse.json({
       kpis: {
         totalOrdenes,
-        pacientesUnicos: pacientesUnicosSet.size,
+        pacientesUnicos,
         totalPruebas: totalPruebasProcesadas,
         tasaProcesamiento
       },
@@ -218,7 +243,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error: any) {
-    console.error("Error al generar estadísticas:", error);
+    console.error("Error al generar estadisticas:", error);
     return NextResponse.json({ error: `Error interno en el servidor analítico: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
 }

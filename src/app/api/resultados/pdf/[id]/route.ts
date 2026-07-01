@@ -7,7 +7,7 @@ import fs from "fs";
 import React from "react";
 import ReporteDocumentServer from "../../../../components/resultados/ReporteDocumentServer";
 
-export async function GET(request: Request, { params }: { params: any }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const resolvedParams = await params;
     const ordenId = parseInt(resolvedParams.id, 10);
@@ -18,15 +18,44 @@ export async function GET(request: Request, { params }: { params: any }) {
 
     const orden = await prisma.orden.findUnique({
       where: { id: ordenId },
-      include: {
-        paciente: true,
+      select: {
+        id: true,
+        fechaCreacion: true,
+        resultadosCompletados: true,
+        notasSubcategoria: {
+          select: {
+            subcategoria: true,
+            nota: true
+          }
+        },
+        paciente: {
+          select: {
+            nombreCompleto: true,
+            cedula: true,
+            fechaNacimiento: true,
+            esBebe: true,
+            sexo: true,
+            telefono: true,
+            direccion: true,
+            observaciones: true
+          }
+        },
         estado: { select: { nombre: true } },
         creadoPor: { select: { nombre: true } },
         detalles: {
-          include: {
+          select: {
+            id: true,
+            cantidad: true,
             resultado: {
-              include: {
-                valores: true,
+              select: {
+                valoresReferencia: true,
+                observaciones: true,
+                firmado: true,
+                valores: {
+                  select: {
+                    valorIngresado: true
+                  }
+                },
                 procesadoPor: {
                   select: {
                     id: true,
@@ -39,10 +68,22 @@ export async function GET(request: Request, { params }: { params: any }) {
               },
             },
             prueba: {
-              include: {
+              select: {
+                nombre: true,
+                unidades: true,
+                valoresReferencia: true,
+                categoriaVisual: true,
+                subcategoriaVisual: true,
+                codigo: true,
                 subcategoria: {
-                  include: {
-                    categoria: true,
+                  select: {
+                    nombre: true,
+                    esPaquete: true,
+                    categoria: {
+                      select: {
+                        nombre: true
+                      }
+                    },
                   },
                 },
               },

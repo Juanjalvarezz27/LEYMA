@@ -43,109 +43,115 @@ export async function GET(req: Request) {
       fechaFin = new Date("2100-01-01T00:00:00Z");
     }
 
-    // 1. OBTENER INGRESOS
-    const ingresos = await prisma.orden.findMany({
-      where: {
-        fechaCreacion: { gte: fechaInicio, lte: fechaFin },
-        estado: { nombre: "CERRADA" } 
-      },
-      include: { 
-        paciente: { select: { nombreCompleto: true } },
-        pagos: {
-          include: { metodo: true }
-        },
-        tipoDescuento: true,
-        detalles: {
-          include: {
-            tipoDescuento: true,
-            prueba: { select: { nombre: true } }
-          }
-        }
-      },
-      orderBy: { fechaCreacion: 'desc' }
-    });
+    // 1. KPIs CON AGGREGATE NATIVO DE PRISMA
+    const [ingresosAgg, gastosAgg, metodosPago] = await Promise.all([
+      prisma.orden.aggregate({
+        _sum: { totalUSD: true, totalBS: true },
+        where: { fechaCreacion: { gte: fechaInicio, lte: fechaFin }, estado: { nombre: "CERRADA" } }
+      }),
+      prisma.gasto.aggregate({
+        _sum: { montoUSD: true, montoBS: true },
+        where: { fechaGasto: { gte: fechaInicio, lte: fechaFin } }
+      }),
+      prisma.metodoPago.findMany()
+    ]);
 
-    // 2. OBTENER GASTOS
-    const gastos = await prisma.gasto.findMany({
-      where: { fechaGasto: { gte: fechaInicio, lte: fechaFin } },
-      include: { registradoPor: { select: { nombre: true } }, metodo: true },
-      orderBy: { fechaGasto: 'desc' }
-    });
-
-    // 3. MÉTODOS DE PAGO GENERALES
-    const metodosPago = await prisma.metodoPago.findMany();
-
-    // TOTALES USD Y BS
-    let totalIngresosUSD = 0; let totalIngresosBS = 0;
-    ingresos.forEach(i => {
-      const usd = Number(i.totalUSD) || 0;
-      totalIngresosUSD += usd;
-      totalIngresosBS += Number(i.totalBS) || (usd * tasaBCV);
-    });
-
-    let totalGastosUSD = 0; let totalGastosBS = 0;
-    gastos.forEach(g => {
-      const usd = Number(g.montoUSD) || 0;
-      totalGastosUSD += usd;
-      totalGastosBS += Number(g.montoBS) || (usd * tasaBCV);
-    });
+    const totalIngresosUSD = ingresosAgg._sum.totalUSD || 0;
+    const totalIngresosBS = ingresosAgg._sum.totalBS || (totalIngresosUSD * tasaBCV);
+    
+    const totalGastosUSD = gastosAgg._sum.montoUSD || 0;
+    const totalGastosBS = gastosAgg._sum.montoBS || (totalGastosUSD * tasaBCV);
 
     const balanceNetoUSD = totalIngresosUSD - totalGastosUSD;
     const balanceNetoBS = totalIngresosBS - totalGastosBS;
 
-    // TENDENCIA DIARIA
-    const conteoTendencia: Record<string, { ingresos: number; gastos: number }> = {};
-    const diasDelPeriodo: string[] = [];
-    let temporalDate = new Date(fechaInicio);
-    
+    // 2. TENDENCIA DIARIA (Uso micro-extracción para asegurar compatibilidad de Timezones sin raw complejo)
     const diferenciaDias = Math.ceil((fechaFin.getTime() - fechaInicio.getTime()) / (1000 * 3600 * 24));
     
+    let graficoTendencia: any[] = [];
+    const conteoTendencia: Record<string, { ingresos: number; gastos: number }> = {};
+    const diasDelPeriodo: string[] = [];
+
     if (diferenciaDias <= 60) {
+      // Extraemos SOLO fechas y montos (ultra ligero en memoria, soporta 100k+ registros sin problema)
+      const [fechasIngresos, fechasGastos] = await Promise.all([
+        prisma.orden.findMany({
+          where: { fechaCreacion: { gte: fechaInicio, lte: fechaFin }, estado: { nombre: "CERRADA" } },
+          select: { fechaCreacion: true, totalUSD: true }
+        }),
+        prisma.gasto.findMany({
+          where: { fechaGasto: { gte: fechaInicio, lte: fechaFin } },
+          select: { fechaGasto: true, montoUSD: true }
+        })
+      ]);
+
+      let temporalDate = new Date(fechaInicio);
       while (temporalDate <= fechaFin) {
         const key = formatToCaracasDateString(temporalDate);
         if (!diasDelPeriodo.includes(key)) diasDelPeriodo.push(key);
         if (!conteoTendencia[key]) conteoTendencia[key] = { ingresos: 0, gastos: 0 };
         temporalDate.setUTCHours(temporalDate.getUTCHours() + 24);
       }
+
+      fechasIngresos.forEach(i => {
+        const key = formatToCaracasDateString(i.fechaCreacion);
+        if (conteoTendencia[key]) conteoTendencia[key].ingresos += (Number(i.totalUSD) || 0);
+      });
+
+      fechasGastos.forEach(g => {
+        const key = formatToCaracasDateString(g.fechaGasto);
+        if (conteoTendencia[key]) conteoTendencia[key].gastos += (Number(g.montoUSD) || 0);
+      });
+
+      graficoTendencia = diasDelPeriodo.map((fecha) => {
+        const [year, month, day] = fecha.split("-");
+        return {
+          label: `${day}/${month}`,
+          Ingresos: parseFloat(conteoTendencia[fecha]?.ingresos.toFixed(2) || "0"),
+          Gastos: parseFloat(conteoTendencia[fecha]?.gastos.toFixed(2) || "0")
+        };
+      });
     }
 
-    ingresos.forEach(i => {
-      const key = formatToCaracasDateString(i.fechaCreacion);
-      if (conteoTendencia[key]) conteoTendencia[key].ingresos += (Number(i.totalUSD) || 0);
-    });
+    // 3. MÉTODOS DE PAGO (Group By Nativo)
+    const metodosMap = new Map(metodosPago.map(m => [m.id, m.nombre]));
 
-    gastos.forEach(g => {
-      const key = formatToCaracasDateString(g.fechaGasto);
-      if (conteoTendencia[key]) conteoTendencia[key].gastos += (Number(g.montoUSD) || 0);
-    });
+    const [gastosGrouped, pagosGrouped] = await Promise.all([
+      prisma.gasto.groupBy({
+        by: ['metodoId'],
+        _sum: { montoUSD: true },
+        where: { fechaGasto: { gte: fechaInicio, lte: fechaFin } }
+      }),
+      prisma.pago.groupBy({
+        by: ['metodoId'],
+        _sum: { montoUSD: true },
+        where: { orden: { fechaCreacion: { gte: fechaInicio, lte: fechaFin }, estado: { nombre: "CERRADA" } } }
+      })
+    ]);
 
-    const graficoTendencia = diasDelPeriodo.map((fecha) => {
-      const [year, month, day] = fecha.split("-");
-      return {
-        label: `${day}/${month}`,
-        Ingresos: parseFloat(conteoTendencia[fecha]?.ingresos.toFixed(2) || "0"),
-        Gastos: parseFloat(conteoTendencia[fecha]?.gastos.toFixed(2) || "0")
-      };
-    });
-
-    // DISTRIBUCIÓN POR MÉTODO (GASTOS)
     const gastosPorMetodo: Record<string, number> = {};
-    gastos.forEach(g => {
-      const nombre = g.metodo.nombre;
-      gastosPorMetodo[nombre] = (gastosPorMetodo[nombre] || 0) + (Number(g.montoUSD) || 0);
+    gastosGrouped.forEach(g => {
+      const nombre = metodosMap.get(g.metodoId) || "Desconocido";
+      gastosPorMetodo[nombre] = (gastosPorMetodo[nombre] || 0) + (g._sum.montoUSD || 0);
     });
     const graficoGastos = Object.entries(gastosPorMetodo).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value);
 
-    // DISTRIBUCIÓN POR MÉTODO (INGRESOS)
     const ingresosPorMetodo: Record<string, number> = {};
-    ingresos.forEach(i => {
-      const nombreMetodo = i.pagos && i.pagos.length > 0 ? i.pagos[0].metodo.nombre : "EFECTIVO_USD";
-      ingresosPorMetodo[nombreMetodo] = (ingresosPorMetodo[nombreMetodo] || 0) + (Number(i.totalUSD) || 0);
+    pagosGrouped.forEach(p => {
+      const nombre = metodosMap.get(p.metodoId) || "EFECTIVO_USD";
+      ingresosPorMetodo[nombre] = (ingresosPorMetodo[nombre] || 0) + (p._sum.montoUSD || 0);
     });
     const graficoIngresos = Object.entries(ingresosPorMetodo).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value);
 
-    // HISTORIAL (Solo mandamos los gastos para la tabla que pediste)
-    const historialRaw = gastos.map(g => ({
+
+    // 4. HISTORIAL GASTOS (Micro-extracción)
+    const gastosRaw = await prisma.gasto.findMany({
+      where: { fechaGasto: { gte: fechaInicio, lte: fechaFin } },
+      select: { id: true, concepto: true, montoUSD: true, montoBS: true, fechaGasto: true, metodo: { select: { nombre: true } }, registradoPor: { select: { nombre: true } } },
+      orderBy: { fechaGasto: 'desc' }
+    });
+
+    const historial = gastosRaw.map(g => ({
       id: `gas-${g.id}`,
       tipo: 'GASTO',
       concepto: g.concepto,
@@ -156,12 +162,34 @@ export async function GET(req: Request) {
       responsable: g.registradoPor.nombre
     }));
 
-    const historial = historialRaw.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
+    // 5. HISTORIAL DESCUENTOS (Solo descargamos las órdenes que de verdad tienen descuentos)
+    const ingresosConDescuento = await prisma.orden.findMany({
+      where: {
+        fechaCreacion: { gte: fechaInicio, lte: fechaFin },
+        estado: { nombre: "CERRADA" },
+        OR: [
+          { descuentoGeneral: { gt: 0 } },
+          { detalles: { some: { descuento: { gt: 0 } } } }
+        ]
+      },
+      select: {
+        id: true, fechaCreacion: true, descuentoGeneral: true, subtotalUSD: true,
+        paciente: { select: { nombreCompleto: true } },
+        tipoDescuento: { select: { nombre: true } },
+        detalles: {
+          where: { descuento: { gt: 0 } },
+          select: {
+            id: true, descuento: true, precioCongeladoUSD: true, cantidad: true,
+            prueba: { select: { nombre: true } },
+            tipoDescuento: { select: { nombre: true } }
+          }
+        }
+      },
+      orderBy: { fechaCreacion: 'desc' }
+    });
 
-    // HISTORIAL DESCUENTOS
     const historialDescuentosRaw: any[] = [];
-    ingresos.forEach(orden => {
-      // Descuento general
+    ingresosConDescuento.forEach(orden => {
       if (orden.descuentoGeneral > 0) {
         let montoDescuentoUSD = Number(orden.descuentoGeneral) || 0;
         const motivo = orden.tipoDescuento?.nombre || 'Descuento General';
@@ -183,7 +211,6 @@ export async function GET(req: Request) {
         });
       }
       
-      // Descuentos por detalle
       if (orden.detalles) {
         orden.detalles.forEach(detalle => {
           if (detalle.descuento > 0) {
@@ -219,8 +246,8 @@ export async function GET(req: Request) {
       graficoTendencia,
       graficoGastos,
       graficoIngresos, 
-      historial, // <-- Ahora es exclusivamente el histórico de los gastos del período
-      historialDescuentos, // <-- Historial de descuentos
+      historial,
+      historialDescuentos,
       metodosPago 
     });
 

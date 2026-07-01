@@ -20,6 +20,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
     }
 
+    const ordenExistente = await prisma.orden.findUnique({
+      where: { id: ordenId },
+      include: { paciente: true }
+    });
+
+    if (!ordenExistente) {
+      throw new Error("Orden inválida: La orden no existe en el sistema.");
+    }
+
+    if (!ordenExistente.pacienteId || !ordenExistente.paciente) {
+      throw new Error("Orden inválida: Falta relación crítica con el paciente.");
+    }
+
     let validadorId = usuarioSesion.id;
     let validacionActiva = false;
 
@@ -64,7 +77,8 @@ export async function POST(req: Request) {
         const nextFirmado = accion === "EDITAR" ? (currentRes?.firmado ?? true) : (debeFirmarEste ? true : (currentRes?.firmado || false));
         const nextFecha = accion === "EDITAR" ? (currentRes?.fechaProcesado || new Date()) : (debeFirmarEste ? new Date() : (currentRes?.fechaProcesado || new Date()));
 
-        await tx.resultadoPrueba.upsert({
+        // UPSERT DEL ENCABEZADO (ResultadoPrueba)
+        const resPrueba = await tx.resultadoPrueba.upsert({
           where: { detalleOrdenId: res.detalleOrdenId },
           update: {
             observaciones: res.observaciones || null,
@@ -72,13 +86,6 @@ export async function POST(req: Request) {
             usuarioId: nextUsuarioId,
             firmado: nextFirmado,
             fechaProcesado: nextFecha,
-            valores: {
-              deleteMany: {}, 
-              create: res.valores.map((v: any) => ({
-                pruebaId: v.pruebaId,
-                valorIngresado: v.valorIngresado
-              }))
-            }
           },
           create: {
             detalleOrdenId: res.detalleOrdenId,
@@ -87,14 +94,36 @@ export async function POST(req: Request) {
             observaciones: res.observaciones || null,
             valoresReferencia: res.valoresReferencia || null,
             fechaProcesado: nextFecha,
-            valores: {
-              create: res.valores.map((v: any) => ({
-                pruebaId: v.pruebaId,
-                valorIngresado: v.valorIngresado
-              }))
-            }
           }
         });
+
+        // OPTIMIZACIÓN: Prevenir Dead Tuples y Bloat
+        // Buscamos los valores que ya existen para este resultado
+        const existingValores = await tx.valorResultado.findMany({
+          where: { resultadoId: resPrueba.id }
+        });
+        const existingValoresMap = new Map(existingValores.map(ev => [ev.pruebaId, ev.id]));
+
+        // Iteramos los valores que vienen del frontend y actualizamos o creamos uno por uno.
+        // Esto permite a PostgreSQL hacer un HOT (Heap-Only-Tuple) update, sin afectar los índices,
+        // lo que ahorra un masivo espacio de disco en comparación al deleteMany + create de antes.
+        for (const v of res.valores) {
+          const valorId = existingValoresMap.get(v.pruebaId);
+          if (valorId) {
+             await tx.valorResultado.update({
+               where: { id: valorId },
+               data: { valorIngresado: v.valorIngresado }
+             });
+          } else {
+             await tx.valorResultado.create({
+               data: {
+                 resultadoId: resPrueba.id,
+                 pruebaId: v.pruebaId,
+                 valorIngresado: v.valorIngresado
+               }
+             });
+          }
+        }
       }
 
       // Verificamos si absolutamente TODOS los detalles de la orden ya están FIRMADOS
@@ -115,12 +144,10 @@ export async function POST(req: Request) {
       if (notasSubcategoria && notasSubcategoria.length > 0) {
         for (const ns of notasSubcategoria) {
           if (!ns.nota || ns.nota.trim() === '') {
-            // Si la nota está vacía, la eliminamos si existe
             await tx.notaSubcategoriaOrden.deleteMany({
               where: { ordenId: ordenId, subcategoria: ns.subcategoria }
             });
           } else {
-            // Si tiene texto, hacemos upsert
             await tx.notaSubcategoriaOrden.upsert({
               where: { 
                 ordenId_subcategoria: { ordenId: ordenId, subcategoria: ns.subcategoria } 
@@ -132,8 +159,9 @@ export async function POST(req: Request) {
         }
       }
     }, {
-      maxWait: 15000,
-      timeout: 60000
+      // Reducción drástica de timeout para evitar bloqueos eternos (locks)
+      maxWait: 5000,   // Espera máxima para adquirir candado: 5 segundos
+      timeout: 10000   // Tiempo máximo para completar toda la transacción: 10 segundos
     });
 
     return NextResponse.json({ success: true });

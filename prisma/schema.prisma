@@ -115,6 +115,9 @@ model Paciente {
   observaciones   String?  @db.Text
   ordenes         Orden[]
   fechaRegistro   DateTime @default(now())
+
+  @@index([nombreCompleto])
+  @@index([fechaRegistro])
 }
 
 model Orden {
@@ -138,6 +141,10 @@ model Orden {
   detalles              DetalleOrden[]
   serviciosExtra        ServicioEnOrden[]
   notasSubcategoria     NotaSubcategoriaOrden[]
+
+  @@index([fechaCreacion])
+  @@index([estadoId])
+  @@index([pacienteId])
 }
 
 model DetalleOrden {

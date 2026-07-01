@@ -198,27 +198,39 @@ export default function CierreCajaPage() {
       )}
 
       {/* HEADER PRINCIPAL */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between mb-8 gap-6 pt-2">
-        <div>
+      <div className="flex flex-col xl:flex-row xl:items-start justify-between mb-8 gap-6 pt-2">
+        <div className="flex flex-col gap-3">
           <h1 className="text-3xl md:text-4xl font-extrabold text-[#111827] flex items-center gap-3">
-            <Calculator className="text-indigo-600" size={36} strokeWidth={2.5} />
-            Cierre Diario
+            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-2xl">
+              <Calculator size={28} strokeWidth={2.5} />
+            </div>
+            {data?.tituloCaja || "Cierre Diario"}
           </h1>
-          <p className="text-sm font-medium text-slate-500 mt-2 flex flex-wrap items-center gap-3">
-            <span>Tasa Aplicada: <strong className="text-[#111827]">Bs. {tasaBCV?.toFixed(2) || "---"}</strong></span>
-            {data?.ultimoCierre && (
-              <>
-                <span className="hidden md:inline w-1 h-1 rounded-full bg-slate-300"></span>
-                <span>Último cierre: <strong className="text-[#111827]">{new Date(data.ultimoCierre.fecha).toLocaleString('es-VE')}</strong> por {data.ultimoCierre.por}</span>
-              </>
+          
+          <div className="flex flex-wrap items-center gap-2 mt-1">
+            {data?.esAtrasado && data?.fechaTarget && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 text-xs font-black rounded-xl border border-amber-200 shadow-sm">
+                <AlertTriangle size={14} strokeWidth={2.5} />
+                Corresponde al {new Date(data.fechaTarget + 'T12:00:00').toLocaleDateString('es-VE', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}
+              </span>
             )}
-          </p>
+            
+            <span className="inline-flex items-center px-3 py-1.5 bg-white border border-slate-200 rounded-xl shadow-sm text-xs font-medium text-slate-500">
+              Tasa Aplicada: <strong className="text-[#111827] ml-1">Bs. {tasaBCV?.toFixed(2) || "---"}</strong>
+            </span>
+            
+            {data?.ultimoCierre && (
+              <span className="inline-flex items-center px-3 py-1.5 bg-white border border-slate-200 rounded-xl shadow-sm text-xs font-medium text-slate-500">
+                Último cierre: <strong className="text-[#111827] ml-1 mr-1">{new Date(data.ultimoCierre.fecha).toLocaleString('es-VE')}</strong> por {data.ultimoCierre.por}
+              </span>
+            )}
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 shrink-0">
           <div className="flex items-center bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm w-max">
             {[
-              { id: "HOY", label: "Caja de Hoy", icon: <Wallet size={16}/> },
+              { id: "HOY", label: data?.esAtrasado ? "Caja Pendiente" : "Caja de Hoy", icon: <Wallet size={16}/> },
               { id: "HISTORIAL", label: "Historial de Cierres", icon: <History size={16}/> }
             ].map((opt) => (
               <button
@@ -375,8 +387,8 @@ export default function CierreCajaPage() {
               <div className="flex items-center gap-4">
                 <div className="p-2 bg-emerald-100 rounded-xl"><CheckCircle size={24} /></div>
                 <div>
-                  <h3 className="font-extrabold text-sm uppercase tracking-wide">El turno de hoy ha sido cerrado</h3>
-                  <p className="text-xs font-medium opacity-80">El dinero físico fue auditado. Los nuevos movimientos que registres entrarán en la caja de mañana.</p>
+                  <h3 className="font-extrabold text-sm uppercase tracking-wide">El turno ha sido cerrado</h3>
+                  <p className="text-xs font-medium opacity-80">El dinero físico fue auditado. Los nuevos movimientos que registres entrarán en la caja del próximo turno.</p>
                 </div>
               </div>
               <button

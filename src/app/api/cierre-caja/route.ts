@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getCaracasTodayBounds, getCaracasBoundsForDate } from "../../../lib/dateUtils";
+import { getCaracasTodayBounds, getCaracasBoundsForDate, formatToCaracasDateString, getCaracasDateString } from "../../../lib/dateUtils";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
 
@@ -17,19 +17,55 @@ export async function GET(req: Request) {
 
     let fechaInicio: Date;
     let fechaFin: Date;
+    let tituloCaja = "Cierre Diario";
+    let fechaTarget = "";
+    let esAtrasado = false;
 
     if (periodo === "CUSTOM" && inicioStr && finStr) {
       // Si mandan un rango custom
       fechaInicio = new Date(`${inicioStr}T00:00:00`);
       fechaFin = new Date(`${finStr}T23:59:59`);
+      tituloCaja = `Cierre (${inicioStr} al ${finStr})`;
+      fechaTarget = inicioStr;
     } else {
-      // Rango estricto de HOY adaptado a Caracas
-      const bounds = getCaracasTodayBounds();
-      fechaInicio = bounds.inicio;
-      fechaFin = bounds.fin;
+      // Buscar el último cierre para determinar desde qué fecha hay órdenes pendientes
+      const ultimoCierre = await prisma.cierreCaja.findFirst({
+        orderBy: { fechaCierre: 'desc' }
+      });
+      
+      const oldestPendingOrder = await prisma.orden.findFirst({
+        where: {
+          estado: { nombre: { not: "ANULADA" } },
+          ...(ultimoCierre ? { fechaCreacion: { gt: ultimoCierre.fechaCierre } } : {})
+        },
+        orderBy: { fechaCreacion: 'asc' }
+      });
+
+      if (oldestPendingOrder) {
+        // Hay una orden pendiente, usamos la fecha de ese día
+        const dateString = formatToCaracasDateString(oldestPendingOrder.fechaCreacion);
+        const bounds = getCaracasBoundsForDate(dateString);
+        fechaInicio = bounds.inicio;
+        fechaFin = bounds.fin;
+        fechaTarget = dateString;
+        
+        const todayString = getCaracasDateString();
+        if (dateString !== todayString) {
+          esAtrasado = true;
+          tituloCaja = `Cierre Atrasado`;
+        } else {
+          tituloCaja = "Cierre de Hoy";
+        }
+      } else {
+        const bounds = getCaracasTodayBounds();
+        fechaInicio = bounds.inicio;
+        fechaFin = bounds.fin;
+        tituloCaja = "Cierre de Hoy";
+        fechaTarget = getCaracasDateString();
+      }
     }
 
-    // 1. VERIFICAR SI YA SE CERRÓ HOY
+    // 1. VERIFICAR SI YA SE CERRÓ LA CAJA DEL PERIODO ENCONTRADO
     const cierreDeHoy = await prisma.cierreCaja.findFirst({
       where: { fechaCierre: { gte: fechaInicio, lte: fechaFin } }
     });
@@ -84,6 +120,9 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({
+      tituloCaja,
+      fechaTarget,
+      esAtrasado,
       yaCerroHoy,
       historialCierres,
       resumen: {
@@ -126,19 +165,40 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { totalCalculadoUSD, totalCalculadoBS, totalDeclaradoUSD, totalDeclaradoBS, observaciones, tasaBCV, desglose } = body;
     
-    // Obtenemos el rango del día actual en Caracas
-    const { inicio: fechaInicio } = getCaracasTodayBounds();
+    const ultimoCierre = await prisma.cierreCaja.findFirst({ orderBy: { fechaCierre: 'desc' } });
+    const oldestPendingOrder = await prisma.orden.findFirst({
+      where: {
+        estado: { nombre: { not: "ANULADA" } },
+        ...(ultimoCierre ? { fechaCreacion: { gt: ultimoCierre.fechaCierre } } : {})
+      },
+      orderBy: { fechaCreacion: 'asc' }
+    });
+
+    let fechaInicioBounds: Date;
+    let fechaFinBounds: Date;
+
+    if (oldestPendingOrder) {
+      const dateString = formatToCaracasDateString(oldestPendingOrder.fechaCreacion);
+      const bounds = getCaracasBoundsForDate(dateString);
+      fechaInicioBounds = bounds.inicio;
+      fechaFinBounds = bounds.fin;
+    } else {
+      const bounds = getCaracasTodayBounds();
+      fechaInicioBounds = bounds.inicio;
+      fechaFinBounds = bounds.fin;
+    }
 
     const cierreExistente = await prisma.cierreCaja.findFirst({
-      where: { fechaCierre: { gte: fechaInicio } }
+      where: { fechaCierre: { gte: fechaInicioBounds, lte: fechaFinBounds } }
     });
 
     if (cierreExistente) {
-      return NextResponse.json({ error: "El turno de hoy ya fue cerrado." }, { status: 400 });
+      return NextResponse.json({ error: "El turno para esta fecha ya fue cerrado." }, { status: 400 });
     }
 
-    const ultimoCierre = await prisma.cierreCaja.findFirst({ orderBy: { fechaCierre: 'desc' } });
-    const fechaApertura = ultimoCierre ? ultimoCierre.fechaCierre : fechaInicio;
+    const fechaApertura = ultimoCierre ? ultimoCierre.fechaCierre : fechaInicioBounds;
+    const ahora = new Date();
+    const fechaCierre = fechaFinBounds < ahora ? fechaFinBounds : ahora;
 
     const descuadreUSD = parseFloat(totalDeclaradoUSD) - parseFloat(totalCalculadoUSD);
     const descuadreBS = parseFloat(totalDeclaradoBS) - parseFloat(totalCalculadoBS);
@@ -147,6 +207,7 @@ export async function POST(req: Request) {
       data: {
         usuarioId: usuarioSesion.id,
         fechaApertura,
+        fechaCierre,
         totalCalculadoUSD: parseFloat(totalCalculadoUSD),
         totalCalculadoBS: parseFloat(totalCalculadoBS),
         totalDeclaradoUSD: parseFloat(totalDeclaradoUSD),

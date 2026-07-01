@@ -63,6 +63,12 @@ export default function BuscadorPaciente({
                 const edad = pac.fechaNacimiento 
                   ? new Date().getFullYear() - new Date(pac.fechaNacimiento).getFullYear() 
                   : "?";
+                  
+                // Extraer YYYY-MM-DD y convertir a DD/MM/YYYY
+                const fechaFormateada = pac.fechaNacimiento
+                  ? new Date(pac.fechaNacimiento).toISOString().split('T')[0].split('-').reverse().join('/')
+                  : "Sin Fecha";
+
                 return (
                   <button
                     key={pac.id}
@@ -72,7 +78,9 @@ export default function BuscadorPaciente({
                   >
                     <span className="font-bold text-[#1D1D1F] group-hover:text-[#0071E3]">{pac.nombreCompleto}</span>
                     <span className="text-[11px] text-slate-500 font-medium mt-0.5">
-                      {pac.cedula ? `C.I: ${pac.cedula}` : "Sin Cédula"} • {edad} años
+                      {pac.cedula 
+                        ? `C.I: ${pac.cedula} • ${edad} años` 
+                        : `Sin Cédula • F. Nac: ${fechaFormateada}`} {pac.telefono ? `• Tel: ${pac.telefono}` : ""}
                     </span>
                   </button>
                 );

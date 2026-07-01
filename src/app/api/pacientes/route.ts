@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
+export function normalizarNombre(nombre: string): string {
+  if (!nombre) return "";
+  return nombre
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Elimina acentos
+    .toUpperCase()
+    .replace(/\s+/g, " ") // Reduce múltiples espacios a uno solo
+    .trim();
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q") || searchParams.get("cedula");
@@ -39,11 +49,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "La fecha de nacimiento proporcionada es inválida." }, { status: 400 });
     }
 
+    const nombreNormalizado = normalizarNombre(body.nombreCompleto);
+    const esSinCedula = body.esBebe || !cedulaLimpia;
+
+    // VALIDACIÓN ANTI-DUPLICADOS (HOMONIMIA) PARA PACIENTES SIN CÉDULA
+    if (esSinCedula) {
+      const existente = await prisma.paciente.findFirst({
+        where: {
+          nombreCompleto: nombreNormalizado,
+          fechaNacimiento: fechaNacimiento
+        }
+      });
+      if (existente) {
+        return NextResponse.json(
+          { error: "Ya existe un paciente sin cédula registrado con este mismo nombre exacto y fecha de nacimiento." },
+          { status: 400 }
+        );
+      }
+    }
+
     const nuevoPaciente = await prisma.paciente.create({
       data: {
         // Si es bebe o la cedula esta vacia, guardamos NULL para no romper el Unique de la DB
-        cedula: (body.esBebe || !cedulaLimpia) ? null : cedulaLimpia,
-        nombreCompleto: body.nombreCompleto.toUpperCase(),
+        cedula: esSinCedula ? null : cedulaLimpia,
+        nombreCompleto: nombreNormalizado,
         fechaNacimiento: fechaNacimiento,
         esBebe: body.esBebe,
         sexo: body.sexo,

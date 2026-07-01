@@ -4,13 +4,17 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Calculator, Users, Wallet, Landmark, Filter, Search, Loader2, CheckCircle,
   AlertTriangle, ChevronLeft, ChevronRight, Lock, AlertCircle, Save, X,
-  ChevronDown, ChevronUp, Activity, History, Trash2
+  ChevronDown, ChevronUp, Activity, History, Trash2, FileText, Printer, Download
 } from "lucide-react";
 import { toast } from "react-toastify";
 import useTasaBCV from "../../hooks/useTasaBcv";
 import ModalCierre from "../../components/cierre/ModalCierre";
 import ModalConfirmacion from "../../components/ui/ModalConfirmacion";
 import { normalizeSearchString } from "../../../lib/stringUtils";
+import { pdf } from "@react-pdf/renderer";
+import CierreDiarioPDF from "../../components/cierre/CierreDiarioPDF";
+import HistorialCierresPDF from "../../components/cierre/HistorialCierresPDF";
+import ModalPreviewCierrePDF from "../../components/cierre/ModalPreviewCierrePDF";
 
 type VistaType = "HOY" | "HISTORIAL";
 type PeriodoType = "HOY" | "CUSTOM";
@@ -21,7 +25,7 @@ const formatearMetodo = (str: string) => {
 };
 
 export default function CierreCajaPage() {
-  const { tasa: tasaBCV, loading: loadingTasa } = useTasaBCV();
+  const { tasa: tasaBcvEnVivo, loading: loadingTasa } = useTasaBCV();
 
   const [vista, setVista] = useState<VistaType>("HOY");
   const [periodo, setPeriodo] = useState<PeriodoType>("HOY");
@@ -30,6 +34,7 @@ export default function CierreCajaPage() {
 
   const [data, setData] = useState<any>(null);
   const [cargando, setCargando] = useState(true);
+  const tasaAplicada = data?.tasaDelDia || tasaBcvEnVivo;
 
   const [busqueda, setBusqueda] = useState("");
   const [paginaActual, setPaginaActual] = useState(1);
@@ -52,7 +57,7 @@ export default function CierreCajaPage() {
     setCargando(true);
     try {
       const timestamp = new Date().getTime();
-      let url = `/api/cierre-caja?tasa=${tasaBCV || 39}&t=${timestamp}`;
+      let url = `/api/cierre-caja?tasa=${tasaBcvEnVivo || 39}&t=${timestamp}`;
       if (periodo === "CUSTOM") {
         if (!fechaInicio || !fechaFin) { setCargando(false); return; }
         url += `&periodo=CUSTOM&inicio=${fechaInicio}&fin=${fechaFin}`;
@@ -94,11 +99,38 @@ export default function CierreCajaPage() {
 
   useEffect(() => {
     if (!loadingTasa) fetchCierre();
-  }, [periodo, loadingTasa, tasaBCV]);
+  }, [periodo, loadingTasa, tasaBcvEnVivo]);
 
   const aplicarFiltroCustom = () => {
     if (!fechaInicio || !fechaFin) return toast.warning("Seleccione fechas");
     fetchCierre();
+  };
+
+  const [previewPDF, setPreviewPDF] = useState<"DIARIO" | "HISTORIAL" | "INDIVIDUAL" | null>(null);
+  const [dataIndividual, setDataIndividual] = useState<any>(null);
+
+  const abrirPreviewCierre = () => {
+    if (!data) return;
+    setPreviewPDF("DIARIO");
+  };
+
+  const abrirPreviewHistorial = () => {
+    if (!historialFiltrado || historialFiltrado.length === 0) return toast.warning("No hay datos en el historial para imprimir.");
+    setPreviewPDF("HISTORIAL");
+  };
+
+  const abrirPreviewIndividual = async (id: string) => {
+    const toastId = toast.loading("Cargando detalles del cierre...");
+    try {
+      const res = await fetch(`/api/cierre-caja?cierreId=${id}`);
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      setDataIndividual(result);
+      setPreviewPDF("INDIVIDUAL");
+      toast.update(toastId, { render: "Cargado exitosamente", type: "success", isLoading: false, autoClose: 2000 });
+    } catch (error: any) {
+      toast.update(toastId, { render: error.message, type: "error", isLoading: false, autoClose: 3000 });
+    }
   };
 
   const formatMoney = (amount: number, isBs = false) => {
@@ -173,7 +205,6 @@ export default function CierreCajaPage() {
 
   return (
     <div className="w-full min-h-screen p-4 md:p-8 bg-[#FAFAFA] animate-in fade-in duration-300">
-
       <ModalConfirmacion
         isOpen={!!modalAnularCierreId}
         onClose={() => setModalAnularCierreId(null)}
@@ -188,7 +219,7 @@ export default function CierreCajaPage() {
       {showModalCierre && (
         <ModalCierre
           data={data}
-          tasaBCV={tasaBCV}
+          tasaBCV={tasaAplicada}
           onClose={() => setShowModalCierre(false)}
           onSuccess={() => {
             setShowModalCierre(false);
@@ -216,7 +247,7 @@ export default function CierreCajaPage() {
             )}
             
             <span className="inline-flex items-center px-3 py-1.5 bg-white border border-slate-200 rounded-xl shadow-sm text-xs font-medium text-slate-500">
-              Tasa Aplicada: <strong className="text-[#111827] ml-1">Bs. {tasaBCV?.toFixed(2) || "---"}</strong>
+              Tasa Aplicada: <strong className="text-[#111827] ml-1">Bs. {tasaAplicada?.toFixed(2) || "---"}</strong>
             </span>
             
             {data?.ultimoCierre && (
@@ -246,23 +277,35 @@ export default function CierreCajaPage() {
           </div>
 
           {vista === "HOY" && (
-            data?.yaCerroHoy ? (
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => data?.historialCierres?.[0]?.id && anularCierre(data.historialCierres[0].id)}
-                className="px-6 py-3 text-emerald-700 bg-emerald-100 hover:bg-red-100 hover:text-red-700 text-xs font-extrabold rounded-2xl transition-all shadow-md flex items-center justify-center gap-2 group min-w-[160px]"
-                title="Anular Cierre de Hoy"
+                onClick={abrirPreviewCierre}
+                disabled={previewPDF !== null || !data}
+                className="px-5 py-3 text-[#111827] bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-xs font-extrabold rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                title="Imprimir Cierre Diario en PDF"
               >
-                <span className="group-hover:hidden flex items-center gap-2"><CheckCircle size={16} strokeWidth={2.5} /> Turno Cerrado</span>
-                <span className="hidden group-hover:flex items-center gap-2"><Trash2 size={16} strokeWidth={2.5} /> Anular Cierre</span>
+                {previewPDF === "DIARIO" ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} strokeWidth={2.5} />} 
+                <span className="hidden sm:inline">Imprimir Cierre</span>
               </button>
-            ) : (
-              <button
-                onClick={() => setShowModalCierre(true)}
-                className="px-6 py-3 text-white text-xs font-extrabold rounded-2xl transition-all shadow-md flex items-center gap-2 bg-[#111827] hover:bg-black"
-              >
-                <Lock size={16} strokeWidth={2.5} /> Ejecutar Cierre
-              </button>
-            )
+
+              {data?.yaCerroHoy ? (
+                <button
+                  onClick={() => data?.historialCierres?.[0]?.id && anularCierre(data.historialCierres[0].id)}
+                  className="px-6 py-3 text-emerald-700 bg-emerald-100 hover:bg-red-100 hover:text-red-700 text-xs font-extrabold rounded-2xl transition-all shadow-md flex items-center justify-center gap-2 group min-w-[160px]"
+                  title="Anular Cierre de Hoy"
+                >
+                  <span className="group-hover:hidden flex items-center gap-2"><CheckCircle size={16} strokeWidth={2.5} /> Turno Cerrado</span>
+                  <span className="hidden group-hover:flex items-center gap-2"><Trash2 size={16} strokeWidth={2.5} /> Anular Cierre</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowModalCierre(true)}
+                  className="px-6 py-3 text-white text-xs font-extrabold rounded-2xl transition-all shadow-md flex items-center gap-2 bg-[#111827] hover:bg-black"
+                >
+                  <Lock size={16} strokeWidth={2.5} /> Ejecutar Cierre
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -304,6 +347,15 @@ export default function CierreCajaPage() {
                   <input type="date" value={fechaFinHistorial} onChange={(e) => {setFechaFinHistorial(e.target.value); setPaginaActualHistorial(1);}} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-600" />
                 </div>
               )}
+              <button
+                onClick={abrirPreviewHistorial}
+                disabled={previewPDF !== null || historialFiltrado.length === 0}
+                className="px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-600 hover:text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 ml-auto disabled:opacity-50"
+                title="Descargar Historial en PDF"
+              >
+                {previewPDF === "HISTORIAL" ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} strokeWidth={2.5} />} 
+                <span className="hidden lg:inline">Exportar PDF</span>
+              </button>
             </div>
           </div>
           <div className="overflow-x-auto w-full">
@@ -353,13 +405,22 @@ export default function CierreCajaPage() {
                         )}
                       </td>
                       <td className="px-8 py-5 text-center whitespace-nowrap">
-                        <button
-                          onClick={() => anularCierre(c.id)}
-                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                          title="Anular Cierre"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => abrirPreviewIndividual(c.id)}
+                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                            title="Imprimir Detalle"
+                          >
+                            <Printer size={18} />
+                          </button>
+                          <button
+                            onClick={() => anularCierre(c.id)}
+                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                            title="Anular Cierre"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -432,7 +493,7 @@ export default function CierreCajaPage() {
                       {/* Agrandado de text-xl a text-2xl */}
                       <span className="text-2xl font-extrabold text-emerald-600 truncate">{formatMoney(box.ingresosUSD)}</span>
                       {/* Agrandado de text-xs a text-sm */}
-                      <span className="text-sm font-bold text-emerald-700/80 mt-0.5 truncate">{formatMoney(box.ingresosUSD * (tasaBCV || 1), true)}</span>
+                      <span className="text-sm font-bold text-emerald-700/80 mt-0.5 truncate">{formatMoney(box.ingresosBS, true)}</span>
                     </div>
                   </div>
                 </div>
@@ -535,8 +596,20 @@ export default function CierreCajaPage() {
               </div>
             </div>
           </div>
-
         </div>
+      )}
+      
+      {previewPDF && (
+        <ModalPreviewCierrePDF
+          tipo={previewPDF}
+          dataDiario={previewPDF === "INDIVIDUAL" ? dataIndividual : data}
+          tasaBCV={previewPDF === "INDIVIDUAL" ? dataIndividual?.tasaDelDia : (tasaAplicada || 1)}
+          historialData={historialFiltrado}
+          onClose={() => {
+            setPreviewPDF(null);
+            setDataIndividual(null);
+          }}
+        />
       )}
     </div>
   );

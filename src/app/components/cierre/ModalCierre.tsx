@@ -89,9 +89,7 @@ export default function ModalCierre({ data, tasaBCV, onClose, onSuccess }: Modal
     ? Object.values(declaradosPorMetodo).reduce((sum, val) => sum + (parseFloat(val.bs) || 0), 0)
     : parseFloat(declaradoGlobalBS || "0");
 
-  const totalEsperadoBS = data?.desglosesCaja?.length > 0 
-    ? data.desglosesCaja.reduce((sum: number, box: any) => sum + (box.netoUSD * (tasaBCV || 1)), 0)
-    : (calculoUSD * (tasaBCV || 1));
+  const totalEsperadoBS = data?.resumen?.totalEnCajaBS || 0;
 
   const descuadreCalculadoUSD = Math.round((totalDeclaradoDinamicamenteUSD - calculoUSD) * 100) / 100;
   const descuadreCalculadoBS = Math.round((totalDeclaradoDinamicamenteBS - totalEsperadoBS) * 100) / 100;
@@ -170,7 +168,7 @@ export default function ModalCierre({ data, tasaBCV, onClose, onSuccess }: Modal
                     <div key={box.nombre} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl transition-all hover:border-indigo-100 hover:shadow-md hover:bg-white">
                       <div className="flex justify-between items-center mb-3">
                         <h4 className="text-sm font-extrabold text-[#111827] uppercase tracking-wide">{formatearMetodo(box.nombre)}</h4>
-                        <span className="text-xs font-bold text-slate-400">Esperado: <strong className="text-emerald-600">{formatMoney(box.netoUSD)}</strong> <span className="mx-0.5">/</span> <strong className="text-[#111827]">{formatMoney(box.netoUSD * (tasaBCV || 1), true)}</strong></span>
+                        <span className="text-xs font-bold text-slate-400">Esperado: <strong className="text-emerald-600">{formatMoney(box.netoUSD)}</strong> <span className="mx-0.5">/</span> <strong className="text-[#111827]">{formatMoney(box.ingresosBS, true)}</strong></span>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="relative">

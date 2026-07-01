@@ -15,13 +15,25 @@ export async function GET(req: Request) {
     const inicioStr = searchParams.get("inicio");
     const finStr = searchParams.get("fin");
 
+    const cierreId = searchParams.get("cierreId");
+
     let fechaInicio: Date;
     let fechaFin: Date;
     let tituloCaja = "Cierre Diario";
     let fechaTarget = "";
     let esAtrasado = false;
+    let oldestPendingOrder: any = null;
+    let tasaDelDiaFija: number | null = null;
 
-    if (periodo === "CUSTOM" && inicioStr && finStr) {
+    if (cierreId) {
+      const cierreEspecifico = await prisma.cierreCaja.findUnique({ where: { id: cierreId } });
+      if (!cierreEspecifico) throw new Error("Cierre no encontrado");
+      fechaInicio = cierreEspecifico.fechaApertura;
+      fechaFin = cierreEspecifico.fechaCierre;
+      tituloCaja = `Cierre del ${fechaFin.toLocaleDateString("es-VE", { timeZone: "America/Caracas" })}`;
+      fechaTarget = fechaFin.toISOString();
+      tasaDelDiaFija = Number(cierreEspecifico.tasaBCV) || null;
+    } else if (periodo === "CUSTOM" && inicioStr && finStr) {
       // Si mandan un rango custom
       fechaInicio = new Date(`${inicioStr}T00:00:00`);
       fechaFin = new Date(`${finStr}T23:59:59`);
@@ -33,7 +45,7 @@ export async function GET(req: Request) {
         orderBy: { fechaCierre: 'desc' }
       });
       
-      const oldestPendingOrder = await prisma.orden.findFirst({
+      oldestPendingOrder = await prisma.orden.findFirst({
         where: {
           estado: { nombre: { not: "ANULADA" } },
           ...(ultimoCierre ? { fechaCreacion: { gt: ultimoCierre.fechaCierre } } : {})
@@ -92,31 +104,50 @@ export async function GET(req: Request) {
       orderBy: { fechaCreacion: 'desc' }
     });
 
+    let tasaDelDia = tasaBCV;
+    if (tasaDelDiaFija !== null) {
+      tasaDelDia = tasaDelDiaFija;
+    } else if (oldestPendingOrder && oldestPendingOrder.tasaBCV) {
+      tasaDelDia = oldestPendingOrder.tasaBCV;
+    } else if (ordenes.length > 0 && ordenes[0].tasaBCV) {
+      tasaDelDia = ordenes[ordenes.length - 1].tasaBCV;
+    }
+
     // --- LÓGICA DE ARQUEO (SOLO INGRESOS) ---
-    const metodosMap: Record<string, { ingresosUSD: number }> = {};
+    const metodosMap: Record<string, { ingresosUSD: number, ingresosBS: number }> = {};
     let totalCuentasPorCobrarUSD = 0;
+    let totalCuentasPorCobrarBS = 0;
 
     ordenes.forEach(o => {
-      const montoOrden = Number(o.totalUSD) || 0;
+      const montoOrdenUSD = Number(o.totalUSD) || 0;
+      const montoOrdenBS = Number(o.totalBS) || 0;
 
       // REGLA: Si la orden TIENE pagos registrados, va al Líquido Real
       if (o.pagos && o.pagos.length > 0) {
         o.pagos.forEach(p => {
           const m = p.metodo.nombre;
-          if (!metodosMap[m]) metodosMap[m] = { ingresosUSD: 0 };
+          if (!metodosMap[m]) metodosMap[m] = { ingresosUSD: 0, ingresosBS: 0 };
           metodosMap[m].ingresosUSD += Number(p.montoUSD) || 0;
+          metodosMap[m].ingresosBS += Number(p.montoBS) || 0;
         });
       } else {
         // REGLA: Si NO hay pagos, es dinero que NO ESTÁ EN LA CAJA, va a Por Cobrar
-        totalCuentasPorCobrarUSD += montoOrden;
+        totalCuentasPorCobrarUSD += montoOrdenUSD;
+        totalCuentasPorCobrarBS += montoOrdenBS;
       }
     });
 
     let totalCajaUSD = 0;
+    let totalCajaBS = 0;
     const desglosesCaja = Object.entries(metodosMap).map(([nombre, valores]) => {
       totalCajaUSD += valores.ingresosUSD;
-      // Mantenemos netoUSD igual a ingresosUSD para compatibilidad con el modal
-      return { nombre, ingresosUSD: valores.ingresosUSD, netoUSD: valores.ingresosUSD };
+      totalCajaBS += valores.ingresosBS;
+      return { 
+        nombre, 
+        ingresosUSD: valores.ingresosUSD, 
+        ingresosBS: valores.ingresosBS,
+        netoUSD: valores.ingresosUSD 
+      };
     });
 
     return NextResponse.json({
@@ -124,12 +155,13 @@ export async function GET(req: Request) {
       fechaTarget,
       esAtrasado,
       yaCerroHoy,
+      tasaDelDia,
       historialCierres,
       resumen: {
         totalEnCajaUSD: totalCajaUSD,
-        totalEnCajaBS: totalCajaUSD * tasaBCV,
+        totalEnCajaBS: totalCajaBS,
         cuentasPorCobrarUSD: totalCuentasPorCobrarUSD,
-        cuentasPorCobrarBS: totalCuentasPorCobrarUSD * tasaBCV,
+        cuentasPorCobrarBS: totalCuentasPorCobrarBS,
         pacientesAtendidos: ordenes.length
       },
       desglosesCaja,
@@ -138,7 +170,7 @@ export async function GET(req: Request) {
         cedula: o.paciente.cedula,
         paciente: o.paciente.nombreCompleto,
         totalUSD: Number(o.totalUSD) || 0,
-        totalBS: Number(o.totalBS) || ((Number(o.totalUSD) || 0) * tasaBCV),
+        totalBS: Number(o.totalBS) || 0,
         estadoPago: (o.pagos && o.pagos.length > 0) ? "PAGADO" : "PENDIENTE",
         registradoPor: o.creadoPor.nombre,
         metodoUsado: (o.pagos && o.pagos.length > 0) ? o.pagos[0].metodo.nombre : "NINGUNO"

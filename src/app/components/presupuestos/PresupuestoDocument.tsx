@@ -80,11 +80,7 @@ export const pdfStyles = StyleSheet.create({
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
   },
-  thCode: { width: '15%', color: '#FFF', fontSize: 8, fontWeight: 700 },
-  thName: { width: '45%', color: '#FFF', fontSize: 8, fontWeight: 700 },
-  thPrice: { width: '13%', color: '#FFF', fontSize: 8, fontWeight: 700, textAlign: 'right' },
-  thTotal: { width: '13%', color: '#FFF', fontSize: 8, fontWeight: 700, textAlign: 'right' },
-  thTotalBs: { width: '14%', color: '#FFF', fontSize: 8, fontWeight: 700, textAlign: 'right' },
+  thName: { width: '100%', color: '#FFF', fontSize: 8, fontWeight: 700 },
 
   tableRow: {
     flexDirection: 'row',
@@ -93,11 +89,7 @@ export const pdfStyles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 8,
   },
-  tdCode: { width: '15%', fontSize: 8, color: '#000000', fontWeight: 700 },
-  tdName: { width: '45%', fontSize: 9, fontWeight: 700 },
-  tdPrice: { width: '13%', fontSize: 9, textAlign: 'right' },
-  tdTotal: { width: '13%', fontSize: 9, textAlign: 'right', fontWeight: 700 },
-  tdTotalBs: { width: '14%', fontSize: 9, textAlign: 'right', fontWeight: 700, color: '#000000' },
+  tdName: { width: '100%', fontSize: 9, fontWeight: 700 },
 
   totalsBox: {
     width: '40%',
@@ -212,38 +204,19 @@ const PresupuestoDocument = ({
         {/* TABLA DE EXÁMENES */}
         <View style={pdfStyles.table}>
           <View style={pdfStyles.tableHeader}>
-            <Text style={pdfStyles.thCode}>CÓDIGO</Text>
             <Text style={pdfStyles.thName}>PARAMETRO</Text>
-            <Text style={pdfStyles.thPrice}>PRECIO ($)</Text>
-            <Text style={pdfStyles.thTotal}>TOTAL ($)</Text>
-            <Text style={pdfStyles.thTotalBs}>TOTAL (Bs)</Text>
           </View>
 
-          {pruebas.map((p, idx) => {
-            const rowTotalUSD = p.precioUSD * p.cantidad;
-            const rowTotalBs = rowTotalUSD * tasaBCV;
-            return (
-              <View key={idx} style={pdfStyles.tableRow}>
-                <Text style={pdfStyles.tdCode}>{p.codigo}</Text>
-                <Text style={pdfStyles.tdName}>{p.nombre} {p.cantidad > 1 ? `(x${p.cantidad})` : ''}</Text>
-                <Text style={pdfStyles.tdPrice}>${p.precioUSD.toFixed(2)}</Text>
-                <Text style={pdfStyles.tdTotal}>${rowTotalUSD.toFixed(2)}</Text>
-                <Text style={pdfStyles.tdTotalBs}>Bs {rowTotalBs.toFixed(2)}</Text>
-              </View>
-            );
-          })}
-          
+          {pruebas.map((p, idx) => (
+            <View key={idx} style={pdfStyles.tableRow}>
+              <Text style={pdfStyles.tdName}>{p.nombre} {p.cantidad > 1 ? `(x${p.cantidad})` : ''}</Text>
+            </View>
+          ))}
           {serviciosExtras.map((s, idx) => {
             const qty = s.cantidad || 1;
-            const rowTotalUSD = s.precioUSD * qty;
-            const rowTotalBs = rowTotalUSD * tasaBCV;
             return (
               <View key={`srv-${idx}`} style={pdfStyles.tableRow}>
-                <Text style={pdfStyles.tdCode}>SRV</Text>
                 <Text style={pdfStyles.tdName}>{s.nombre} {qty > 1 ? `(x${qty})` : ''}</Text>
-                <Text style={pdfStyles.tdPrice}>${s.precioUSD.toFixed(2)}</Text>
-                <Text style={pdfStyles.tdTotal}>${rowTotalUSD.toFixed(2)}</Text>
-                <Text style={pdfStyles.tdTotalBs}>Bs {rowTotalBs.toFixed(2)}</Text>
               </View>
             );
           })}

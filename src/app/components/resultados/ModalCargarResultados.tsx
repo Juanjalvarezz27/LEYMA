@@ -148,7 +148,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
   });
 
   const groupedDetalles = sortedDetalles.reduce((acc: any, det: any) => {
-    // Si la prueba tiene categoriaVisual o subcategoriaVisual, las usamos prioritariamente
+    // Si la prueba tiene una categoriaVisual o subcategoriaVisual, las usamos prioritariamente
     const catNombre = (det.prueba?.categoriaVisual || det.prueba?.subcategoria?.categoria?.nombre || "OTROS").trim().toUpperCase();
     const subcatNombre = (det.prueba?.subcategoriaVisual || det.prueba?.subcategoria?.nombre || "PRUEBAS INDIVIDUALES").trim().toUpperCase();
     if (!acc[catNombre]) acc[catNombre] = {};

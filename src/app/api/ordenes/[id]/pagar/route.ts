@@ -40,6 +40,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       };
     });
 
+    const ordenActual = await prisma.orden.findUnique({
+      where: { id: ordenId as any },
+      include: { pagos: true }
+    });
+
+    if (!ordenActual) return NextResponse.json({ error: "Orden no encontrada" }, { status: 404 });
+
+    const pagosPreviosUSD = ordenActual.pagos.reduce((acc: number, p: any) => acc + Number(p.montoUSD), 0);
+    const sumaNuevosPagosUSD = pagosData.reduce((acc: number, p: any) => acc + p.montoUSD, 0);
+    const totalDeudaUSD = Number(ordenActual.totalUSD);
+
+    if (pagosPreviosUSD + sumaNuevosPagosUSD > totalDeudaUSD + 0.05) {
+      return NextResponse.json({ 
+        error: `El pago (${sumaNuevosPagosUSD} USD) excede la deuda restante de la orden (${Math.max(0, totalDeudaUSD - pagosPreviosUSD).toFixed(2)} USD).` 
+      }, { status: 400 });
+    }
+
     const ordenActualizada = await prisma.orden.update({
       where: { id: ordenId as any },
       data: {

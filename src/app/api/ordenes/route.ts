@@ -55,6 +55,11 @@ export async function POST(req: Request) {
       };
     }) : [];
 
+    const sumaPagosUSD = pagosData.reduce((acc: number, p: any) => acc + p.montoUSD, 0);
+    if (sumaPagosUSD > Number(body.totalUSD) + 0.05) {
+      return NextResponse.json({ error: `La suma de los pagos en USD (${sumaPagosUSD}) no puede exceder el total de la orden (${body.totalUSD})` }, { status: 400 });
+    }
+
     const nuevaOrden = await prisma.orden.create({
       data: {
         pacienteId: parseId(body.pacienteId),

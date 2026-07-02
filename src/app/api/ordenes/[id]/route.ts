@@ -71,13 +71,28 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       tipoDescuentoId: p.descuentoInd > 0 ? getIdDescuento(p.tipoDescuentoInd) : null,
     }));
 
+    const tasa = body.tasaBCV;
+    const pagosData = body.pagos && body.pagos.length > 0 ? body.pagos.map((p: any) => {
+      const montoEnUSD = p.moneda === "USD" ? p.monto : (p.monto / tasa);
+      const montoEnBS = p.moneda === "BS" ? p.monto : (p.monto * tasa);
+
+      return {
+        metodoId: p.metodoId,
+        montoUSD: parseFloat(montoEnUSD.toFixed(2)),
+        montoBS: parseFloat(montoEnBS.toFixed(2)),
+        referencia: p.referencia || null,
+        fechaPago: new Date()
+      };
+    }) : [];
+
     // Uso de Transacción: Borramos los detalles viejos y metemos los nuevos
     const ordenActualizada = await prisma.$transaction(async (tx) => {
-      // 1. Limpiar pruebas y servicios anteriores
+      // 1. Limpiar pruebas, servicios y PAGOS anteriores (para evitar pagos fantasmas si el monto bajó)
       await tx.detalleOrden.deleteMany({ where: { ordenId } });
       await tx.servicioEnOrden.deleteMany({ where: { ordenId } });
+      await tx.pago.deleteMany({ where: { ordenId } });
 
-      // 2. Actualizar totales, crear nuevas pruebas y servicios
+      // 2. Actualizar totales, crear nuevas pruebas, servicios y los nuevos pagos
       return await tx.orden.update({
         where: { id: ordenId },
         data: {
@@ -97,6 +112,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
               precioCongeladoUSD: s.precioCongelado,
             }))
           } : undefined,
+          pagos: pagosData.length > 0 ? {
+            create: pagosData
+          } : undefined
         }
       });
     });

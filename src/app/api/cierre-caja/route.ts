@@ -113,7 +113,7 @@ export async function GET(req: Request) {
       tasaDelDia = ordenes[ordenes.length - 1].tasaBCV;
     }
 
-    // --- LÓGICA DE ARQUEO (SOLO INGRESOS) ---
+    // --- LÓGICA DE ARQUEO (INGRESOS Y POR COBRAR CORREGIDOS) ---
     const metodosMap: Record<string, { ingresosUSD: number, ingresosBS: number }> = {};
     let totalCuentasPorCobrarUSD = 0;
     let totalCuentasPorCobrarBS = 0;
@@ -122,19 +122,31 @@ export async function GET(req: Request) {
       const montoOrdenUSD = Number(o.totalUSD) || 0;
       const montoOrdenBS = Number(o.totalBS) || 0;
 
-      // REGLA: Si la orden TIENE pagos registrados, va al Líquido Real
+      let pagosDeLaOrdenUSD = 0;
+      let pagosDeLaOrdenBS = 0;
+
       if (o.pagos && o.pagos.length > 0) {
         o.pagos.forEach(p => {
           const m = p.metodo.nombre;
           if (!metodosMap[m]) metodosMap[m] = { ingresosUSD: 0, ingresosBS: 0 };
-          metodosMap[m].ingresosUSD += Number(p.montoUSD) || 0;
-          metodosMap[m].ingresosBS += Number(p.montoBS) || 0;
+          
+          const valorIngresoUSD = Number(p.montoUSD) || 0;
+          const valorIngresoBS = Number(p.montoBS) || 0;
+
+          metodosMap[m].ingresosUSD += valorIngresoUSD;
+          metodosMap[m].ingresosBS += valorIngresoBS;
+
+          pagosDeLaOrdenUSD += valorIngresoUSD;
+          pagosDeLaOrdenBS += valorIngresoBS;
         });
-      } else {
-        // REGLA: Si NO hay pagos, es dinero que NO ESTÁ EN LA CAJA, va a Por Cobrar
-        totalCuentasPorCobrarUSD += montoOrdenUSD;
-        totalCuentasPorCobrarBS += montoOrdenBS;
       }
+
+      // Por cobrar es lo que falta por pagar de la orden
+      const faltanteUSD = Math.max(0, montoOrdenUSD - pagosDeLaOrdenUSD);
+      const faltanteBS = Math.max(0, montoOrdenBS - pagosDeLaOrdenBS);
+      
+      totalCuentasPorCobrarUSD += faltanteUSD;
+      totalCuentasPorCobrarBS += faltanteBS;
     });
 
     let totalCajaUSD = 0;

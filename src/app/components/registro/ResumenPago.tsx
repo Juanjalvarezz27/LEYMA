@@ -289,7 +289,13 @@ export default function ResumenPago({
                           const nuevaMoneda = esBs ? "BS" : "USD";
                           
                           const nuevosPagos = [...pagos];
-                          nuevosPagos[idx] = { ...nuevosPagos[idx], metodoId: m.id, moneda: nuevaMoneda };
+                          const monedaCambiada = nuevosPagos[idx].moneda !== nuevaMoneda;
+                          nuevosPagos[idx] = { 
+                            ...nuevosPagos[idx], 
+                            metodoId: m.id, 
+                            moneda: nuevaMoneda,
+                            monto: monedaCambiada ? 0 : nuevosPagos[idx].monto
+                          };
                           setPagos(nuevosPagos);
                           setDropdownAbierto(null);
                         }}

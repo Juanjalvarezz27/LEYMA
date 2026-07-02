@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalPreviewPDF from "../../components/resultados/ModalPreviewPDF"; 
+import ModalAsistenteWhatsApp from "../../components/ModalAsistenteWhatsApp";
 import { normalizeSearchString } from "../../../lib/stringUtils";
 
 export default function PacientesPage() {
@@ -26,6 +27,7 @@ export default function PacientesPage() {
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState<any | null>(null);
   const [cargandoHistorialId, setCargandoHistorialId] = useState<string | null>(null);
   const [ordenPDF, setOrdenPDF] = useState<any | null>(null);
+  const [whatsAppModalConfig, setWhatsAppModalConfig] = useState<{isOpen: boolean, paciente: any} | null>(null);
 
   const fetchPacientes = async () => {
     setCargando(true);
@@ -93,24 +95,12 @@ export default function PacientesPage() {
     return `${edad} ${esBebe ? 'Meses' : 'Años'}`;
   };
 
-  // --- LÓGICA DE WHATSAPP ---
-  const formatWhatsAppNumber = (phone: string) => {
-    if (!phone) return "";
-    let cleaned = phone.replace(/\D/g, "");
-    if (cleaned.startsWith("0")) return "58" + cleaned.substring(1);
-    if (!cleaned.startsWith("58")) return "58" + cleaned;
-    return cleaned;
-  };
-
   const enviarWhatsAppContacto = (paciente: any) => {
     if (!paciente.telefono) {
       toast.warning("El paciente no tiene un número de teléfono registrado.");
       return;
     }
-    const numeroWA = formatWhatsAppNumber(paciente.telefono);
-    const mensaje = `*Laboratorio LEYMA C.A.*\nHola ${paciente.nombreCompleto}, nos comunicamos con usted para `;
-    const url = `https://wa.me/${numeroWA}?text=${encodeURIComponent(mensaje)}`;
-    window.open(url, "_blank");
+    setWhatsAppModalConfig({ isOpen: true, paciente });
   };
 
   return (
@@ -447,6 +437,16 @@ export default function PacientesPage() {
         )}
       </div>
 
+      {/* ModalAsistenteWhatsApp */}
+      {whatsAppModalConfig && whatsAppModalConfig.paciente && (
+        <ModalAsistenteWhatsApp
+          isOpen={whatsAppModalConfig.isOpen}
+          onClose={() => setWhatsAppModalConfig(null)}
+          pacienteNombre={whatsAppModalConfig.paciente.nombreCompleto}
+          telefono={whatsAppModalConfig.paciente.telefono || ""}
+          tipoMensaje="contacto"
+        />
+      )}
     </div>
   );
 }

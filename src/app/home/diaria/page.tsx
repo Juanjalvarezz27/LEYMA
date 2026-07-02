@@ -10,6 +10,7 @@ import { toast } from "react-toastify";
 
 import ModalDetalleOrden from "../../components/diaria/ModalDetalleOrden";
 import ModalProcesarPago from "../../components/diaria/ModalProcesarPago";
+import ModalAsistenteWhatsApp from "../../components/ModalAsistenteWhatsApp";
 import { normalizeSearchString } from "../../../lib/stringUtils";
 
 const obtenerFechaHoyVzla = () => {
@@ -55,6 +56,7 @@ function ListaDiariaContent() {
   // Estados para Modales
   const [ordenSeleccionada, setOrdenSeleccionada] = useState<any | null>(null);
   const [ordenParaPagar, setOrdenParaPagar] = useState<any | null>(null);
+  const [whatsAppModalConfig, setWhatsAppModalConfig] = useState<{isOpen: boolean, orden: any} | null>(null);
 
   // Estados para Clave Maestra (Anular/Activar)
   const [modalClave, setModalClave] = useState<{ visible: boolean, ordenId: number | null, accion: "ANULAR" | "ACTIVAR", estadoDestino: string }>({
@@ -110,23 +112,12 @@ function ListaDiariaContent() {
   };
 
   // --- LÓGICA DE WHATSAPP ---
-  const formatWhatsAppNumber = (phone: string) => {
-    if (!phone) return "";
-    let cleaned = phone.replace(/\D/g, "");
-    if (cleaned.startsWith("0")) return "58" + cleaned.substring(1);
-    if (!cleaned.startsWith("58")) return "58" + cleaned;
-    return cleaned;
-  };
-
   const enviarWhatsApp = (orden: any) => {
     if (!orden.paciente.telefono) {
       toast.warning("El paciente no tiene un número de teléfono registrado.");
       return;
     }
-    const numeroWA = formatWhatsAppNumber(orden.paciente.telefono);
-    const mensaje = `*Laboratorio LEYMA C.A.*\nHola ${orden.paciente.nombreCompleto}, nos comunicamos referente a su orden N° ${orden.id.toString().padStart(5, '0')}.`;
-    const url = `https://wa.me/${numeroWA}?text=${encodeURIComponent(mensaje)}`;
-    window.open(url, "_blank");
+    setWhatsAppModalConfig({ isOpen: true, orden });
   };
 
   // --- LÓGICA DE ANULAR / ACTIVAR ---
@@ -533,6 +524,18 @@ function ListaDiariaContent() {
           </table>
         </div>
       </div>
+
+      {/* ModalAsistenteWhatsApp */}
+      {whatsAppModalConfig && whatsAppModalConfig.orden && (
+        <ModalAsistenteWhatsApp
+          isOpen={whatsAppModalConfig.isOpen}
+          onClose={() => setWhatsAppModalConfig(null)}
+          pacienteNombre={whatsAppModalConfig.orden.paciente.nombreCompleto}
+          telefono={whatsAppModalConfig.orden.paciente.telefono || ""}
+          tipoMensaje="contacto"
+          datosAdicionales={{ ordenId: whatsAppModalConfig.orden.id }}
+        />
+      )}
     </div>
   );
 }

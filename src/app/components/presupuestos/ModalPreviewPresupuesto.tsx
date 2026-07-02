@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { PDFViewer, pdf } from "@react-pdf/renderer";
 import { MessageCircle } from "lucide-react";
 import PresupuestoDocument from "./PresupuestoDocument";
+import ModalAsistenteWhatsApp from "../ModalAsistenteWhatsApp";
 
 interface ModalPreviewPresupuestoProps {
   paciente: { nombre: string, cedula: string, telefono?: string };
@@ -29,6 +30,8 @@ export default function ModalPreviewPresupuesto({
   onClose 
 }: ModalPreviewPresupuestoProps) {
   const [isMounted, setIsMounted] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [telefonoManual, setTelefonoManual] = useState<string>("");
 
   useEffect(() => {
     setIsMounted(true);
@@ -102,44 +105,9 @@ export default function ModalPreviewPresupuesto({
       }
       numeroStr = inputTelefono;
     }
-
-    // Limpiamos todo lo que no sea número
-    let cleaned = numeroStr.replace(/\D/g, "");
     
-    // Si empieza con 0 (ej. 0412), lo cambiamos a 58 (ej. 58412)
-    if (cleaned.startsWith("0")) {
-      cleaned = "58" + cleaned.substring(1);
-    } 
-    // Si no empieza con 58 (y no era 0), le agregamos el 58 al principio
-    else if (!cleaned.startsWith("58")) {
-      cleaned = "58" + cleaned;
-    }
-
-    // Agrupamos la info en una estructura minimizada para que el Base64 sea muy corto
-    const data = {
-      p: { n: paciente.nombre, c: paciente.cedula, t: paciente.telefono },
-      e: pruebas.map(pr => [pr.nombre, pr.precioUSD, pr.cantidad || 1]),
-      se: serviciosExtras.map(s => [s.nombre, s.precioUSD, s.cantidad || 1]),
-      b: tasaBCV,
-      d: descuento,
-      s: subtotal,
-      t: total
-    };
-    
-    // Convertimos a base64 manejando acentos correctamente
-    const jsonStr = JSON.stringify(data);
-    const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
-    
-    const url = `${window.location.origin}/cotizacion?d=${base64}`;
-    
-    let text = `*Laboratorio LEYMA C.A.*\nHola ${paciente.nombre || 'estimado paciente'},\n\n`;
-    text += `Adjunto le enviamos el presupuesto solicitado.\n\n`;
-    text += `*Total a pagar:* $${total.toFixed(2)} / Bs ${(total * tasaBCV).toFixed(2)}\n\n`;
-    text += `*Ver cotización y descargar PDF aquí:*\n${url}\n\n`;
-    text += `¡Cualquier consulta estamos a su orden!`;
-    
-    // Abrimos wa.me apuntando DIRECTO al número formateado
-    window.open(`https://wa.me/${cleaned}?text=${encodeURIComponent(text)}`, "_blank");
+    setTelefonoManual(numeroStr);
+    setShowWhatsAppModal(true);
   };
 
   if (!isMounted) return null;
@@ -188,6 +156,34 @@ export default function ModalPreviewPresupuesto({
           />
         </PDFViewer>
       </div>
+
+      {/* MODAL ASISTENTE WHATSAPP */}
+      {showWhatsAppModal && (() => {
+        // Generar enlace antes de pasarlo al modal
+        const data = {
+          p: { n: paciente.nombre, c: paciente.cedula, t: paciente.telefono },
+          e: pruebas.map(pr => [pr.nombre, pr.precioUSD, pr.cantidad || 1]),
+          se: serviciosExtras.map(s => [s.nombre, s.precioUSD, s.cantidad || 1]),
+          b: tasaBCV,
+          d: descuento,
+          s: subtotal,
+          t: total
+        };
+        const jsonStr = JSON.stringify(data);
+        const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
+        const url = `${window.location.origin}/cotizacion?d=${base64}`;
+
+        return (
+          <ModalAsistenteWhatsApp 
+            isOpen={showWhatsAppModal}
+            onClose={() => setShowWhatsAppModal(false)}
+            pacienteNombre={paciente.nombre || 'estimado paciente'}
+            telefono={telefonoManual || paciente.telefono || ""}
+            tipoMensaje="presupuesto"
+            datosAdicionales={{ link: url }}
+          />
+        );
+      })()}
     </div>
   );
 }

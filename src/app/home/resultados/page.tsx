@@ -9,6 +9,7 @@ import {
 import { toast } from "react-toastify";
 import ModalCargarResultados from "../../components/resultados/ModalCargarResultados";
 import ModalPreviewPDF from "../../components/resultados/ModalPreviewPDF";
+import ModalAsistenteWhatsApp from "../../components/ModalAsistenteWhatsApp";
 import { normalizeSearchString } from "../../../lib/stringUtils";
 
 const obtenerFechaCaracas = (fecha: string | Date = new Date()) => {
@@ -42,6 +43,7 @@ export default function ResultadosPage() {
   // ESTADOS DE MODALES
   const [ordenSeleccionada, setOrdenSeleccionada] = useState<any | null>(null);
   const [ordenPDF, setOrdenPDF] = useState<any | null>(null);
+  const [whatsAppModalConfig, setWhatsAppModalConfig] = useState<{isOpen: boolean, orden: any, tipoMensaje: 'contacto' | 'cobro'} | null>(null);
 
   const fetchOrdenes = async (b = busqueda, f = fechaFiltro) => {
     setCargando(true);
@@ -148,10 +150,7 @@ export default function ResultadosPage() {
       toast.warning("El paciente no tiene un número de teléfono registrado.");
       return;
     }
-    const numeroWA = formatWhatsAppNumber(orden.paciente.telefono);
-    const mensaje = `*Laboratorio LEYMA C.A.*\nHola ${orden.paciente.nombreCompleto}, nos comunicamos referente a su orden N° ${orden.id.toString().padStart(5, '0')}.`;
-    const url = `https://wa.me/${numeroWA}?text=${encodeURIComponent(mensaje)}`;
-    window.open(url, "_blank");
+    setWhatsAppModalConfig({ isOpen: true, orden, tipoMensaje: 'contacto' });
   };
 
   const enviarWhatsAppCobro = (orden: any) => {
@@ -159,15 +158,7 @@ export default function ResultadosPage() {
       toast.warning("El paciente no tiene un número de teléfono registrado.");
       return;
     }
-    const numeroWA = formatWhatsAppNumber(orden.paciente.telefono);
-    let mensaje = `*Laboratorio LEYMA C.A.*\nHola ${orden.paciente.nombreCompleto},\n\n`;
-    mensaje += `Te informamos que tus resultados ya están listos y validados.\n\n`;
-    mensaje += `Por favor, acércate a nuestras instalaciones para realizar el pago pendiente y recibir tu informe oficial.\n\n`;
-    mensaje += `*Total de la orden:* $${orden.totalUSD.toFixed(2)} / Bs ${orden.totalBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}\n\n`;
-    mensaje += `¡Te esperamos!`;
-
-    const url = `https://wa.me/${numeroWA}?text=${encodeURIComponent(mensaje)}`;
-    window.open(url, "_blank");
+    setWhatsAppModalConfig({ isOpen: true, orden, tipoMensaje: 'cobro' });
   };
 
   return (
@@ -532,6 +523,22 @@ export default function ResultadosPage() {
           )}
         </>
       )}
+      {/* ModalAsistenteWhatsApp */}
+      {whatsAppModalConfig && whatsAppModalConfig.orden && (
+        <ModalAsistenteWhatsApp
+          isOpen={whatsAppModalConfig.isOpen}
+          onClose={() => setWhatsAppModalConfig(null)}
+          pacienteNombre={whatsAppModalConfig.orden.paciente.nombreCompleto}
+          telefono={whatsAppModalConfig.orden.paciente.telefono || ""}
+          tipoMensaje={whatsAppModalConfig.tipoMensaje}
+          datosAdicionales={{
+            montoUSD: whatsAppModalConfig.tipoMensaje === 'cobro' ? whatsAppModalConfig.orden.totalUSD : undefined,
+            montoBS: whatsAppModalConfig.tipoMensaje === 'cobro' ? whatsAppModalConfig.orden.totalBS : undefined,
+            ordenId: whatsAppModalConfig.orden.id
+          }}
+        />
+      )}
+
     </div>
   );
 }

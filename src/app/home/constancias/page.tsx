@@ -4,6 +4,7 @@ import { useState, useEffect, Fragment } from "react";
 import { Search, FileBadge, Calendar, ChevronLeft, ChevronRight, FileText, Activity, User, ChevronDown, ChevronUp, History, MessageCircle } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalConstancia from "../../components/constancias/ModalConstancia";
+import ModalAsistenteWhatsApp from "../../components/ModalAsistenteWhatsApp";
 import { normalizeSearchString } from "../../../lib/stringUtils";
 
 export default function ConstanciasPage() {
@@ -18,6 +19,7 @@ export default function ConstanciasPage() {
 
   const [ordenSeleccionada, setOrdenSeleccionada] = useState<any | null>(null);
   const [pacienteExpandido, setPacienteExpandido] = useState<string | null>(null);
+  const [whatsAppModalConfig, setWhatsAppModalConfig] = useState<{isOpen: boolean, paciente: any} | null>(null);
 
   const fetchOrdenes = async (b = busqueda, f = fechaFiltro) => {
     setCargando(true);
@@ -108,25 +110,13 @@ export default function ConstanciasPage() {
     setPacienteExpandido(pacienteExpandido === pacienteId ? null : pacienteId);
   };
 
-  // --- LÓGICA DE WHATSAPP ---
-  const formatWhatsAppNumber = (phone: string) => {
-    if (!phone) return "";
-    let cleaned = phone.replace(/\D/g, "");
-    if (cleaned.startsWith("0")) return "58" + cleaned.substring(1);
-    if (!cleaned.startsWith("58")) return "58" + cleaned;
-    return cleaned;
-  };
-
   const enviarWhatsAppContacto = (e: React.MouseEvent, paciente: any) => {
     e.stopPropagation(); // Evita que se abra/cierre la fila
     if (!paciente.telefono) {
       toast.warning("El paciente no tiene un número de teléfono registrado.");
       return;
     }
-    const numeroWA = formatWhatsAppNumber(paciente.telefono);
-    const mensaje = `*Laboratorio LEYMA C.A.*\nHola ${paciente.nombreCompleto}, nos comunicamos con usted para `;
-    const url = `https://wa.me/${numeroWA}?text=${encodeURIComponent(mensaje)}`;
-    window.open(url, "_blank");
+    setWhatsAppModalConfig({ isOpen: true, paciente });
   };
 
   return (
@@ -370,6 +360,16 @@ export default function ConstanciasPage() {
         )}
       </div>
 
+      {/* ModalAsistenteWhatsApp */}
+      {whatsAppModalConfig && whatsAppModalConfig.paciente && (
+        <ModalAsistenteWhatsApp
+          isOpen={whatsAppModalConfig.isOpen}
+          onClose={() => setWhatsAppModalConfig(null)}
+          pacienteNombre={whatsAppModalConfig.paciente.nombreCompleto}
+          telefono={whatsAppModalConfig.paciente.telefono || ""}
+          tipoMensaje="contacto"
+        />
+      )}
     </div>
   );
 }

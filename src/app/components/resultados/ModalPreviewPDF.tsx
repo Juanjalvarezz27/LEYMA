@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { PDFViewer, pdf } from "@react-pdf/renderer";
 import QRCodeNode from "qrcode";
 import ReporteDocument from "./ReporteDocument";
+import ModalAsistenteWhatsApp from "../ModalAsistenteWhatsApp";
 
 interface ModalPreviewPDFProps {
   orden: any;
@@ -20,6 +21,9 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
   // Estados para el modal de correo
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailInput, setEmailInput] = useState("");
+
+  // Estados para el asistente de WhatsApp
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -82,18 +86,7 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
       toast.warning("El paciente no tiene número de teléfono registrado.");
       return;
     }
-    let cleaned = orden.paciente.telefono.replace(/\D/g, "");
-    if (cleaned.startsWith("0")) cleaned = "58" + cleaned.substring(1);
-    else if (!cleaned.startsWith("58")) cleaned = "58" + cleaned;
-
-    const link = `${window.location.origin}/validar/${orden.id}`;
-    const mensaje =
-      `*Laboratorio LEYMA C.A.*\nHola ${orden.paciente.nombreCompleto},\n\n` +
-      `Tus resultados ya están listos.\n\n` +
-      `*Ver tu informe en PDF:*\n${link}\n\n` +
-      `¡Cualquier consulta estamos a tu orden. Feliz día!`;
-
-    window.open(`https://wa.me/${cleaned}?text=${encodeURIComponent(mensaje)}`, "_blank");
+    setShowWhatsAppModal(true);
   };
 
   const confirmarEnvioCorreo = async (e: React.FormEvent) => {
@@ -240,6 +233,16 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
           </div>
         </div>
       )}
+
+      {/* MODAL ASISTENTE WHATSAPP */}
+      <ModalAsistenteWhatsApp 
+        isOpen={showWhatsAppModal}
+        onClose={() => setShowWhatsAppModal(false)}
+        pacienteNombre={orden.paciente.nombreCompleto}
+        telefono={orden.paciente.telefono || ""}
+        tipoMensaje="resultados"
+        datosAdicionales={{ link: `${window.location.origin}/validar/${orden.id}` }}
+      />
     </div>
   );
 }

@@ -1,8 +1,43 @@
 "use client";
-import { X, Plus, Trash2, ChevronDown, Loader2, Package, LayoutList, Search, Edit2, Check } from "lucide-react";
+import { X, Plus, Trash2, ChevronDown, Loader2, Package, LayoutList, Search, Edit2, Check, GripVertical } from "lucide-react";
+import { DndContext, PointerSensor, useSensor, useSensors, DragEndEvent, closestCenter, useDroppable } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
 import { normalizeSearchString } from "../../../lib/stringUtils";
+
+const SortableRowModal = ({ id, children }: { id: string, children: React.ReactNode }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition: isDragging ? transition : 'none', // Evitamos el "vuelo" al cambiar de grupo
+    zIndex: isDragging ? 9999 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className={`relative group/drag ${isDragging ? 'opacity-50 shadow-2xl z-50' : 'z-10'}`}>
+      <div 
+        {...listeners} 
+        {...attributes} 
+        className="absolute left-[-26px] top-6 p-1.5 cursor-grab active:cursor-grabbing text-slate-300 hover:text-[#0071E3] opacity-0 group-hover/drag:opacity-100 transition-opacity"
+      >
+        <GripVertical size={16} />
+      </div>
+      {children}
+    </div>
+  );
+};
+
+const DroppableGroupModal = ({ id, children }: { id: string, children: React.ReactNode }) => {
+  const { isOver, setNodeRef } = useDroppable({ id });
+  return (
+    <div ref={setNodeRef} className={`transition-colors rounded-xl border border-transparent ${isOver ? 'bg-blue-50/50 border-blue-300 ring-4 ring-blue-100' : ''}`}>
+      {children}
+    </div>
+  );
+};
 
 export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, categoriasExistentes, subcategoriasExistentes, catalogoExamenes = [] }: any) {
   const [formData, setFormData] = useState({ 
@@ -85,7 +120,8 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
         esPaquete: pruebaEditar.esPaquete || false,
         precioPaqueteUSD: pruebaEditar.precioUSD ? pruebaEditar.precioUSD.toString() : ""
       });
-      setPruebas(pruebaEditar.pruebas.map((p: any) => ({
+        setPruebas(pruebaEditar.pruebas.map((p: any) => ({
+        tempId: p.id || Math.random().toString(36).substring(7),
         id: p.id,
         codigo: p.codigo,
         nombre: p.nombre,
@@ -104,10 +140,24 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
     setGuardando(false);
   }, [pruebaEditar, isOpen]);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    })
+  );
+
   if (!isOpen) return null;
 
   const agregarFila = () => {
-    setPruebas([...pruebas, { id: "", codigo: "", nombre: "", precioUSD: "", unidades: "", valoresReferencia: "", opcionesPredefinidas: [], mostrarOpciones: false, categoriaVisual: "", subcategoriaVisual: "" }]);
+    setPruebas([...pruebas, { 
+      tempId: Math.random().toString(36).substring(7),
+      id: "", 
+      codigo: "", nombre: "", precioUSD: "", unidades: "", valoresReferencia: "", 
+      opcionesPredefinidas: [], mostrarOpciones: false,
+      categoriaVisual: "", subcategoriaVisual: "" 
+    }]);
   };
 
   const eliminarFila = (index: number) => {
@@ -122,19 +172,18 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
 
   const agregarAlListadoBusqueda = (item: any) => {
     if (item.tipo === 'paquete' || item.tipo === 'subcategoria') {
-      // Agregar todas sus pruebas (creando copias desvinculadas)
       const nuevasPruebas = item.pruebas.filter((p: any) => !pruebas.some((pr: any) => pr.codigo === p.codigo)).map((p: any) => ({
-        id: "", // Forzamos vacío para que se cree como nueva prueba
+        tempId: Math.random().toString(36).substring(7),
+        id: "",
         codigo: p.codigo, nombre: p.nombre, precioUSD: p.precioUSD ? p.precioUSD.toString() : "", 
         unidades: p.unidades || "", valoresReferencia: p.valoresReferencia || "", 
         opcionesPredefinidas: p.opcionesPredefinidas ? p.opcionesPredefinidas.split(',').filter(Boolean) : [], 
         mostrarOpciones: !!p.opcionesPredefinidas,
-        categoriaVisual: item.codigoCategoria || "", // El nombre de la categoría del paquete original
-        subcategoriaVisual: item.nombre // El nombre del paquete original
+        categoriaVisual: item.codigoCategoria || "",
+        subcategoriaVisual: item.nombre
       }));
       
       if (nuevasPruebas.length > 0) {
-        // Limpiamos el primer item si está vacío (cuando se abre el modal y se busca de inmediato)
         setPruebas(prev => {
           const prevLimpio = (prev.length === 1 && !prev[0].codigo && !prev[0].nombre) ? [] : prev;
           return [...prevLimpio, ...nuevasPruebas];
@@ -144,12 +193,12 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
         toast.info("Todas las pruebas de este grupo ya estaban agregadas.");
       }
     } else {
-      // Es una prueba individual
       if (!pruebas.some(pr => pr.codigo === item.codigo)) {
         setPruebas(prev => {
           const prevLimpio = (prev.length === 1 && !prev[0].codigo && !prev[0].nombre) ? [] : prev;
           return [...prevLimpio, { 
-            id: "", // Forzamos vacío para que se cree como copia nueva
+            tempId: Math.random().toString(36).substring(7),
+            id: "",
             codigo: item.codigo, nombre: item.nombre, precioUSD: item.precioUSD ? item.precioUSD.toString() : "", 
             unidades: item.unidades || "", valoresReferencia: item.valoresReferencia || "", 
             opcionesPredefinidas: item.opcionesPredefinidas ? item.opcionesPredefinidas.split(',').filter(Boolean) : [], 
@@ -250,19 +299,111 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
             precioUSD: formData.esPaquete ? 0 : (parseFloat(p.precioUSD) || 0)
           })
         });
-        toast.success("Opción guardada correctamente en la BD.");
+        toast.success("Opción editada en la BD.");
       } catch (e) {
-        toast.error("Error al actualizar la BD.");
+        toast.error("Error al guardar en BD.");
       }
     } else {
       toast.success("Opción editada (aún no existe en BD).");
     }
   };
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    let targetGroup: any = null;
+    try {
+      targetGroup = JSON.parse(over.id as string);
+    } catch (e) {
+      // Es un ID normal de sortable
+    }
+
+    setPruebas((items) => {
+      const oldIndex = items.findIndex((item) => item.tempId === active.id);
+      if (oldIndex === -1) return items;
+
+      if (targetGroup) {
+        // === DROP SOBRE EL HEADER DE UN GRUPO ===
+        // Encontrar el último índice de este grupo ANTES de modificar el elemento
+        let lastIndexOfGroup = -1;
+        for (let i = items.length - 1; i >= 0; i--) {
+          if (i !== oldIndex && // Excluir el elemento que estamos arrastrando
+              (items[i].categoriaVisual || "SIN CATEGORIA") === targetGroup.categoriaVisual &&
+              (items[i].subcategoriaVisual || "SIN SUBCATEGORIA") === targetGroup.subcategoriaVisual) {
+            lastIndexOfGroup = i;
+            break;
+          }
+        }
+
+        const newItems = [...items];
+        const draggedItem = { ...newItems[oldIndex] };
+        
+        draggedItem.categoriaVisual = targetGroup.categoriaVisual;
+        draggedItem.subcategoriaVisual = targetGroup.subcategoriaVisual;
+        newItems[oldIndex] = draggedItem;
+
+        if (lastIndexOfGroup !== -1) {
+          let toIndex = lastIndexOfGroup;
+          if (oldIndex > lastIndexOfGroup) {
+            toIndex = lastIndexOfGroup + 1;
+          }
+          return arrayMove(newItems, oldIndex, toIndex);
+        }
+        return newItems;
+      } else {
+        // === DROP NORMAL DE ORDENAMIENTO ===
+        if (active.id === over.id) return items;
+        const newIndex = items.findIndex((item) => item.tempId === over.id);
+        if (newIndex === -1) return items;
+        
+        const draggedItemOriginal = items[oldIndex];
+        const targetItem = items[newIndex];
+
+        const isDraggedUnassigned = (!draggedItemOriginal.categoriaVisual || draggedItemOriginal.categoriaVisual === "SIN CATEGORIA") && 
+                                    (!draggedItemOriginal.subcategoriaVisual || draggedItemOriginal.subcategoriaVisual === "SIN SUBCATEGORIA");
+        
+        const isTargetAssigned = targetItem && ((targetItem.categoriaVisual && targetItem.categoriaVisual !== "SIN CATEGORIA") || 
+                                                (targetItem.subcategoriaVisual && targetItem.subcategoriaVisual !== "SIN SUBCATEGORIA"));
+
+        if (isDraggedUnassigned && isTargetAssigned) {
+          // El usuario soltó una prueba nueva sobre una prueba de un grupo.
+          // Comportamiento inteligente: Asignarla a ese grupo y mandarla al final.
+          const newItems = [...items];
+          const draggedItem = { ...newItems[oldIndex] };
+          
+          draggedItem.categoriaVisual = targetItem.categoriaVisual;
+          draggedItem.subcategoriaVisual = targetItem.subcategoriaVisual;
+          newItems[oldIndex] = draggedItem;
+
+          let lastIndexOfGroup = -1;
+          for (let i = items.length - 1; i >= 0; i--) {
+            if (i !== oldIndex && 
+                (items[i].categoriaVisual || "SIN CATEGORIA") === targetItem.categoriaVisual &&
+                (items[i].subcategoriaVisual || "SIN SUBCATEGORIA") === targetItem.subcategoriaVisual) {
+              lastIndexOfGroup = i;
+              break;
+            }
+          }
+
+          if (lastIndexOfGroup !== -1) {
+            let toIndex = lastIndexOfGroup;
+            if (oldIndex > lastIndexOfGroup) {
+              toIndex = lastIndexOfGroup + 1;
+            }
+            return arrayMove(newItems, oldIndex, toIndex);
+          }
+        }
+        
+        // Si no es el caso especial de asignación automática, es un ordenamiento estricto
+        return arrayMove(items, oldIndex, newIndex);
+      }
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // 1. Validación UI
     if (formData.esPaquete && !formData.precioPaqueteUSD) {
       toast.error("Debe ingresar el precio total del paquete.");
       return;
@@ -274,20 +415,16 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
     
     setGuardando(true);
     try {
-      // 2. LIMPIEZA DE DATOS (Mapeo estricto para evitar error 500 en Prisma)
       const payloadLimpio = {
         categoria: formData.categoria,
         subcategoria: formData.subcategoria,
         esPaquete: formData.esPaquete,
-        // Si es paquete, convertimos a Float, si no, lo enviamos como null
         precioPaqueteUSD: formData.esPaquete ? parseFloat(formData.precioPaqueteUSD) : null, 
         
         pruebas: pruebas.map(p => ({
-          // Si el ID viene vacío (""), pasamos undefined para que Prisma sepa que es un registro nuevo
           id: p.id ? p.id : undefined, 
           codigo: p.codigo,
           nombre: p.nombre,
-          // Convertimos el precio individual a Float (si aplica)
           precioUSD: !formData.esPaquete ? parseFloat(p.precioUSD) : null,
           unidades: p.unidades,
           valoresReferencia: p.valoresReferencia || null,
@@ -297,7 +434,6 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
         }))
       };
 
-      // 3. Enviamos los datos formateados a la API
       await onSave(payloadLimpio);
     } finally {
       setGuardando(false);
@@ -522,7 +658,9 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
               </div>
             </div>
 
-            <div className="space-y-4">
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={pruebas.map(p => p.tempId)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-4 pb-4">
               {pruebas.map((p, index) => {
                 const prev = index > 0 ? pruebas[index - 1] : null;
                 const cat = p.categoriaVisual || "SIN CATEGORIA";
@@ -555,6 +693,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                     )}
 
                     {isNewGroup && hasGroup && (
+                      <DroppableGroupModal id={JSON.stringify({categoriaVisual: cat, subcategoriaVisual: sub})}>
                       <div className="flex items-center gap-3 px-2 mt-4 mb-3">
                         <div className="flex items-center gap-2 shrink-0 bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 shadow-sm focus-within:border-[#0071E3] focus-within:ring-2 focus-within:ring-[#0071E3]/20 transition-all">
                           <div className="flex flex-col">
@@ -648,7 +787,9 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                           Quitar Grupo / Unir Arriba
                         </button>
                       </div>
+                      </DroppableGroupModal>
                     )}
+                    <SortableRowModal id={p.tempId}>
                     <div className={`flex flex-col bg-[#F5F5F7]/60 border border-slate-200/80 p-5 shadow-sm hover:border-[#0071E3]/30 transition-colors ${hasGroup && isNewGroup ? 'rounded-2xl rounded-t-lg' : 'rounded-2xl mt-4'}`}>
                       
                       <div className="grid grid-cols-12 gap-4 items-end w-full">
@@ -753,13 +894,14 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                     </div>
                   )}
 
-
-
                     </div>
+                  </SortableRowModal>
                   </div>
                 );
               })}
             </div>
+            </SortableContext>
+            </DndContext>
           </div>
         </form>
 

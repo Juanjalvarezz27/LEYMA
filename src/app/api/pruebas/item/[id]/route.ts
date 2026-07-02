@@ -22,14 +22,16 @@ export async function PUT(
     const actualizado = await prisma.prueba.update({
       where: { id },
       data: { 
-        codigo: body.codigo.toUpperCase(),
-        nombre: body.nombre.toUpperCase(),
-        precioUSD: parseFloat(body.precioUSD),
-        unidades: body.unidades || null,
-        valoresReferencia: body.valoresReferencia || null,
-        opcionesPredefinidas: body.opcionesPredefinidas || null,
-        categoriaVisual: body.categoriaVisual || null,
-        subcategoriaVisual: body.subcategoriaVisual || null
+        codigo: body.codigo?.toUpperCase(),
+        nombre: body.nombre?.toUpperCase(),
+        precioUSD: body.precioUSD !== undefined ? parseFloat(body.precioUSD) : undefined,
+        unidades: body.unidades !== undefined ? body.unidades : undefined,
+        valoresReferencia: body.valoresReferencia !== undefined ? body.valoresReferencia : undefined,
+        opcionesPredefinidas: body.opcionesPredefinidas !== undefined ? body.opcionesPredefinidas : undefined,
+        categoriaVisual: body.categoriaVisual !== undefined ? body.categoriaVisual : undefined,
+        subcategoriaVisual: body.subcategoriaVisual !== undefined ? body.subcategoriaVisual : undefined,
+        subcategoriaId: body.subcategoriaId !== undefined ? body.subcategoriaId : undefined,
+        ordenVisual: body.ordenVisual !== undefined ? parseInt(body.ordenVisual) : undefined
       }
     });
 

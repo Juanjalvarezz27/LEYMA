@@ -1,6 +1,46 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { Plus, Edit2, Ban, CheckCircle2, Search, TestTubes, DollarSign, ClipboardList, ChevronDown, ChevronUp, Activity, FlaskConical, Tags, Filter, SlidersHorizontal, Check, Trash2, Package, Briefcase } from "lucide-react";
+import { Plus, Edit2, Ban, CheckCircle2, Search, TestTubes, DollarSign, ClipboardList, ChevronDown, ChevronUp, Activity, FlaskConical, Tags, Filter, SlidersHorizontal, Check, Trash2, Package, Briefcase, GripVertical } from "lucide-react";
+import { DndContext, useDraggable, useDroppable, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+const DroppableGroup = ({ id, children }: { id: string, children: React.ReactNode }) => {
+  const { isOver, setNodeRef } = useDroppable({ id });
+  return (
+    <div ref={setNodeRef} className={`transition-colors rounded-xl border border-transparent ${isOver ? 'bg-blue-50/50 border-blue-300 ring-4 ring-blue-100' : ''}`}>
+      {children}
+    </div>
+  );
+};
+
+const SortablePrueba = ({ p, examen, children }: { p: any, examen: any, children: React.ReactNode }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: p.id,
+    data: { prueba: p, sourceExamen: examen }
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 9999 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className={`relative group/drag transition-all ${isDragging ? 'opacity-50 shadow-2xl scale-[1.02] z-50' : ''}`}>
+      {examen.activa && (
+        <div 
+          {...listeners} 
+          {...attributes} 
+          className="absolute left-[-26px] top-1/2 -translate-y-1/2 p-1.5 cursor-grab active:cursor-grabbing text-slate-300 hover:text-[#0071E3] opacity-0 group-hover/drag:opacity-100 transition-opacity"
+        >
+          <GripVertical size={16} />
+        </div>
+      )}
+      {children}
+    </div>
+  );
+};
 import { toast } from "react-toastify";
 import ModalPrueba from "../../components/pruebas/ModalPrueba";
 import ModalPruebaIndividual from "../../components/pruebas/ModalPruebaIndividual";
@@ -41,6 +81,139 @@ export default function PruebasPage() {
   
   const { tasa, loading: loadingTasa } = useTasaBCV();
   const tasaBCV = tasa ?? 36.5;
+
+  const [modalConfirmDrop, setModalConfirmDrop] = useState<{isOpen: boolean, source: any, target: any} | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+    
+    const sourceData = active.data.current;
+    if (!sourceData) return;
+    
+    let targetData;
+    try {
+      targetData = JSON.parse(over.id as string);
+      // === DROP EN GRUPO DISTINTO ===
+      const p = sourceData.prueba;
+      
+      const currentCatVisual = (p.categoriaVisual || "SIN CATEGORIA").trim().toUpperCase();
+      const currentSubcatVisual = (p.subcategoriaVisual || "SIN SUBCATEGORIA").trim().toUpperCase();
+      
+      if (
+        p.subcategoriaId === targetData.subcategoriaId &&
+        currentCatVisual === targetData.catVisual &&
+        currentSubcatVisual === targetData.subcatVisual
+      ) {
+        return; // No se movió de grupo
+      }
+
+      setModalConfirmDrop({
+        isOpen: true,
+        source: sourceData,
+        target: targetData
+      });
+      return;
+    } catch (e) {
+      // === DROP SOBRE OTRA PRUEBA (ORDENAMIENTO) ===
+      if (active.id !== over.id) {
+        const overData = over.data.current;
+        if (!overData) return;
+
+        const sourcePrueba = sourceData.prueba;
+        const targetPrueba = overData.prueba;
+        
+        // Solo ordenamos si están en el mismo grupo visual
+        if (sourcePrueba.subcategoriaId === targetPrueba.subcategoriaId && 
+            (sourcePrueba.categoriaVisual || "SIN CATEGORIA").trim().toUpperCase() === (targetPrueba.categoriaVisual || "SIN CATEGORIA").trim().toUpperCase() && 
+            (sourcePrueba.subcategoriaVisual || "SIN SUBCATEGORIA").trim().toUpperCase() === (targetPrueba.subcategoriaVisual || "SIN SUBCATEGORIA").trim().toUpperCase()) {
+            
+            // Encontrar índices y reordenar optimistamente
+            const examenActual = examenes.find(e => e.id === sourcePrueba.subcategoriaId);
+            if (!examenActual) return;
+            
+            const grupoPruebas = examenActual.pruebas.filter((p: any) => 
+              (p.categoriaVisual || "SIN CATEGORIA").trim().toUpperCase() === (sourcePrueba.categoriaVisual || "SIN CATEGORIA").trim().toUpperCase() && 
+              (p.subcategoriaVisual || "SIN SUBCATEGORIA").trim().toUpperCase() === (sourcePrueba.subcategoriaVisual || "SIN SUBCATEGORIA").trim().toUpperCase()
+            ).sort((a: any, b: any) => (a.ordenVisual || 0) - (b.ordenVisual || 0));
+
+            const oldIndex = grupoPruebas.findIndex((p: any) => p.id === active.id);
+            const newIndex = grupoPruebas.findIndex((p: any) => p.id === over.id);
+
+            const reorderedGroup = arrayMove(grupoPruebas, oldIndex, newIndex);
+            
+            // Re-calcular ordenVisual
+            const updatedPruebas = reorderedGroup.map((p: any, index: number) => ({
+              ...p,
+              ordenVisual: index + 1
+            }));
+
+            // Actualizar UI optimistamente
+            const newExamenes = examenes.map(e => {
+              if (e.id === examenActual.id) {
+                const otrasPruebas = e.pruebas.filter((p: any) => !updatedPruebas.some((up: any) => up.id === p.id));
+                return { ...e, pruebas: [...otrasPruebas, ...updatedPruebas] };
+              }
+              return e;
+            });
+            setExamenes(newExamenes);
+
+            // Guardar en backend
+            try {
+              const res = await fetch(`/api/pruebas/reorder`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ pruebas: updatedPruebas.map((p: any) => ({ id: p.id, ordenVisual: p.ordenVisual })) })
+              });
+              if (!res.ok) throw new Error("Error al guardar el nuevo orden");
+            } catch (error) {
+              toast.error("Error al guardar el orden. Se revertirán los cambios.");
+              fetchExamenes();
+            }
+        }
+      }
+    }
+  };
+
+  const confirmarDrop = async () => {
+    if (!modalConfirmDrop) return;
+    setCargando(true);
+    
+    const { source, target } = modalConfirmDrop;
+    const { prueba } = source;
+    setModalConfirmDrop(null);
+
+    try {
+      const res = await fetch(`/api/pruebas/item/${prueba.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subcategoriaId: target.subcategoriaId,
+          categoriaVisual: target.catVisual === "SIN CATEGORIA" ? null : target.catVisual,
+          subcategoriaVisual: target.subcatVisual === "SIN SUBCATEGORIA" ? null : target.subcatVisual,
+        })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Error al mover la prueba");
+      }
+
+      toast.success("Prueba movida correctamente");
+      fetchExamenes();
+    } catch (error: any) {
+      toast.error(error.message);
+      setCargando(false);
+    }
+  };
 
   const fetchExamenes = async () => {
     try {
@@ -293,6 +466,7 @@ export default function PruebasPage() {
   }, {} as Record<string, any[]>);
 
   return (
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
     <div className="h-full flex flex-col pb-10 overflow-y-auto pr-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
       <div className="flex justify-between items-end mb-8 shrink-0">
         <div>
@@ -523,7 +697,9 @@ export default function PruebasPage() {
                               return Object.entries(gruposPruebas).map(([cat, subs]) => (
                                 <div key={cat} className="flex flex-col gap-3 mt-2">
                                   {Object.entries(subs as any).map(([sub, pruebasGrupo]) => (
-                                    <div key={sub} className="flex flex-col gap-3 mt-1">
+                                    <DroppableGroup key={sub} id={JSON.stringify({ subcategoriaId: examen.id, catVisual: cat, subcatVisual: sub })}>
+                                    <SortableContext items={(pruebasGrupo as any[]).map(p => p.id)} strategy={verticalListSortingStrategy}>
+                                    <div className="flex flex-col gap-3 mt-1 p-1">
                                       {(cat !== "SIN CATEGORIA" || sub !== "SIN SUBCATEGORIA") && (
                                         <div className="flex items-center gap-3 px-4 mt-1 mb-1">
                                           <div className="flex items-center gap-2 shrink-0">
@@ -552,7 +728,8 @@ export default function PruebasPage() {
                                       : 'bg-slate-50/50 border-slate-200/40 opacity-75';
 
                                     return (
-                                      <div key={p.id} className={`flex items-center px-5 py-4 rounded-2xl border transition-all shadow-[0_2px_8px_-4px_rgba(0,0,0,0.02)] hover:border-[#0071E3]/40 ${bgFondoFila}`}>
+                                      <SortablePrueba key={p.id} p={p} examen={examen}>
+                                      <div className={`flex items-center px-5 py-4 rounded-2xl border transition-all shadow-[0_2px_8px_-4px_rgba(0,0,0,0.02)] hover:border-[#0071E3]/40 ${bgFondoFila}`}>
                                         
                                         <div className={`flex items-center gap-4 ${examen.esPaquete ? 'w-[40%]' : 'w-[35%]'}`}>
                                           <span className={`px-2.5 py-1 rounded-md text-[10px] font-mono font-black tracking-wider shrink-0 ${p.activa && examen.activa ? 'bg-white text-[#0071E3] shadow-sm' : 'bg-red-100/50 text-red-600'}`}>
@@ -609,11 +786,14 @@ export default function PruebasPage() {
 
                                         </div>
                                       </div>
+                                      </SortablePrueba>
                                     );
                                   })}
                                   </div>
-                                ))}
-                                </div>
+                                  </SortableContext>
+                                </DroppableGroup>
+                              ))}
+                            </div>
                               ));
                             })()
                           )}
@@ -681,8 +861,24 @@ export default function PruebasPage() {
 
       <ModalPrueba isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSavePrueba} pruebaEditar={pruebaEditando} categoriasExistentes={categoriasExistentes} subcategoriasExistentes={subcategoriasExistentes} catalogoExamenes={examenes} />
       <ModalPruebaIndividual isOpen={isModalItemOpen} onClose={() => setIsModalItemOpen(false)} onSave={handleSavePruebaIndividual} itemEditar={itemEditando} />
-      <ModalServicioExtra isOpen={isModalServicioOpen} onClose={() => setIsModalServicioOpen(false)} onSave={handleSaveServicio} itemEditar={servicioEditando} />
+      <ModalServicioExtra
+        isOpen={isModalServicioOpen}
+        onClose={() => setIsModalServicioOpen(false)}
+        itemEditar={servicioEditando}
+        onSave={handleSaveServicio}
+      />
       
+      {/* Modal de Confirmación Drop */}
+      <ModalConfirmacion
+        isOpen={!!modalConfirmDrop}
+        onClose={() => setModalConfirmDrop(null)}
+        onConfirm={confirmarDrop}
+        titulo="Mover Prueba"
+        mensaje={`¿Estás seguro de mover la prueba ${modalConfirmDrop?.source?.prueba?.nombre} al grupo ${modalConfirmDrop?.target?.subcatVisual === "SIN SUBCATEGORIA" ? modalConfirmDrop?.target?.catVisual : modalConfirmDrop?.target?.subcatVisual}?`}
+        textoConfirmar="Mover"
+        colorBoton="blue"
+      />
+
       <ModalConfirmacion 
         isOpen={isModalConfirmOpen && activeTab === 'pruebas'}
         onClose={() => setIsModalConfirmOpen(false)}
@@ -707,5 +903,6 @@ export default function PruebasPage() {
         placeholderInput="Clave maestra..."
       />
     </div>
+    </DndContext>
   );
 }

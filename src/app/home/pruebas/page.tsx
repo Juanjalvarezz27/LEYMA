@@ -512,8 +512,8 @@ export default function PruebasPage() {
                             (() => {
                               const pruebasOrdenadas = [...examen.pruebas].sort((a: any, b: any) => (a.ordenVisual || 0) - (b.ordenVisual || 0));
                               const gruposPruebas = pruebasOrdenadas.reduce((acc: any, p: any) => {
-                                const cat = p.categoriaVisual || "SIN CATEGORIA";
-                                const sub = p.subcategoriaVisual || "SIN SUBCATEGORIA";
+                                const cat = (p.categoriaVisual || "SIN CATEGORIA").trim().toUpperCase();
+                                const sub = (p.subcategoriaVisual || "SIN SUBCATEGORIA").trim().toUpperCase();
                                 if (!acc[cat]) acc[cat] = {};
                                 if (!acc[cat][sub]) acc[cat][sub] = [];
                                 acc[cat][sub].push(p);

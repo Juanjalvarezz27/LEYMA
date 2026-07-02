@@ -252,13 +252,13 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
 
   const allSigners = new Map();
   const groupedByCategory = orden.detalles.reduce((acc: any, det: any) => {
-    let catNombreOriginal = det.prueba?.categoriaVisual || det.prueba?.subcategoria?.categoria?.nombre || "OTROS";
-    let subcatNombre = det.prueba?.subcategoriaVisual || det.prueba?.subcategoria?.nombre || "PRUEBAS INDIVIDUALES";
+    let catNombreOriginal = (det.prueba?.categoriaVisual || det.prueba?.subcategoria?.categoria?.nombre || "OTROS").trim().toUpperCase();
+    let subcatNombre = (det.prueba?.subcategoriaVisual || det.prueba?.subcategoria?.nombre || "PRUEBAS INDIVIDUALES").trim().toUpperCase();
 
     if (det.prueba?.subcategoria?.esPaquete) {
-      catNombreOriginal = `${det.prueba.subcategoria.categoria?.nombre || "PERFIL"} - ${det.prueba.subcategoria.nombre}`;
+      catNombreOriginal = `${det.prueba.subcategoria.categoria?.nombre || "PERFIL"} - ${det.prueba.subcategoria.nombre}`.trim().toUpperCase();
       if (det.prueba.categoriaVisual || det.prueba.subcategoriaVisual) {
-        subcatNombre = `${det.prueba.categoriaVisual || "S/C"} - ${det.prueba.subcategoriaVisual || "S/S"}`;
+        subcatNombre = `${det.prueba.categoriaVisual || "S/C"} - ${det.prueba.subcategoriaVisual || "S/S"}`.trim().toUpperCase();
       } else {
         subcatNombre = "PRUEBAS INDIVIDUALES";
       }

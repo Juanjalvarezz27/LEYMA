@@ -85,6 +85,18 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       };
     }) : [];
 
+    const sumaPagosUSD = pagosData.reduce((acc: number, p: any) => acc + p.montoUSD, 0);
+    const esPagoCompleto = sumaPagosUSD >= (Number(body.totalUSD) - 0.02);
+
+    let nuevoEstadoId;
+    if (esPagoCompleto) {
+      const estadoCerrada = await prisma.estadoOrden.findUnique({ where: { nombre: "CERRADA" } });
+      if (estadoCerrada) nuevoEstadoId = estadoCerrada.id;
+    } else if (body.estado) {
+      const estado = await prisma.estadoOrden.findUnique({ where: { nombre: body.estado } });
+      if (estado) nuevoEstadoId = estado.id;
+    }
+
     // Uso de Transacción: Borramos los detalles viejos y metemos los nuevos
     const ordenActualizada = await prisma.$transaction(async (tx) => {
       // 1. Limpiar pruebas, servicios y PAGOS anteriores (para evitar pagos fantasmas si el monto bajó)
@@ -96,6 +108,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return await tx.orden.update({
         where: { id: ordenId },
         data: {
+          ...(nuevoEstadoId ? { estadoId: nuevoEstadoId } : {}),
           subtotalUSD: Number(Number(body.subtotalUSD).toFixed(2)),
           descuentoGeneral: body.descuentoGeneral || 0,
           tipoDescuentoId: body.descuentoGeneral > 0 ? getIdDescuento(body.tipoDescuentoGral) : null,

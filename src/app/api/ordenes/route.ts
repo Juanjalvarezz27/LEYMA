@@ -60,11 +60,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `La suma de los pagos en USD (${sumaPagosUSD}) no puede exceder el total de la orden (${body.totalUSD})` }, { status: 400 });
     }
 
+    // Auto-cierre de órdenes y protección contra cierre falso
+    let estadoFinalId = estado.id;
+    const esPagoCompleto = sumaPagosUSD >= (Number(body.totalUSD) - 0.02);
+    const estadoCerrada = await prisma.estadoOrden.findUnique({ where: { nombre: "CERRADA" } });
+
+    if (esPagoCompleto && estadoCerrada) {
+      estadoFinalId = estadoCerrada.id; 
+    } else if (estado.nombre === "CERRADA" && !esPagoCompleto) {
+      return NextResponse.json({ error: "No se puede cerrar una orden con saldo pendiente." }, { status: 400 });
+    }
+
     const nuevaOrden = await prisma.orden.create({
       data: {
         pacienteId: parseId(body.pacienteId),
         usuarioId: usuarioId,
-        estadoId: estado.id,
+        estadoId: estadoFinalId,
         subtotalUSD: Number(Number(body.subtotalUSD).toFixed(2)),
         descuentoGeneral: body.descuentoGeneral || 0,
         tipoDescuentoId: body.descuentoGeneral > 0 ? getIdDescuento(body.tipoDescuentoGral) : null,

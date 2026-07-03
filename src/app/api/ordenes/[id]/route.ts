@@ -88,7 +88,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const sumaPagosUSD = pagosData.reduce((acc: number, p: any) => acc + p.montoUSD, 0);
     const esPagoCompleto = sumaPagosUSD >= (Number(body.totalUSD) - 0.02);
 
-    let nuevoEstadoId;
+    let nuevoEstadoId: number | undefined;
     if (esPagoCompleto) {
       const estadoCerrada = await prisma.estadoOrden.findUnique({ where: { nombre: "CERRADA" } });
       if (estadoCerrada) nuevoEstadoId = estadoCerrada.id;

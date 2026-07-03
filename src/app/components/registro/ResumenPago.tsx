@@ -61,9 +61,9 @@ export default function ResumenPago({
     }));
   };
 
-  const subtotalPruebas = pruebasSeleccionadas.reduce((acc, p) => acc + ((p.precioFinal ?? p.precioUSD) * p.cantidad), 0);
-  const subtotalServicios = serviciosSeleccionados.reduce((acc, s) => acc + (s.precioUSD * (s.cantidad || 1)), 0);
-  const subtotalUSD = subtotalPruebas + subtotalServicios;
+  const subtotalPruebas = Number(pruebasSeleccionadas.reduce((acc, p) => acc + ((p.precioFinal ?? p.precioUSD) * p.cantidad), 0).toFixed(2));
+  const subtotalServicios = Number(serviciosSeleccionados.reduce((acc, s) => acc + (s.precioUSD * (s.cantidad || 1)), 0).toFixed(2));
+  const subtotalUSD = Number((subtotalPruebas + subtotalServicios).toFixed(2));
 
   const handleDescuentoGeneral = (valorStr: string) => {
     let valor = parseFloat(valorStr) || 0;
@@ -72,9 +72,9 @@ export default function ResumenPago({
     setDescuentoGeneral(valor);
   };
 
-  const montoDescGral = tipoDescGral === "PORCENTAJE" ? (subtotalUSD * (descuentoGeneral / 100)) : descuentoGeneral;
-  const totalFinalUSD = Math.max(0, subtotalUSD - montoDescGral);
-  const totalFinalBS = totalFinalUSD * tasaBCV;
+  const montoDescGral = tipoDescGral === "PORCENTAJE" ? Number((subtotalUSD * (descuentoGeneral / 100)).toFixed(2)) : descuentoGeneral;
+  const totalFinalUSD = Number((Math.max(0, subtotalUSD - montoDescGral)).toFixed(2));
+  const totalFinalBS = Number((totalFinalUSD * tasaBCV).toFixed(2));
 
   const agregarPago = () => setPagos([...pagos, { metodoId: "", monto: 0, moneda: "USD", referencia: "" }]);
 

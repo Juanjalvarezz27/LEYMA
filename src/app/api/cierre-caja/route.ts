@@ -141,12 +141,12 @@ export async function GET(req: Request) {
         });
       }
 
-      // Por cobrar es lo que falta por pagar de la orden
-      const faltanteUSD = Math.max(0, montoOrdenUSD - pagosDeLaOrdenUSD);
-      const faltanteBS = Math.max(0, montoOrdenBS - pagosDeLaOrdenBS);
+      // Por cobrar es lo que falta por pagar de la orden, forzando 2 decimales
+      const faltanteUSD = Number(Math.max(0, montoOrdenUSD - pagosDeLaOrdenUSD).toFixed(2));
+      const faltanteBS = Number(Math.max(0, montoOrdenBS - pagosDeLaOrdenBS).toFixed(2));
       
-      totalCuentasPorCobrarUSD += faltanteUSD;
-      totalCuentasPorCobrarBS += faltanteBS;
+      totalCuentasPorCobrarUSD = Number((totalCuentasPorCobrarUSD + faltanteUSD).toFixed(2));
+      totalCuentasPorCobrarBS = Number((totalCuentasPorCobrarBS + faltanteBS).toFixed(2));
     });
 
     let totalCajaUSD = 0;

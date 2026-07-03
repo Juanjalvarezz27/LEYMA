@@ -1,5 +1,5 @@
 "use client";
-import { X, Plus, Trash2, ChevronDown, Loader2, Package, LayoutList, Search, Edit2, Check, GripVertical } from "lucide-react";
+import { X, Plus, Trash2, ChevronDown, ChevronUp, Loader2, Package, LayoutList, Search, Edit2, Check, GripVertical } from "lucide-react";
 import { DndContext, PointerSensor, useSensor, useSensors, DragEndEvent, closestCenter, useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -359,46 +359,76 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
         
         const draggedItemOriginal = items[oldIndex];
         const targetItem = items[newIndex];
-
-        const isDraggedUnassigned = (!draggedItemOriginal.categoriaVisual || draggedItemOriginal.categoriaVisual === "SIN CATEGORIA") && 
-                                    (!draggedItemOriginal.subcategoriaVisual || draggedItemOriginal.subcategoriaVisual === "SIN SUBCATEGORIA");
         
-        const isTargetAssigned = targetItem && ((targetItem.categoriaVisual && targetItem.categoriaVisual !== "SIN CATEGORIA") || 
-                                                (targetItem.subcategoriaVisual && targetItem.subcategoriaVisual !== "SIN SUBCATEGORIA"));
-
-        if (isDraggedUnassigned && isTargetAssigned) {
-          // El usuario soltó una prueba nueva sobre una prueba de un grupo.
-          // Comportamiento inteligente: Asignarla a ese grupo y mandarla al final.
-          const newItems = [...items];
-          const draggedItem = { ...newItems[oldIndex] };
-          
-          draggedItem.categoriaVisual = targetItem.categoriaVisual;
-          draggedItem.subcategoriaVisual = targetItem.subcategoriaVisual;
-          newItems[oldIndex] = draggedItem;
-
-          let lastIndexOfGroup = -1;
-          for (let i = items.length - 1; i >= 0; i--) {
-            if (i !== oldIndex && 
-                (items[i].categoriaVisual || "SIN CATEGORIA") === targetItem.categoriaVisual &&
-                (items[i].subcategoriaVisual || "SIN SUBCATEGORIA") === targetItem.subcategoriaVisual) {
-              lastIndexOfGroup = i;
-              break;
-            }
-          }
-
-          if (lastIndexOfGroup !== -1) {
-            let toIndex = lastIndexOfGroup;
-            if (oldIndex > lastIndexOfGroup) {
-              toIndex = lastIndexOfGroup + 1;
-            }
-            return arrayMove(newItems, oldIndex, toIndex);
-          }
-        }
+        const newItems = [...items];
+        const draggedItem = { ...newItems[oldIndex] };
         
-        // Si no es el caso especial de asignación automática, es un ordenamiento estricto
-        return arrayMove(items, oldIndex, newIndex);
+        // Siempre adoptamos la categoría del item sobre el cual soltamos
+        draggedItem.categoriaVisual = targetItem.categoriaVisual;
+        draggedItem.subcategoriaVisual = targetItem.subcategoriaVisual;
+        newItems[oldIndex] = draggedItem;
+
+        return arrayMove(newItems, oldIndex, newIndex);
       }
     });
+  };
+
+  const moverGrupoArriba = (index: number) => {
+    const cat = pruebas[index].categoriaVisual || "SIN CATEGORIA";
+    const sub = pruebas[index].subcategoriaVisual || "SIN SUBCATEGORIA";
+
+    let endIndex = index;
+    for (let i = index; i < pruebas.length; i++) {
+      if ((pruebas[i].categoriaVisual || "SIN CATEGORIA") === cat &&
+          (pruebas[i].subcategoriaVisual || "SIN SUBCATEGORIA") === sub) {
+        endIndex = i;
+      } else {
+        break;
+      }
+    }
+
+    if (index === 0) return;
+    
+    const prevEndIndex = index - 1;
+    const prevCat = pruebas[prevEndIndex].categoriaVisual || "SIN CATEGORIA";
+    const prevSub = pruebas[prevEndIndex].subcategoriaVisual || "SIN SUBCATEGORIA";
+    
+    let prevStartIndex = prevEndIndex;
+    for (let i = prevEndIndex; i >= 0; i--) {
+      if ((pruebas[i].categoriaVisual || "SIN CATEGORIA") === prevCat &&
+          (pruebas[i].subcategoriaVisual || "SIN SUBCATEGORIA") === prevSub) {
+        prevStartIndex = i;
+      } else {
+        break;
+      }
+    }
+
+    setPruebas(prev => {
+      const result = [...prev];
+      const prevGroup = result.slice(prevStartIndex, prevEndIndex + 1);
+      const currentGroup = result.slice(index, endIndex + 1);
+      
+      result.splice(prevStartIndex, (endIndex - prevStartIndex) + 1, ...currentGroup, ...prevGroup);
+      return result;
+    });
+  };
+
+  const moverGrupoAbajo = (index: number) => {
+    const cat = pruebas[index].categoriaVisual || "SIN CATEGORIA";
+    const sub = pruebas[index].subcategoriaVisual || "SIN SUBCATEGORIA";
+
+    let endIndex = index;
+    for (let i = index; i < pruebas.length; i++) {
+      if ((pruebas[i].categoriaVisual || "SIN CATEGORIA") === cat &&
+          (pruebas[i].subcategoriaVisual || "SIN SUBCATEGORIA") === sub) {
+        endIndex = i;
+      } else {
+        break;
+      }
+    }
+
+    if (endIndex >= pruebas.length - 1) return;
+    moverGrupoArriba(endIndex + 1);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -587,7 +617,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
           </div>
 
           <div className="px-8 pb-8 space-y-4 relative z-10">
-            <div className="flex justify-between items-center relative z-20">
+            <div className="flex justify-between items-center relative z-[60]">
               <div>
                 <h4 className="text-[14px] font-black text-[#1D1D1F] uppercase tracking-widest">
                   {formData.esPaquete ? "Parámetros del Paquete" : "Pruebas e Ítems Individuales"}
@@ -694,8 +724,18 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
 
                     {isNewGroup && hasGroup && (
                       <DroppableGroupModal id={JSON.stringify({categoriaVisual: cat, subcategoriaVisual: sub})}>
-                      <div className="flex items-center gap-3 px-2 mt-4 mb-3">
-                        <div className="flex items-center gap-2 shrink-0 bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 shadow-sm focus-within:border-[#0071E3] focus-within:ring-2 focus-within:ring-[#0071E3]/20 transition-all">
+                      <div className="flex justify-between items-center px-2 mt-4 mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex flex-col gap-1">
+                            <button type="button" onClick={() => moverGrupoArriba(index)} title="Mover grupo arriba" className="p-0.5 text-slate-300 hover:text-[#0071E3] hover:bg-slate-100 rounded transition-colors disabled:opacity-30" disabled={index === 0}>
+                              <ChevronUp size={14} strokeWidth={3} />
+                            </button>
+                            <button type="button" onClick={() => moverGrupoAbajo(index)} title="Mover grupo abajo" className="p-0.5 text-slate-300 hover:text-[#0071E3] hover:bg-slate-100 rounded transition-colors disabled:opacity-30">
+                              <ChevronDown size={14} strokeWidth={3} />
+                            </button>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 shrink-0 bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 shadow-sm focus-within:border-[#0071E3] focus-within:ring-2 focus-within:ring-[#0071E3]/20 transition-all">
                           <div className="flex flex-col">
                             <span className="text-[8px] font-black tracking-widest uppercase text-slate-400 mb-0.5">Editar Categoría Visual</span>
                             <div className="grid">
@@ -767,6 +807,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                               />
                             </div>
                           </div>
+                        </div>
                         </div>
                         <div className="h-px bg-slate-200/70 flex-1"></div>
                         <button type="button" onClick={() => {

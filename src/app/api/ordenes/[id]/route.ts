@@ -96,11 +96,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return await tx.orden.update({
         where: { id: ordenId },
         data: {
-          subtotalUSD: body.subtotalUSD,
+          subtotalUSD: Number(Number(body.subtotalUSD).toFixed(2)),
           descuentoGeneral: body.descuentoGeneral || 0,
           tipoDescuentoId: body.descuentoGeneral > 0 ? getIdDescuento(body.tipoDescuentoGral) : null,
-          totalUSD: body.totalUSD,
-          totalBS: body.totalBS,
+          totalUSD: Number(Number(body.totalUSD).toFixed(2)),
+          totalBS: Number(Number(body.totalBS).toFixed(2)),
           tasaBCV: body.tasaBCV,
           detalles: {
             create: detallesData

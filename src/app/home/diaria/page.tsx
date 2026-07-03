@@ -351,12 +351,12 @@ function ListaDiariaContent() {
           <table className="w-full text-left border-collapse">
             <thead className="bg-slate-100/50">
               <tr className="border-b-2 border-slate-200">
-                <th className="px-6 py-5 text-[12px] font-black text-[#1D1D1F] uppercase tracking-[0.15em] align-middle">N° Orden</th>
-                <th className="px-6 py-5 text-[12px] font-black text-[#1D1D1F] uppercase tracking-[0.15em] align-middle">Paciente</th>
-                <th className="px-6 py-5 text-[12px] font-black text-[#1D1D1F] uppercase tracking-[0.15em] align-middle">Pruebas</th>
-                <th className="px-6 py-5 text-[12px] font-black text-[#1D1D1F] uppercase tracking-[0.15em] align-middle">Monto</th>
-                <th className="px-6 py-5 text-[12px] font-black text-[#1D1D1F] uppercase tracking-[0.15em] align-middle">Estado</th>
-                <th className="px-6 py-5 text-[12px] font-black text-[#1D1D1F] uppercase tracking-[0.15em] text-center align-middle">Acciones</th>
+                <th className="px-6 py-5 text-[12px] font-black text-[#1D1D1F] uppercase tracking-[0.15em] align-middle whitespace-nowrap w-[100px]">N° Orden</th>
+                <th className="px-6 py-5 text-[12px] font-black text-[#1D1D1F] uppercase tracking-[0.15em] align-middle min-w-[250px]">Paciente</th>
+                <th className="px-6 py-5 text-[12px] font-black text-[#1D1D1F] uppercase tracking-[0.15em] align-middle whitespace-nowrap w-[120px]">Pruebas</th>
+                <th className="px-6 py-5 text-[12px] font-black text-[#1D1D1F] uppercase tracking-[0.15em] align-middle whitespace-nowrap w-[150px]">Monto</th>
+                <th className="px-6 py-5 text-[12px] font-black text-[#1D1D1F] uppercase tracking-[0.15em] align-middle whitespace-nowrap w-[120px]">Estado</th>
+                <th className="px-6 py-5 text-[12px] font-black text-[#1D1D1F] uppercase tracking-[0.15em] text-center align-middle whitespace-nowrap w-[180px]">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -384,17 +384,17 @@ function ListaDiariaContent() {
                     </td>
                     
                     <td className="px-6 py-4 align-middle">
-                      <span className="inline-flex items-center justify-center text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">
+                      <span className="inline-flex items-center justify-center text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1 rounded-lg whitespace-nowrap">
                         {orden.detalles.length} Prueba(s)
                       </span>
                     </td>
                     
                     <td className="px-6 py-4 align-middle">
                       <div className="flex flex-col justify-center">
-                        <span className={`font-black leading-tight ${orden.estado.nombre === "ANULADA" ? 'text-slate-400' : 'text-[#0071E3]'}`}>
+                        <span className={`font-black leading-tight whitespace-nowrap ${orden.estado.nombre === "ANULADA" ? 'text-slate-400' : 'text-[#0071E3]'}`}>
                           ${orden.totalUSD.toFixed(2)}
                         </span>
-                        <span className="text-[13px] font-bold text-slate-500 mt-0.5">
+                        <span className="text-[13px] font-bold text-slate-500 mt-0.5 whitespace-nowrap">
                           Bs {orden.totalBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}
                         </span>
                       </div>

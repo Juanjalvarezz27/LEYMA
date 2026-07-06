@@ -102,13 +102,27 @@ export async function POST(req: Request) {
         const existingValores = await tx.valorResultado.findMany({
           where: { resultadoId: resPrueba.id }
         });
-        const existingValoresMap = new Map(existingValores.map(ev => [ev.pruebaId, ev.id]));
+        
+        // Agrupamos los IDs existentes por pruebaId para manejar múltiples valores del mismo parámetro (ej. con el botón +)
+        const existingValoresByPrueba = new Map<string, string[]>();
+        for (const ev of existingValores) {
+          if (!existingValoresByPrueba.has(ev.pruebaId)) {
+            existingValoresByPrueba.set(ev.pruebaId, []);
+          }
+          existingValoresByPrueba.get(ev.pruebaId)!.push(ev.id);
+        }
 
         // Iteramos los valores que vienen del frontend y actualizamos o creamos uno por uno.
         // Esto permite a PostgreSQL hacer un HOT (Heap-Only-Tuple) update, sin afectar los índices,
         // lo que ahorra un masivo espacio de disco en comparación al deleteMany + create de antes.
         for (const v of res.valores) {
-          const valorId = existingValoresMap.get(v.pruebaId);
+          const idsForPrueba = existingValoresByPrueba.get(v.pruebaId);
+          let valorId = null;
+          
+          if (idsForPrueba && idsForPrueba.length > 0) {
+             valorId = idsForPrueba.shift(); // Tomamos el primer ID disponible y lo quitamos del array
+          }
+
           if (valorId) {
              await tx.valorResultado.update({
                where: { id: valorId },
@@ -123,6 +137,18 @@ export async function POST(req: Request) {
                }
              });
           }
+        }
+        
+        // Eliminamos los valores sobrantes (si el usuario quitó resultados con el botón -)
+        const idsToDelete: string[] = [];
+        for (const ids of existingValoresByPrueba.values()) {
+           idsToDelete.push(...ids);
+        }
+        
+        if (idsToDelete.length > 0) {
+           await tx.valorResultado.deleteMany({
+             where: { id: { in: idsToDelete } }
+           });
         }
       }
 

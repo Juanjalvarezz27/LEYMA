@@ -67,7 +67,8 @@ export async function GET(req: Request) {
               }
             }
           }
-        }
+        },
+        notasSubcategoria: true
       },
       orderBy: { fechaCreacion: 'desc' }
     });

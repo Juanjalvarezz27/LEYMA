@@ -111,6 +111,46 @@ export async function GET(req: Request) {
           Gastos: parseFloat(conteoTendencia[fecha]?.gastos.toFixed(2) || "0")
         };
       });
+    } else {
+      // Agrupación mensual para periodos mayores a 60 días
+      const [fechasIngresos, fechasGastos] = await Promise.all([
+        prisma.orden.findMany({
+          where: { fechaCreacion: { gte: fechaInicio, lte: fechaFin }, estado: { nombre: "CERRADA" } },
+          select: { fechaCreacion: true, totalUSD: true }
+        }),
+        prisma.gasto.findMany({
+          where: { fechaGasto: { gte: fechaInicio, lte: fechaFin } },
+          select: { fechaGasto: true, montoUSD: true }
+        })
+      ]);
+
+      fechasIngresos.forEach(i => {
+        const d = new Date(i.fechaCreacion);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (!diasDelPeriodo.includes(key)) diasDelPeriodo.push(key);
+        if (!conteoTendencia[key]) conteoTendencia[key] = { ingresos: 0, gastos: 0 };
+        conteoTendencia[key].ingresos += (Number(i.totalUSD) || 0);
+      });
+
+      fechasGastos.forEach(g => {
+        const d = new Date(g.fechaGasto);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (!diasDelPeriodo.includes(key)) diasDelPeriodo.push(key);
+        if (!conteoTendencia[key]) conteoTendencia[key] = { ingresos: 0, gastos: 0 };
+        conteoTendencia[key].gastos += (Number(g.montoUSD) || 0);
+      });
+
+      diasDelPeriodo.sort();
+
+      graficoTendencia = diasDelPeriodo.map((mesKey) => {
+        const [year, month] = mesKey.split("-");
+        const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+        return {
+          label: `${monthNames[parseInt(month) - 1]} ${year.substring(2)}`,
+          Ingresos: parseFloat(conteoTendencia[mesKey]?.ingresos.toFixed(2) || "0"),
+          Gastos: parseFloat(conteoTendencia[mesKey]?.gastos.toFixed(2) || "0")
+        };
+      });
     }
 
     // 3. MÉTODOS DE PAGO (Group By Nativo)

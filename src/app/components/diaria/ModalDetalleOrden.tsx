@@ -209,78 +209,82 @@ export default function ModalDetalleOrden({ orden, onClose }: ModalDetalleOrdenP
                 const subtotalItemBS = subtotalItemUSD * orden.tasaBCV;
 
                 return (
-                  <div key={item.id} className="bg-white border border-slate-200 p-5 lg:p-6 rounded-[24px] flex flex-col md:flex-row md:items-center justify-between shadow-sm hover:shadow-md transition-shadow gap-6">
+                  <div key={item.id} className="bg-white border border-slate-200 p-5 lg:p-6 rounded-[24px] flex flex-col shadow-sm hover:shadow-md transition-shadow gap-4">
                     
-                    <div className="flex items-start gap-4 flex-1 w-full">
-                      <div className={`w-12 h-12 lg:w-14 lg:h-14 rounded-xl flex items-center justify-center shrink-0 border mt-1 ${item.isPaquete ? "bg-purple-50 text-purple-600 border-purple-100" : "bg-blue-50 text-[#0071E3] border-blue-100"}`}>
-                        {item.isPaquete ? <Package size={24} strokeWidth={2.5} /> : <FlaskConical size={24} strokeWidth={2.5} />}
-                      </div>
-                      
-                      <div className="flex flex-col w-full">
-                        {/* ETIQUETAS DE JERARQUÍA */}
-                        <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.categoriaNombre}</span>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 w-full">
+                      <div className="flex items-start gap-4 flex-1 w-full">
+                        <div className={`w-12 h-12 lg:w-14 lg:h-14 rounded-xl flex items-center justify-center shrink-0 border mt-1 ${item.isPaquete ? "bg-purple-50 text-purple-600 border-purple-100" : "bg-blue-50 text-[#0071E3] border-blue-100"}`}>
+                          {item.isPaquete ? <Package size={24} strokeWidth={2.5} /> : <FlaskConical size={24} strokeWidth={2.5} />}
+                        </div>
+                        
+                        <div className="flex flex-col w-full">
+                          {/* ETIQUETAS DE JERARQUÍA */}
+                          <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.categoriaNombre}</span>
+                            {!item.isPaquete && (
+                              <>
+                                <span className="text-[10px] text-slate-300">&gt;</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.subcategoriaNombre}</span>
+                              </>
+                            )}
+                          </div>
+
+                          <h4 className="font-bold text-[#1D1D1F] text-base lg:text-lg leading-tight flex items-center gap-2 flex-wrap">
+                            {item.nombre}
+                            {item.isPaquete && (
+                              <span className="text-[9px] font-black bg-purple-100 text-purple-600 px-2 py-0.5 rounded uppercase tracking-wider shrink-0">Perfil</span>
+                            )}
+                          </h4>
+                          
                           {!item.isPaquete && (
-                            <>
-                              <span className="text-[10px] text-slate-300">&gt;</span>
-                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.subcategoriaNombre}</span>
-                            </>
+                            <span className="text-[#0071E3] text-[10px] font-black uppercase tracking-widest mt-1.5">
+                              {item.codigo}
+                            </span>
+                          )}
+
+                          {/* Etiqueta de Descuento (Visible en Paquetes e Individuales) */}
+                          {valorDesc > 0 && (
+                            <div className="mt-2">
+                              <span className="text-[9px] font-black text-red-500 bg-red-50 px-2 py-1 rounded border border-red-100 uppercase tracking-widest">
+                                Descuento: {item.tipoDesc === "PORCENTAJE" ? `-${valorDesc}%` : `-$${valorDesc.toFixed(2)}`}
+                              </span>
+                            </div>
                           )}
                         </div>
-
-                        <h4 className="font-bold text-[#1D1D1F] text-base lg:text-lg leading-tight flex items-center gap-2">
-                          {item.nombre}
-                          {item.isPaquete && (
-                            <span className="text-[9px] font-black bg-purple-100 text-purple-600 px-2 py-0.5 rounded uppercase tracking-wider">Perfil</span>
-                          )}
-                        </h4>
-                        
-                        {!item.isPaquete && (
-                          <span className="text-[#0071E3] text-[10px] font-black uppercase tracking-widest mt-1.5">
-                            {item.codigo}
-                          </span>
-                        )}
-
-                        {/* Etiqueta de Descuento (Visible en Paquetes e Individuales) */}
-                        {valorDesc > 0 && (
-                          <div className="mt-2">
-                            <span className="text-[9px] font-black text-red-500 bg-red-50 px-2 py-1 rounded border border-red-100 uppercase tracking-widest">
-                              Descuento: {item.tipoDesc === "PORCENTAJE" ? `-${valorDesc}%` : `-$${valorDesc.toFixed(2)}`}
-                            </span>
-                          </div>
-                        )}
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-6 lg:gap-10 justify-end w-full md:w-auto border-t md:border-0 border-slate-50 pt-4 md:pt-0 shrink-0">
-                      <div className="text-center">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cant.</p>
-                        <p className="font-bold text-[#1D1D1F] text-base mt-1">{item.cantidad}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Precio</p>
-                        <p className="font-bold text-[#1D1D1F] text-base leading-none mt-1">${item.precioCongeladoUSD.toFixed(2)}</p>
-                        <p className="text-[10px] font-medium text-slate-500 mt-1">Bs {precioBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}</p>
-                      </div>
-                      <div className="text-right min-w-[80px]">
-                        <p className="text-[10px] font-bold text-[#0071E3] uppercase tracking-widest">Subtotal</p>
-                        <p className="font-black text-[#0071E3] text-xl leading-none mt-1">${subtotalItemUSD.toFixed(2)}</p>
-                        <p className="text-[11px] font-bold text-slate-500 mt-1">Bs {subtotalItemBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}</p>
+                      
+                      <div className="flex items-center gap-6 lg:gap-10 justify-end w-full md:w-auto border-t md:border-0 border-slate-50 pt-4 md:pt-0 shrink-0">
+                        <div className="text-center">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cant.</p>
+                          <p className="font-bold text-[#1D1D1F] text-base mt-1">{item.cantidad}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Precio</p>
+                          <p className="font-bold text-[#1D1D1F] text-base leading-none mt-1">${item.precioCongeladoUSD.toFixed(2)}</p>
+                          <p className="text-[10px] font-medium text-slate-500 mt-1">Bs {precioBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}</p>
+                        </div>
+                        <div className="text-right min-w-[80px]">
+                          <p className="text-[10px] font-bold text-[#0071E3] uppercase tracking-widest">Subtotal</p>
+                          <p className="font-black text-[#0071E3] text-xl leading-none mt-1">${subtotalItemUSD.toFixed(2)}</p>
+                          <p className="text-[11px] font-bold text-slate-500 mt-1">Bs {subtotalItemBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}</p>
+                        </div>
                       </div>
                     </div>
                     {/* DROP DOWN AL FONDO */}
                     {item.isPaquete && (
-                      <details className="mt-4 bg-[#F5F5F7]/80 rounded-xl w-full group">
+                      <details className="bg-[#F5F5F7]/80 rounded-xl w-full group border border-slate-200/60">
                         <summary className="p-3 cursor-pointer text-xs font-bold text-slate-700 list-none flex items-center gap-2 select-none hover:text-[#0071E3] transition-colors">
                           <span className="flex-1">Incluye {item.pruebasHijas.length} pruebas</span>
                           <div className="w-5 h-5 rounded-full bg-slate-200/50 flex items-center justify-center group-open:rotate-180 transition-transform">
                             <ChevronDown size={14} strokeWidth={3} />
                           </div>
                         </summary>
-                        <div className="px-3 pb-3 pt-0 border-t border-slate-200/50 mt-1">
-                           <p className="text-xs text-slate-500 leading-snug font-medium pt-2">
-                             {item.pruebasHijas.map((ph: any) => ph.nombre).join(', ')}
-                           </p>
+                        <div className="px-4 pb-4 pt-1 border-t border-slate-200/50 mt-1">
+                           <ul className="list-disc list-inside text-xs text-slate-500 leading-snug font-medium grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                             {item.pruebasHijas.map((ph: any, idx: number) => (
+                               <li key={idx} className="truncate" title={ph.nombre}>{ph.nombre}</li>
+                             ))}
+                           </ul>
                         </div>
                       </details>
                     )}
@@ -295,35 +299,37 @@ export default function ModalDetalleOrden({ orden, onClose }: ModalDetalleOrdenP
                 const subtotalItemBS = subtotalItemUSD * orden.tasaBCV;
 
                 return (
-                  <div key={`srv-${se.id}`} className="bg-amber-50/40 border border-amber-200/60 p-5 lg:p-6 rounded-[24px] flex flex-col md:flex-row md:items-center justify-between shadow-sm hover:shadow-md transition-shadow gap-6">
-                    <div className="flex items-start gap-4 flex-1 w-full">
-                      <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl flex items-center justify-center shrink-0 border mt-1 bg-amber-100 text-amber-600 border-amber-200">
-                        <Syringe size={24} strokeWidth={2.5} />
-                      </div>
-                      <div className="flex flex-col w-full justify-center min-h-[48px] lg:min-h-[56px]">
-                        <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Servicio de Extracción</span>
+                  <div key={`srv-${se.id}`} className="bg-amber-50/40 border border-amber-200/60 p-5 lg:p-6 rounded-[24px] flex flex-col shadow-sm hover:shadow-md transition-shadow gap-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 w-full">
+                      <div className="flex items-start gap-4 flex-1 w-full">
+                        <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl flex items-center justify-center shrink-0 border mt-1 bg-amber-100 text-amber-600 border-amber-200">
+                          <Syringe size={24} strokeWidth={2.5} />
                         </div>
-                        <h4 className="font-bold text-[#1D1D1F] text-base lg:text-lg leading-tight flex items-center gap-2">
-                          {se.servicio.nombre}
-                        </h4>
+                        <div className="flex flex-col w-full justify-center min-h-[48px] lg:min-h-[56px]">
+                          <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Servicio de Extracción</span>
+                          </div>
+                          <h4 className="font-bold text-[#1D1D1F] text-base lg:text-lg leading-tight flex items-center gap-2 flex-wrap">
+                            {se.servicio.nombre}
+                          </h4>
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-6 lg:gap-10 justify-end w-full md:w-auto border-t md:border-0 border-slate-50 pt-4 md:pt-0 shrink-0">
-                      <div className="text-center">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cant.</p>
-                        <p className="font-bold text-[#1D1D1F] text-base mt-1">{se.cantidad}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Precio</p>
-                        <p className="font-bold text-[#1D1D1F] text-base leading-none mt-1">${se.precioCongeladoUSD.toFixed(2)}</p>
-                        <p className="text-[10px] font-medium text-slate-500 mt-1">Bs {precioBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}</p>
-                      </div>
-                      <div className="text-right min-w-[80px]">
-                        <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Subtotal</p>
-                        <p className="font-black text-amber-600 text-xl leading-none mt-1">${subtotalItemUSD.toFixed(2)}</p>
-                        <p className="text-[11px] font-bold text-slate-500 mt-1">Bs {subtotalItemBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}</p>
+                      
+                      <div className="flex items-center gap-6 lg:gap-10 justify-end w-full md:w-auto border-t md:border-0 border-amber-100 pt-4 md:pt-0 shrink-0">
+                        <div className="text-center">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cant.</p>
+                          <p className="font-bold text-[#1D1D1F] text-base mt-1">{se.cantidad}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Precio</p>
+                          <p className="font-bold text-[#1D1D1F] text-base leading-none mt-1">${se.precioCongeladoUSD.toFixed(2)}</p>
+                          <p className="text-[10px] font-medium text-slate-500 mt-1">Bs {precioBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}</p>
+                        </div>
+                        <div className="text-right min-w-[80px]">
+                          <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Subtotal</p>
+                          <p className="font-black text-amber-600 text-xl leading-none mt-1">${subtotalItemUSD.toFixed(2)}</p>
+                          <p className="text-[11px] font-bold text-slate-500 mt-1">Bs {subtotalItemBS.toLocaleString('es-VE', {minimumFractionDigits: 2})}</p>
+                        </div>
                       </div>
                     </div>
                   </div>

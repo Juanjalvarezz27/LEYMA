@@ -44,6 +44,8 @@ export default function MonederoPage() {
   const [busquedaDescuento, setBusquedaDescuento] = useState("");
   const [paginaActualDescuento, setPaginaActualDescuento] = useState(1);
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
+  const [mostrarEgresos, setMostrarEgresos] = useState(false);
+  const [mostrarDescuentos, setMostrarDescuentos] = useState(false);
   const ELEMENTOS_POR_PAGINA = 30;
 
   const fetchMonedero = async () => {
@@ -378,28 +380,36 @@ export default function MonederoPage() {
           </div>
 
           {/* HISTORIAL GENERAL DE GASTOS CON PAGINACIÓN Y TEXTOS GRANDES */}
-          <div className="bg-white rounded-[24px] border border-slate-200/80 shadow-sm overflow-hidden mt-6">
-            <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="bg-white rounded-[24px] border border-slate-200/80 shadow-sm overflow-hidden mt-6 transition-all duration-500">
+            <div 
+              className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4 cursor-pointer hover:bg-slate-100/50 transition-colors"
+              onClick={() => setMostrarEgresos(!mostrarEgresos)}
+            >
               <div>
                 <h2 className="text-2xl font-black text-[#1D1D1F] flex items-center gap-2">
                   <CreditCard className="text-red-500" size={24} /> Auditoría de Egresos
+                  <ChevronDown className={`ml-2 text-slate-400 transition-transform duration-300 ${mostrarEgresos ? 'rotate-180' : ''}`} size={20} />
                 </h2>
                 <p className="text-sm font-medium text-slate-500 mt-1">Histórico de salidas paginado de 30 en 30.</p>
               </div>
 
               {/* Barra de Búsqueda Local */}
-              <div className="relative w-full lg:w-80">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                <input 
-                  type="text"
-                  placeholder="Filtrar por concepto o método..."
-                  value={busquedaGasto}
-                  onChange={(e) => setBusquedaGasto(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-[#1D1D1F] focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all"
-                />
-              </div>
+              {mostrarEgresos && (
+                <div className="relative w-full lg:w-80" onClick={e => e.stopPropagation()}>
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  <input 
+                    type="text"
+                    placeholder="Filtrar por concepto o método..."
+                    value={busquedaGasto}
+                    onChange={(e) => setBusquedaGasto(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-[#1D1D1F] focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all"
+                  />
+                </div>
+              )}
             </div>
 
+            {mostrarEgresos && (
+              <>
             <div className="overflow-x-auto w-full">
               <table className="w-full text-left border-collapse min-w-[700px]">
                 <thead>
@@ -496,7 +506,7 @@ export default function MonederoPage() {
             )}
             
             {/* Resumen al pie de la tabla de egresos */}
-            <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
               <span className="text-sm font-bold text-slate-500 italic">
                 Mostrando del {(paginaActual - 1) * ELEMENTOS_POR_PAGINA + 1} al {Math.min(paginaActual * ELEMENTOS_POR_PAGINA, todosLosGastosFiltrados.length)} de {todosLosGastosFiltrados.length} registros.
               </span>
@@ -505,31 +515,41 @@ export default function MonederoPage() {
                 <span className="text-2xl font-black text-red-500">-{formatMoney(todosLosGastosFiltrados.reduce((acc: number, curr: any) => acc + curr.montoUSD, 0))}</span>
               </div>
             </div>
+            </>
+            )}
           </div>
 
           {/* HISTORIAL GENERAL DE DESCUENTOS CON PAGINACIÓN */}
-          <div className="bg-white rounded-[24px] border border-slate-200/80 shadow-sm overflow-hidden mt-6">
-            <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="bg-white rounded-[24px] border border-slate-200/80 shadow-sm overflow-hidden mt-6 transition-all duration-500">
+            <div 
+              className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4 cursor-pointer hover:bg-slate-100/50 transition-colors"
+              onClick={() => setMostrarDescuentos(!mostrarDescuentos)}
+            >
               <div>
                 <h2 className="text-2xl font-black text-[#1D1D1F] flex items-center gap-2">
                   <Tag className="text-red-500" size={24} /> Auditoría de Descuentos
+                  <ChevronDown className={`ml-2 text-slate-400 transition-transform duration-300 ${mostrarDescuentos ? 'rotate-180' : ''}`} size={20} />
                 </h2>
                 <p className="text-sm font-medium text-slate-500 mt-1">Histórico de descuentos aplicados paginado de 30 en 30.</p>
               </div>
 
               {/* Barra de Búsqueda Local */}
-              <div className="relative w-full lg:w-80">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                <input 
-                  type="text"
-                  placeholder="Filtrar por paciente, motivo u orden..."
-                  value={busquedaDescuento}
-                  onChange={(e) => setBusquedaDescuento(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-[#1D1D1F] focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all"
-                />
-              </div>
+              {mostrarDescuentos && (
+                <div className="relative w-full lg:w-80" onClick={e => e.stopPropagation()}>
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  <input 
+                    type="text"
+                    placeholder="Filtrar por paciente, motivo u orden..."
+                    value={busquedaDescuento}
+                    onChange={(e) => setBusquedaDescuento(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-[#1D1D1F] focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all"
+                  />
+                </div>
+              )}
             </div>
 
+            {mostrarDescuentos && (
+              <>
             <div className="overflow-x-auto w-full">
               <table className="w-full text-left border-collapse min-w-[700px]">
                 <thead>
@@ -671,7 +691,7 @@ export default function MonederoPage() {
             )}
             
             {/* Resumen al pie de la tabla de descuentos */}
-            <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
               <span className="text-sm font-bold text-slate-500 italic">
                 Mostrando del {(paginaActualDescuento - 1) * ELEMENTOS_POR_PAGINA + 1} al {Math.min(paginaActualDescuento * ELEMENTOS_POR_PAGINA, ordenesConDescuentosFiltradas.length)} de {ordenesConDescuentosFiltradas.length} órdenes.
               </span>
@@ -680,6 +700,8 @@ export default function MonederoPage() {
                 <span className="text-2xl font-black text-red-500">-{formatMoney(ordenesConDescuentosFiltradas.reduce((acc: number, curr: any) => acc + curr.totalDescuentoUSD, 0))}</span>
               </div>
             </div>
+            </>
+            )}
           </div>
         </div>
       )}

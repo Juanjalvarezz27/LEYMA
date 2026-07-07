@@ -281,6 +281,20 @@ export default function CierreDiarioPDF({ data, tasaBCV }: { data: any, tasaBCV:
           )}
         </View>
 
+        {/* OBSERVACIONES */}
+        {data?.observaciones && (
+          <>
+            <Text style={styles.sectionTitle}>OBSERVACIONES</Text>
+            <View style={[styles.table, { marginBottom: 15 }]}>
+              <View style={[styles.tableRow, { borderBottomWidth: 0 }]}>
+                <Text style={[styles.tableCell, { flex: 1, color: "#1e293b", padding: 10, backgroundColor: "#f8fafc", borderRadius: 4 }]}>
+                  "{data.observaciones}"
+                </Text>
+              </View>
+            </View>
+          </>
+        )}
+
         {/* FIRMA Y SELLO */}
         <View style={styles.firmaSeccion}>
           <View style={styles.lineaFirma}>

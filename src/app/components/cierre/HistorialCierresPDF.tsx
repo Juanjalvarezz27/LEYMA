@@ -221,6 +221,13 @@ export default function HistorialCierresPDF({ historial }: { historial: any[] })
                     </Text>
                   </View>
                 </View>
+
+                {c.observaciones && (
+                  <View style={{ marginTop: 6, padding: 6, backgroundColor: "#f8fafc", borderRadius: 4, borderWidth: 1, borderColor: "#e2e8f0" }}>
+                    <Text style={{ fontSize: 7, color: "#64748b", fontWeight: 700, marginBottom: 2, textTransform: "uppercase" }}>Observaciones</Text>
+                    <Text style={{ fontSize: 8, color: "#334155" }}>"{c.observaciones}"</Text>
+                  </View>
+                )}
               </View>
             )
           })}

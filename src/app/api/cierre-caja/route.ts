@@ -24,6 +24,7 @@ export async function GET(req: Request) {
     let esAtrasado = false;
     let oldestPendingOrder: any = null;
     let tasaDelDiaFija: number | null = null;
+    let observacionesCierre: string | null = null;
 
     if (cierreId) {
       const cierreEspecifico = await prisma.cierreCaja.findUnique({ where: { id: cierreId } });
@@ -33,14 +34,13 @@ export async function GET(req: Request) {
       tituloCaja = `Cierre del ${fechaFin.toLocaleDateString("es-VE", { timeZone: "America/Caracas" })}`;
       fechaTarget = fechaFin.toISOString();
       tasaDelDiaFija = Number(cierreEspecifico.tasaBCV) || null;
+      observacionesCierre = cierreEspecifico.observaciones;
     } else if (periodo === "CUSTOM" && inicioStr && finStr) {
-      // Si mandan un rango custom
       fechaInicio = new Date(`${inicioStr}T00:00:00`);
       fechaFin = new Date(`${finStr}T23:59:59`);
       tituloCaja = `Cierre (${inicioStr} al ${finStr})`;
       fechaTarget = inicioStr;
     } else {
-      // Buscar el último cierre para determinar desde qué fecha hay órdenes pendientes
       const ultimoCierre = await prisma.cierreCaja.findFirst({
         orderBy: { fechaCierre: 'desc' }
       });
@@ -54,45 +54,67 @@ export async function GET(req: Request) {
       });
 
       if (oldestPendingOrder) {
-        // Hay una orden pendiente, usamos la fecha de ese día
-        const dateString = formatToCaracasDateString(oldestPendingOrder.fechaCreacion);
-        const bounds = getCaracasBoundsForDate(dateString);
-        fechaInicio = bounds.inicio;
+        let targetDate = new Date(oldestPendingOrder.fechaCreacion);
+        if (ultimoCierre) {
+           const uCDateStr = formatToCaracasDateString(ultimoCierre.fechaCierre);
+           const targetDateStr = formatToCaracasDateString(targetDate);
+           if (targetDateStr <= uCDateStr) {
+               targetDate = new Date(ultimoCierre.fechaCierre);
+               targetDate.setDate(targetDate.getDate() + 1);
+           }
+        }
+        
+        fechaTarget = formatToCaracasDateString(targetDate);
+        const bounds = getCaracasBoundsForDate(fechaTarget);
+        
+        fechaInicio = ultimoCierre ? ultimoCierre.fechaCierre : bounds.inicio;
         fechaFin = bounds.fin;
-        fechaTarget = dateString;
         
         const todayString = getCaracasDateString();
-        if (dateString !== todayString) {
+        if (fechaTarget !== todayString && fechaTarget < todayString) {
           esAtrasado = true;
           tituloCaja = `Cierre Atrasado`;
         } else {
           tituloCaja = "Cierre de Hoy";
         }
       } else {
+        const todayString = getCaracasDateString();
+        fechaTarget = todayString;
         const bounds = getCaracasTodayBounds();
-        fechaInicio = bounds.inicio;
+        const ultimoCierre = await prisma.cierreCaja.findFirst({ orderBy: { fechaCierre: 'desc' } });
+        fechaInicio = ultimoCierre ? ultimoCierre.fechaCierre : bounds.inicio;
         fechaFin = bounds.fin;
         tituloCaja = "Cierre de Hoy";
-        fechaTarget = getCaracasDateString();
       }
     }
 
-    // 1. VERIFICAR SI YA SE CERRÓ LA CAJA DEL PERIODO ENCONTRADO
     const cierreDeHoy = await prisma.cierreCaja.findFirst({
-      where: { fechaCierre: { gte: fechaInicio, lte: fechaFin } }
+      where: { fechaCierre: { gt: fechaInicio, lte: fechaFin } }
     });
     const yaCerroHoy = !!cierreDeHoy;
+    if (cierreDeHoy && !observacionesCierre) {
+      observacionesCierre = cierreDeHoy.observaciones;
+    }
 
-    // 2. OBTENER EL HISTORIAL COMPLETO DE CIERRES
     const historialCierres = await prisma.cierreCaja.findMany({
       orderBy: { fechaCierre: 'desc' },
       include: { realizadoPor: { select: { nombre: true } } }
     });
 
-    // 3. OBTENER ÓRDENES Y SUS PAGOS (DEL PERÍODO)
+    let orderTimeFilter: any = { lte: fechaFin };
+    if (cierreId) {
+        orderTimeFilter.gt = fechaInicio;
+    } else if (periodo === "CUSTOM" && inicioStr && finStr) {
+        orderTimeFilter.gte = fechaInicio;
+    } else {
+        const ultimoCierre = await prisma.cierreCaja.findFirst({ orderBy: { fechaCierre: 'desc' } });
+        if (ultimoCierre) orderTimeFilter.gt = fechaInicio;
+        else orderTimeFilter.gte = fechaInicio;
+    }
+
     const ordenes = await prisma.orden.findMany({
       where: {
-        fechaCreacion: { gte: fechaInicio, lte: fechaFin },
+        fechaCreacion: orderTimeFilter,
         estado: { nombre: { not: "ANULADA" } }
       },
       include: {
@@ -113,14 +135,13 @@ export async function GET(req: Request) {
       tasaDelDia = ordenes[ordenes.length - 1].tasaBCV;
     }
 
-    // --- LÓGICA DE ARQUEO (INGRESOS Y POR COBRAR CORREGIDOS) ---
     const metodosMap: Record<string, { ingresosUSD: number, ingresosBS: number }> = {};
     let totalCuentasPorCobrarUSD = 0;
     let totalCuentasPorCobrarBS = 0;
 
     ordenes.forEach(o => {
       const montoOrdenUSD = Number(o.totalUSD) || 0;
-      const montoOrdenBS = Number(o.totalBS) || 0;
+      const montoOrdenBS = montoOrdenUSD * tasaDelDia;
 
       let pagosDeLaOrdenUSD = 0;
       let pagosDeLaOrdenBS = 0;
@@ -131,7 +152,7 @@ export async function GET(req: Request) {
           if (!metodosMap[m]) metodosMap[m] = { ingresosUSD: 0, ingresosBS: 0 };
           
           const valorIngresoUSD = Number(p.montoUSD) || 0;
-          const valorIngresoBS = Number(p.montoBS) || 0;
+          const valorIngresoBS = valorIngresoUSD * tasaDelDia;
 
           metodosMap[m].ingresosUSD += valorIngresoUSD;
           metodosMap[m].ingresosBS += valorIngresoBS;
@@ -143,7 +164,7 @@ export async function GET(req: Request) {
 
       // Por cobrar es lo que falta por pagar de la orden, forzando 2 decimales
       const faltanteUSD = Number(Math.max(0, montoOrdenUSD - pagosDeLaOrdenUSD).toFixed(2));
-      const faltanteBS = Number(Math.max(0, montoOrdenBS - pagosDeLaOrdenBS).toFixed(2));
+      const faltanteBS = Number((faltanteUSD * tasaDelDia).toFixed(2));
       
       totalCuentasPorCobrarUSD = Number((totalCuentasPorCobrarUSD + faltanteUSD).toFixed(2));
       totalCuentasPorCobrarBS = Number((totalCuentasPorCobrarBS + faltanteBS).toFixed(2));
@@ -168,6 +189,7 @@ export async function GET(req: Request) {
       esAtrasado,
       yaCerroHoy,
       tasaDelDia,
+      observaciones: observacionesCierre,
       historialCierres,
       resumen: {
         totalEnCajaUSD: totalCajaUSD,
@@ -177,16 +199,19 @@ export async function GET(req: Request) {
         pacientesAtendidos: ordenes.length
       },
       desglosesCaja,
-      flujoPacientes: ordenes.map(o => ({
-        ordenId: o.id,
-        cedula: o.paciente.cedula,
-        paciente: o.paciente.nombreCompleto,
-        totalUSD: Number(o.totalUSD) || 0,
-        totalBS: Number(o.totalBS) || 0,
-        estadoPago: (o.pagos && o.pagos.length > 0) ? "PAGADO" : "PENDIENTE",
-        registradoPor: o.creadoPor.nombre,
-        metodoUsado: (o.pagos && o.pagos.length > 0) ? o.pagos[0].metodo.nombre : "NINGUNO"
-      }))
+      flujoPacientes: ordenes.map(o => {
+        const totalU = Number(o.totalUSD) || 0;
+        return {
+          ordenId: o.id,
+          cedula: o.paciente.cedula,
+          paciente: o.paciente.nombreCompleto,
+          totalUSD: totalU,
+          totalBS: totalU * tasaDelDia,
+          estadoPago: (o.pagos && o.pagos.length > 0) ? "PAGADO" : "PENDIENTE",
+          registradoPor: o.creadoPor.nombre,
+          metodoUsado: (o.pagos && o.pagos.length > 0) ? o.pagos[0].metodo.nombre : "NINGUNO"
+        };
+      })
     });
 
   } catch (error: any) {
@@ -222,7 +247,16 @@ export async function POST(req: Request) {
     let fechaFinBounds: Date;
 
     if (oldestPendingOrder) {
-      const dateString = formatToCaracasDateString(oldestPendingOrder.fechaCreacion);
+      let targetDate = new Date(oldestPendingOrder.fechaCreacion);
+      if (ultimoCierre) {
+           const uCDateStr = formatToCaracasDateString(ultimoCierre.fechaCierre);
+           const targetDateStr = formatToCaracasDateString(targetDate);
+           if (targetDateStr <= uCDateStr) {
+               targetDate = new Date(ultimoCierre.fechaCierre);
+               targetDate.setDate(targetDate.getDate() + 1);
+           }
+      }
+      const dateString = formatToCaracasDateString(targetDate);
       const bounds = getCaracasBoundsForDate(dateString);
       fechaInicioBounds = bounds.inicio;
       fechaFinBounds = bounds.fin;

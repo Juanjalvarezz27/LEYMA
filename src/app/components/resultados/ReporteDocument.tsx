@@ -2,9 +2,7 @@
 
 import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
 
-// ---------------------------------------------------------------------------
-// 1. REGISTRO DE FUENTES
-// ---------------------------------------------------------------------------
+// Registro de fuentes
 Font.register({
   family: 'Montserrat',
   src: 'https://cdn.jsdelivr.net/fontsource/fonts/montserrat@latest/latin-900-normal.ttf' 
@@ -18,13 +16,13 @@ Font.register({
   ]
 });
 
-// ---------------------------------------------------------------------------
-// 2. ESTILOS NATIVOS DE REACT-PDF
-// ---------------------------------------------------------------------------
+// Desactivar hyphenation para evitar errores de cálculo de altura en page-breaks
+Font.registerHyphenationCallback(word => [word]);
+
 export const pdfStyles = StyleSheet.create({
   page: {
     paddingTop: 20,
-    paddingBottom: 15,
+    paddingBottom: 50,
     paddingLeft: 20,
     paddingRight: 40,
     fontFamily: 'Inter',
@@ -33,14 +31,6 @@ export const pdfStyles = StyleSheet.create({
   },
   fixedFooter: {
     marginTop: 'auto',
-  },
-  endOfReport: {
-    textAlign: "center",
-    fontSize: 9,
-    fontWeight: 700,
-    color: "#64748b",
-    marginTop: 20,
-    marginBottom: 10,
   },
   topContact: {
     flexDirection: "row",
@@ -61,10 +51,8 @@ export const pdfStyles = StyleSheet.create({
     alignItems: "flex-end",
     gap: 3,
   },
-
   topContactText: { fontSize: 7, color: '#000000', fontWeight: 700 }, 
   topContactRight: { flexDirection: 'row', gap: 4 },
-  
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -76,14 +64,11 @@ export const pdfStyles = StyleSheet.create({
   },
   logoRow: { flexDirection: 'row', alignItems: 'center' },
   logoImage: { width: 50, height: 50, objectFit: 'contain', marginRight: 12 },
-  
   logoTitle: { fontSize: 24, fontFamily: 'Montserrat', marginBottom: 1 }, 
   logoSubtitle: { fontSize: 8, fontWeight: 700, letterSpacing: 0.5 }, 
-  
   headerData: { textAlign: 'right', fontSize: 10 }, 
   headerDataRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 2 },
   headerDataLabel: { fontWeight: 700, marginRight: 4 },
-
   patientBox: {
     flexDirection: 'row',
     borderBottomWidth: 1.5,
@@ -96,16 +81,13 @@ export const pdfStyles = StyleSheet.create({
   patientRow: { flexDirection: 'row', marginBottom: 1 },
   patientLabel: { width: 85, fontWeight: 700, fontSize: 9 }, 
   patientValue: { flex: 1, fontSize: 9, textTransform: 'uppercase' }, 
-
-  // --- ESTRUCTURA DE BLOQUE POR CATEGORÍA ---
   categoryBlock: {
     width: '100%',
-    marginBottom: 20, 
+    marginBottom: 10, 
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
-    paddingBottom: 10
+    paddingBottom: 8
   },
-
   catTitleView: {
     backgroundColor: '#BFDBFE',
     paddingVertical: 3,
@@ -118,7 +100,6 @@ export const pdfStyles = StyleSheet.create({
     fontWeight: 700,
     textTransform: 'uppercase'
   },
-
   catBioanalistaText: {
     fontSize: 12,
     fontWeight: 700,
@@ -131,12 +112,10 @@ export const pdfStyles = StyleSheet.create({
     borderBottomColor: '#000',
     paddingBottom: 2,
   },
-  
   colDesc: { width: '27%', fontWeight: 700, fontSize: 8.5 }, 
   colRes: { width: '32%', fontWeight: 700, fontSize: 8.5, textAlign: 'center' }, 
   colUni: { width: '15%', fontWeight: 700, fontSize: 8.5, textAlign: 'center' }, 
   colRef: { width: '26%', fontWeight: 700, fontSize: 8.5, textAlign: 'center' }, 
-  
   subcatTitleView: {
     backgroundColor: '#DBEAFE',
     paddingVertical: 2, 
@@ -146,7 +125,6 @@ export const pdfStyles = StyleSheet.create({
     fontSize: 10.5, 
     fontWeight: 700, 
   },
-  
   row: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 2, paddingVertical: 2 },
   rowDesc: { width: '27%', fontSize: 8.5, fontWeight: 700 }, 
   rowDescSub: { width: '27%', fontSize: 8.5, fontWeight: 700, paddingLeft: 10 }, 
@@ -154,12 +132,9 @@ export const pdfStyles = StyleSheet.create({
   rowRes: { width: '32%', fontSize: 9, fontWeight: 700, textAlign: 'center', lineHeight: 1.2 }, 
   rowUni: { width: '15%', fontSize: 8.5, textAlign: 'center', lineHeight: 1.2 }, 
   rowRef: { width: '26%', fontSize: 8.5, textAlign: 'center', lineHeight: 1.2 }, 
-  
-  obsContainer: { marginLeft: 10, marginBottom: 5, marginTop: 2, flexDirection: 'row' },
+  obsContainer: { marginLeft: 10, marginBottom: 5, marginTop: 2, flexDirection: 'row', flexWrap: 'wrap' },
   obsLabel: { fontSize: 8.5, fontWeight: 700, color: '#000000' }, 
-  obsText: { fontSize: 8.5, fontWeight: 400, color: '#000000' }, 
-
-  // ESTILOS DE FIRMAS AL FINAL
+  obsText: { fontSize: 8.5, fontWeight: 400, color: '#000000', flex: 1 }, 
   footerSignaturesContainer: {
     marginTop: 30,
     paddingBottom: 0,
@@ -199,39 +174,8 @@ export const pdfStyles = StyleSheet.create({
     marginTop: 2,
     textAlign: "center",
   }, 
-
-  // FOOTER GENERAL (Uno al lado del otro)
-  footerContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: "#E2E8F0",
-    paddingTop: 5,
-    marginTop: 5,
-    width: "100%",
-  },
-  qrRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    width: '50%'
-  },
-  qrImage: { width: 45, height: 45 },
-  qrLabelBox: { flexDirection: 'column', justifyContent: 'center' },
-  qrTitle: { fontSize: 8.5, fontWeight: 700, color: '#1D1D1F' }, 
-  qrSubtitle: { fontSize: 7, color: '#000000', marginTop: 1, maxWidth: 160 }, 
-
-  legalBox: {
-    width: '50%',
-    alignItems: 'flex-end',
-  },
-  legalText: { fontSize: 7.5, fontWeight: 700, color: '#000000', textAlign: 'right', textTransform: 'uppercase' } 
 });
 
-// ---------------------------------------------------------------------------
-// 3. COMPONENTE DEL DOCUMENTO PDF (EXPORTADO)
-// ---------------------------------------------------------------------------
 const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fechaImpresa: string, qrCodeUrl: string }) => {
   const formatFechaHora = (dateString: string) => {
     const d = new Date(dateString);
@@ -289,12 +233,13 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
     return acc;
   }, {});
 
+  // Renderiza fila + observación (separadas para permitir page-break)
   const renderDetalleRow = (det: any, subCatNombre: string) => {
     const isPaquete = subCatNombre !== "PRUEBAS INDIVIDUALES";
     const listaValores = det.resultado?.valores || [];
     
     return (
-      <View key={det.id} wrap={false}>
+      <View key={det.id}>
         {det.cantidad > 1 ? (
           <View>
             <View style={pdfStyles.row}>
@@ -440,47 +385,47 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
             ? ` - PROCESADO POR: ${Array.from(catData.signers.values()).map((b: any) => b.nombre).join(" / ")}` 
             : "";
           return (
-            <View key={groupKey} style={{ width: "100%", marginBottom: 8, borderBottomWidth: 1, borderBottomColor: "#E2E8F0", paddingBottom: 8 }}>
+            <View key={groupKey} style={pdfStyles.categoryBlock}>
               {Object.entries(catData.subcategorias).map(([subCatNombre, detalles]: [string, any], index: number) => (
                 <View key={subCatNombre} style={{ marginBottom: 8 }}>
-                  <View wrap={false}>
-                    {index === 0 && (
-                      <View style={pdfStyles.catTitleView}>
-                        <Text style={pdfStyles.catTitleText}>
-                          {catNombre}
-                          {bioanalistasText && (
-                            <Text style={pdfStyles.catBioanalistaText}>{bioanalistasText}</Text>
-                          )}
-                        </Text>
-                      </View>
-                    )}
-
-                    {index === 0 && subCatNombre === "PRUEBAS INDIVIDUALES" && (
-                      <View style={{ height: 8 }} />
-                    )}
-
-                    {subCatNombre !== "PRUEBAS INDIVIDUALES" && (
-                      <View>
-                        <View style={pdfStyles.subcatTitleView}>
-                          <Text style={pdfStyles.subcatTitleText}>{subCatNombre}</Text>
-                        </View>
-                        <View style={{ height: 8 }} />
-                      </View>
-                    )}
-
-                    <View style={pdfStyles.tableHeader}>
-                      <Text style={pdfStyles.colDesc}>PARAMETRO</Text>
-                      <Text style={pdfStyles.colRes}>RESULTADO</Text>
-                      <Text style={pdfStyles.colUni}>UNIDADES</Text>
-                      <Text style={pdfStyles.colRef}>VALORES DE REFERENCIA</Text>
+                  {/* Título de categoría */}
+                  {index === 0 && (
+                    <View style={pdfStyles.catTitleView} minPresenceAhead={20}>
+                      <Text style={pdfStyles.catTitleText}>
+                        {catNombre}
+                        {bioanalistasText && (
+                          <Text style={pdfStyles.catBioanalistaText}>{bioanalistasText}</Text>
+                        )}
+                      </Text>
                     </View>
+                  )}
 
-                    <View style={{ height: 3 }} />
+                  {index === 0 && subCatNombre === "PRUEBAS INDIVIDUALES" && (
+                    <View style={{ height: 8 }} />
+                  )}
 
-                    {(detalles as any[]).length > 0 && renderDetalleRow(detalles[0], subCatNombre)}
+                  {/* Subcategoría */}
+                  {subCatNombre !== "PRUEBAS INDIVIDUALES" && (
+                    <View minPresenceAhead={20}>
+                      <View style={pdfStyles.subcatTitleView}>
+                        <Text style={pdfStyles.subcatTitleText}>{subCatNombre}</Text>
+                      </View>
+                      <View style={{ height: 8 }} />
+                    </View>
+                  )}
+
+                  {/* Encabezado de tabla */}
+                  <View style={pdfStyles.tableHeader} minPresenceAhead={15}>
+                    <Text style={pdfStyles.colDesc}>PARAMETRO</Text>
+                    <Text style={pdfStyles.colRes}>RESULTADO</Text>
+                    <Text style={pdfStyles.colUni}>UNIDADES</Text>
+                    <Text style={pdfStyles.colRef}>VALORES DE REFERENCIA</Text>
                   </View>
 
-                  {(detalles as any[]).slice(1).map((det: any) => renderDetalleRow(det, subCatNombre))}
+                  <View style={{ height: 3 }} />
+
+                  {/* TODAS las filas fluyen libremente */}
+                  {(detalles as any[]).map((det: any) => renderDetalleRow(det, subCatNombre))}
 
                   {(() => {
                     const notaObj = orden.notasSubcategoria?.find((ns: any) => 
@@ -503,9 +448,8 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
           );
         })}
 
-        {/* FIRMAS Y FOOTER FINAL (EN LA ÚLTIMA PÁGINA) */}
-        <View wrap={false} style={pdfStyles.fixedFooter}>
-          {/* FIRMAS AL FINAL DEL DOCUMENTO */}
+        {/* FIRMAS */}
+        <View style={pdfStyles.fixedFooter}>
           <View style={pdfStyles.footerSignaturesContainer}>
             <View style={pdfStyles.footerSignaturesRow}>
               {allSigners.size > 0 ? (

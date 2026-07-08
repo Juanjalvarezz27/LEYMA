@@ -132,9 +132,20 @@ export const pdfStyles = StyleSheet.create({
   rowRes: { width: '32%', fontSize: 9, fontWeight: 700, textAlign: 'center', lineHeight: 1.2 }, 
   rowUni: { width: '15%', fontSize: 8.5, textAlign: 'center', lineHeight: 1.2 }, 
   rowRef: { width: '26%', fontSize: 8.5, textAlign: 'center', lineHeight: 1.2 }, 
-  obsContainer: { marginLeft: 10, marginBottom: 5, marginTop: 2, flexDirection: 'row', flexWrap: 'wrap' },
-  obsLabel: { fontSize: 8.5, fontWeight: 700, color: '#000000' }, 
-  obsText: { fontSize: 8.5, fontWeight: 400, color: '#000000', flex: 1 }, 
+  obsContainer: {
+    marginLeft: 10,
+    marginRight: 10,
+    marginBottom: 5,
+    marginTop: 2,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    borderRadius: 2,
+  },
+  obsLabel: { fontSize: 8, fontWeight: 700, color: '#4B5563' }, 
+  obsText: { fontSize: 8, fontWeight: 400, color: '#4B5563', flex: 1 }, 
   footerSignaturesContainer: {
     marginTop: 30,
     paddingBottom: 0,
@@ -384,6 +395,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
           const bioanalistasText = catData.signers.size > 0 
             ? ` - PROCESADO POR: ${Array.from(catData.signers.values()).map((b: any) => b.nombre).join(" / ")}` 
             : "";
+          const isLongTitle = (catNombre + bioanalistasText).length > 65;
           return (
             <View key={groupKey} style={pdfStyles.categoryBlock}>
               {Object.entries(catData.subcategorias).map(([subCatNombre, detalles]: [string, any], index: number) => (
@@ -391,10 +403,10 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                   {/* Título de categoría */}
                   {index === 0 && (
                     <View style={pdfStyles.catTitleView} minPresenceAhead={20}>
-                      <Text style={pdfStyles.catTitleText}>
+                      <Text style={[pdfStyles.catTitleText, isLongTitle ? { fontSize: 11 } : {}]}>
                         {catNombre}
                         {bioanalistasText && (
-                          <Text style={pdfStyles.catBioanalistaText}>{bioanalistasText}</Text>
+                          <Text style={[pdfStyles.catBioanalistaText, isLongTitle ? { fontSize: 11 } : {}]}>{bioanalistasText}</Text>
                         )}
                       </Text>
                     </View>

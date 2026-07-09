@@ -179,8 +179,8 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
         unidades: p.unidades || "", valoresReferencia: p.valoresReferencia || "", 
         opcionesPredefinidas: p.opcionesPredefinidas ? p.opcionesPredefinidas.split(',').filter(Boolean) : [], 
         mostrarOpciones: !!p.opcionesPredefinidas,
-        categoriaVisual: item.codigoCategoria || "",
-        subcategoriaVisual: item.nombre
+        categoriaVisual: p.categoriaVisual || item.codigoCategoria || "",
+        subcategoriaVisual: p.subcategoriaVisual || item.nombre
       }));
       
       if (nuevasPruebas.length > 0) {
@@ -830,6 +830,29 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
                       </div>
                       </DroppableGroupModal>
                     )}
+
+                    {!isNewGroup && hasGroup && (
+                      <div className="relative group/divide w-full h-0 flex items-center justify-center my-0 opacity-0 hover:opacity-100 hover:h-8 transition-all z-20">
+                        <div className="absolute w-full h-px bg-[#0071E3]/20"></div>
+                        <button type="button" onClick={() => {
+                          const nuevas = [...pruebas];
+                          const targetCat = "NUEVA CATEGORIA " + Math.floor(Math.random() * 1000); // Para forzar que sea un grupo distinto aunque haya otra "NUEVA CATEGORIA" adyacente
+                          const targetSub = "NUEVA SUBCATEGORIA";
+                          for (let i = index; i < nuevas.length; i++) {
+                            if ((nuevas[i].categoriaVisual || "SIN CATEGORIA") === cat && (nuevas[i].subcategoriaVisual || "SIN SUBCATEGORIA") === sub) {
+                              nuevas[i].categoriaVisual = targetCat;
+                              nuevas[i].subcategoriaVisual = targetSub;
+                            } else {
+                              break;
+                            }
+                          }
+                          setPruebas(nuevas);
+                        }} className="relative bg-[#F5F5F7] text-[#0071E3] hover:bg-[#0071E3] hover:text-white border border-[#0071E3]/30 text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-sm transition-colors flex items-center gap-1">
+                          <Plus size={10} strokeWidth={4} /> Dividir Grupo Aquí
+                        </button>
+                      </div>
+                    )}
+
                     <SortableRowModal id={p.tempId}>
                     <div className={`flex flex-col bg-[#F5F5F7]/60 border border-slate-200/80 p-5 shadow-sm hover:border-[#0071E3]/30 transition-colors ${hasGroup && isNewGroup ? 'rounded-2xl rounded-t-lg' : 'rounded-2xl mt-4'}`}>
                       

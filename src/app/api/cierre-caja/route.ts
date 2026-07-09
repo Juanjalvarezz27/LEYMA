@@ -278,18 +278,18 @@ export async function POST(req: Request) {
     const ahora = new Date();
     const fechaCierre = fechaFinBounds < ahora ? fechaFinBounds : ahora;
 
-    const descuadreUSD = parseFloat(totalDeclaradoUSD) - parseFloat(totalCalculadoUSD);
-    const descuadreBS = parseFloat(totalDeclaradoBS) - parseFloat(totalCalculadoBS);
+    const descuadreUSD = Number((parseFloat(totalDeclaradoUSD) - parseFloat(totalCalculadoUSD)).toFixed(2));
+    const descuadreBS = Number((parseFloat(totalDeclaradoBS) - parseFloat(totalCalculadoBS)).toFixed(2));
 
     const nuevoCierre = await prisma.cierreCaja.create({
       data: {
         usuarioId: usuarioSesion.id,
         fechaApertura,
         fechaCierre,
-        totalCalculadoUSD: parseFloat(totalCalculadoUSD),
-        totalCalculadoBS: parseFloat(totalCalculadoBS),
-        totalDeclaradoUSD: parseFloat(totalDeclaradoUSD),
-        totalDeclaradoBS: parseFloat(totalDeclaradoBS),
+        totalCalculadoUSD: Number(parseFloat(totalCalculadoUSD).toFixed(2)),
+        totalCalculadoBS: Number(parseFloat(totalCalculadoBS).toFixed(2)),
+        totalDeclaradoUSD: Number(parseFloat(totalDeclaradoUSD).toFixed(2)),
+        totalDeclaradoBS: Number(parseFloat(totalDeclaradoBS).toFixed(2)),
         descuadreUSD,
         descuadreBS,
         tasaBCV: parseFloat(tasaBCV),

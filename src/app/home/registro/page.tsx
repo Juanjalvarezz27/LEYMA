@@ -184,6 +184,26 @@ function RegistroContent() {
     }
   }, [editId]);
 
+  // 3. Lógica de Presupuesto
+  useEffect(() => {
+    const tempStr = sessionStorage.getItem("leyma_presupuesto_temp");
+    if (tempStr && !editId) {
+      try {
+        const temp = JSON.parse(tempStr);
+        if (temp.pruebas && Array.isArray(temp.pruebas)) {
+          setPruebasSeleccionadas(temp.pruebas);
+        }
+        if (temp.serviciosExtras && Array.isArray(temp.serviciosExtras)) {
+          setServiciosSeleccionados(temp.serviciosExtras);
+        }
+        toast.info("Exámenes del presupuesto cargados. Seleccione un paciente para continuar.");
+        sessionStorage.removeItem("leyma_presupuesto_temp");
+      } catch (e) {
+        console.error("Error parsing temp presupuesto", e);
+      }
+    }
+  }, [editId]);
+
   const buscarPaciente = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!cedulaBusqueda.trim()) return;
@@ -285,8 +305,6 @@ function RegistroContent() {
     setCedulaBusqueda("");
     setResultadosBusqueda([]);
     setIsCreandoNuevo(false);
-    setPruebasSeleccionadas([]);
-    setServiciosSeleccionados([]);
     setFormData({
       esBebe: false, cedula: "", nombreCompleto: "", fechaNacimiento: "",
       sexo: "M", telefono: "", correo: "", direccion: "", observaciones: ""
@@ -295,6 +313,10 @@ function RegistroContent() {
   };
 
   const finalizarOrden = async (resumenData: any) => {
+    if (!pacienteSeleccionado) {
+      toast.error("Debe seleccionar o registrar un paciente antes de procesar el pago.");
+      return;
+    }
     if (resumenData.estado === "CERRADA" && resumenData.restanteUSD > 0.005) {
       toast.error(`La orden no puede ser CERRADA con saldo pendiente.`);
       return;
@@ -431,21 +453,17 @@ function RegistroContent() {
         )}
       </section>
 
-      {pacienteSeleccionado && (
-        <ServiciosExtras
-          catalogo={serviciosCatalogo}
-          seleccionados={serviciosSeleccionados}
-          onCambio={setServiciosSeleccionados}
-          tasaBCV={tasaBCV}
-        />
-      )}
+      <ServiciosExtras
+        catalogo={serviciosCatalogo}
+        seleccionados={serviciosSeleccionados}
+        onCambio={setServiciosSeleccionados}
+        tasaBCV={tasaBCV}
+      />
 
-      {pacienteSeleccionado && (
-        <SeleccionPruebas
-          pruebasCatalogo={pruebasCatalogo} pruebasSeleccionadas={pruebasSeleccionadas}
-          setPruebasSeleccionadas={setPruebasSeleccionadas} tasaBCV={tasaBCV}
-        />
-      )}
+      <SeleccionPruebas
+        pruebasCatalogo={pruebasCatalogo} pruebasSeleccionadas={pruebasSeleccionadas}
+        setPruebasSeleccionadas={setPruebasSeleccionadas} tasaBCV={tasaBCV}
+      />
 
       {pruebasSeleccionadas.length > 0 && (
         <ResumenPago
@@ -455,11 +473,6 @@ function RegistroContent() {
         />
       )}
 
-      {!pacienteSeleccionado && (
-        <div className="mt-10 p-12 border-2 border-dashed border-slate-200 rounded-[32px] flex flex-col items-center justify-center text-slate-400">
-          <p className="font-medium">Seleccione un paciente para habilitar las secciones de pruebas y pagos.</p>
-        </div>
-      )}
     </div>
   );
 }

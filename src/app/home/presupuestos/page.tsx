@@ -1,15 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ClipboardList, Calculator, User, Percent } from "lucide-react";
+import { ClipboardList, Calculator, User, Percent, ClipboardCheck } from "lucide-react";
 import { toast } from "react-toastify";
 
 import useTasaBCV from "../../hooks/useTasaBcv";
 import SeleccionPruebas from "../../components/registro/SeleccionPruebas";
 import ServiciosExtras from "../../components/registro/ServiciosExtras";
 import ModalPreviewPresupuesto from "../../components/presupuestos/ModalPreviewPresupuesto";
+import { useRouter } from "next/navigation";
 
 export default function PresupuestosPage() {
+  const router = useRouter();
   const { tasa } = useTasaBCV();
   const tasaBCV = tasa ?? 36.5;
 
@@ -96,6 +98,19 @@ export default function PresupuestosPage() {
       return;
     }
     setShowPdf(true);
+  };
+
+  const pasarARegistro = () => {
+    if (pruebasSeleccionadas.length === 0) {
+      toast.warning("Debe seleccionar al menos un examen.");
+      return;
+    }
+    const data = {
+      pruebas: pruebasSeleccionadas,
+      serviciosExtras: serviciosExtrasSeleccionados
+    };
+    sessionStorage.setItem("leyma_presupuesto_temp", JSON.stringify(data));
+    router.push("/home/registro");
   };
 
   const limpiar = () => {
@@ -231,6 +246,14 @@ export default function PresupuestosPage() {
               className="w-full flex items-center justify-center gap-2 py-4 bg-[#1D1D1F] text-white font-bold rounded-xl hover:bg-black transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5"
             >
               <ClipboardList size={18} /> Generar Presupuesto
+            </button>
+            
+            <button
+              onClick={pasarARegistro}
+              disabled={pruebasSeleccionadas.length === 0}
+              className="w-full mt-3 flex items-center justify-center gap-2 py-4 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5"
+            >
+              <ClipboardCheck size={18} /> Facturar Directamente
             </button>
             
             <button

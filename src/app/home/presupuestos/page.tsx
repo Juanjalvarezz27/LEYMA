@@ -211,21 +211,26 @@ export default function PresupuestosPage() {
               </div>
 
               <div className="pb-4 border-b border-slate-100">
-                <label className="flex items-center gap-2 text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">
-                  <Percent size={14} /> Descuento (%)
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="5"
-                  value={porcentajeDescuento}
-                  onChange={(e) => setPorcentajeDescuento(Number(e.target.value))}
-                  className="w-full accent-[#0071E3]"
-                />
-                <div className="flex justify-between items-center mt-2">
-                  <span className="text-sm font-bold text-[#0071E3]">{porcentajeDescuento}% off</span>
+                <div className="flex justify-between items-center mb-3">
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-500 uppercase tracking-wider">
+                    <Percent size={14} /> Descuento (%)
+                  </label>
                   <span className="text-sm font-bold text-red-500">-${descuentoUSD.toFixed(2)}</span>
+                </div>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={porcentajeDescuento === 0 ? "" : porcentajeDescuento}
+                    onChange={(e) => {
+                      const val = e.target.value === "" ? 0 : Number(e.target.value);
+                      if (val >= 0 && val <= 100) setPorcentajeDescuento(val);
+                    }}
+                    className="w-full pl-4 pr-10 py-3 bg-[#F5F5F7] border border-slate-200/60 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3]"
+                    placeholder="0"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">%</span>
                 </div>
               </div>
 

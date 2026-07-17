@@ -5,14 +5,14 @@ import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/
 // Registro de fuentes
 Font.register({
   family: 'Montserrat',
-  src: 'https://cdn.jsdelivr.net/fontsource/fonts/montserrat@latest/latin-900-normal.ttf' 
+  src: '/fonts/montserrat-900.ttf' 
 });
 
 Font.register({
   family: 'Inter',
   fonts: [
-    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-normal.ttf', fontWeight: 400 },
-    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-700-normal.ttf', fontWeight: 700 }
+    { src: '/fonts/inter-400.ttf', fontWeight: 400 },
+    { src: '/fonts/inter-700.ttf', fontWeight: 700 }
   ]
 });
 

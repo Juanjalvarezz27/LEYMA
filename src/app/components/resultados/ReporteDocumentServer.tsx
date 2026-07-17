@@ -4,21 +4,23 @@
 
 import { Document, Page, Text, View, StyleSheet, Image, Font } from "@react-pdf/renderer";
 
+import path from "path";
+
 // Registro de fuentes
 Font.register({
   family: "Montserrat",
-  src: "https://cdn.jsdelivr.net/fontsource/fonts/montserrat@latest/latin-900-normal.ttf",
+  src: path.join(process.cwd(), "public", "fonts", "montserrat-900.ttf"),
 });
 
 Font.register({
   family: "Inter",
   fonts: [
     {
-      src: "https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-normal.ttf",
+      src: path.join(process.cwd(), "public", "fonts", "inter-400.ttf"),
       fontWeight: 400,
     },
     {
-      src: "https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-700-normal.ttf",
+      src: path.join(process.cwd(), "public", "fonts", "inter-700.ttf"),
       fontWeight: 700,
     },
   ],

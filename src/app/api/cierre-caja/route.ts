@@ -98,7 +98,18 @@ export async function GET(req: Request) {
 
     const historialCierres = await prisma.cierreCaja.findMany({
       orderBy: { fechaCierre: 'desc' },
-      include: { realizadoPor: { select: { nombre: true } } }
+      take: 30,
+      select: {
+        id: true,
+        fechaApertura: true,
+        fechaCierre: true,
+        totalCalculadoUSD: true,
+        totalCalculadoBS: true,
+        descuadreUSD: true,
+        tasaBCV: true,
+        observaciones: true,
+        realizadoPor: { select: { nombre: true } }
+      }
     });
 
     let orderTimeFilter: any = { lte: fechaFin };

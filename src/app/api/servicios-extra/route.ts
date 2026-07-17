@@ -11,7 +11,9 @@ export async function GET(req: Request) {
       where: todos ? {} : { activo: true },
       orderBy: { precioUSD: "asc" },
     });
-    return NextResponse.json(servicios);
+    const response = NextResponse.json(servicios);
+    response.headers.set('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
+    return response;
   } catch (error: any) {
     console.error("Error al cargar servicios extra:", error);
     return NextResponse.json({ error: `Error interno al cargar servicios: ${error?.message || 'Desconocido'}` }, { status: 500 });

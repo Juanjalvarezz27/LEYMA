@@ -4,13 +4,32 @@ import prisma from "@/lib/prisma";
 export async function GET() {
   try {
     const examenes = await prisma.subcategoriaPrueba.findMany({
-      include: {
-        categoria: true,
-        pruebas: { orderBy: { ordenVisual: 'asc' } }
+      where: { activa: true },
+      select: {
+        id: true,
+        nombre: true,
+        activa: true,
+        esPaquete: true,
+        precioUSD: true,
+        categoria: { select: { id: true, nombre: true } },
+        pruebas: {
+          where: { activa: true },
+          orderBy: { ordenVisual: 'asc' },
+          select: {
+            id: true,
+            codigo: true,
+            nombre: true,
+            precioUSD: true,
+            ordenVisual: true
+          }
+        }
       },
       orderBy: { nombre: 'asc' },
     });
-    return NextResponse.json(examenes);
+    // Cachear en CDN de Vercel por 5 min, servir stale hasta 10 min
+    const response = NextResponse.json(examenes);
+    response.headers.set('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
+    return response;
   } catch (error: any) {
     return NextResponse.json({ error: `Error al cargar el catálogo: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }

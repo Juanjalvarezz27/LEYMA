@@ -36,39 +36,64 @@ export async function GET(req: Request) {
 
     const ordenes = await prisma.orden.findMany({
       where: whereClause,
-      take: busqueda ? 150 : undefined, // Límite de seguridad si buscan algo muy genérico como "Jose"
-      include: {
-        paciente: true,
+      take: busqueda ? 150 : undefined,
+      select: {
+        id: true,
+        fechaCreacion: true,
+        resultadosCompletados: true,
+        paciente: {
+          select: {
+            nombreCompleto: true,
+            cedula: true,
+            sexo: true,
+            esBebe: true,
+            fechaNacimiento: true,
+            telefono: true,
+            observaciones: true
+          }
+        },
         estado: { select: { nombre: true } },
-        creadoPor: { select: { nombre: true } }, // Para saber qué asistente la registró
+        creadoPor: { select: { nombre: true } },
         detalles: {
-          include: {
-            resultado: { 
-              include: { 
-                valores: true,
-                procesadoPor: { 
-                  select: { 
-                    id: true, 
-                    nombre: true, 
-                    firmaUrl: true,
-                    mpps: true,
-                    col: true
-                  } 
+          select: {
+            id: true,
+            resultado: {
+              select: {
+                id: true,
+                firmado: true,
+                observaciones: true,
+                fechaProcesado: true,
+                valoresReferencia: true,
+                valores: { select: { id: true, pruebaId: true, valorIngresado: true } },
+                procesadoPor: {
+                  select: { id: true, nombre: true, firmaUrl: true, mpps: true, col: true }
                 }
-              } 
-            }, 
+              }
+            },
             prueba: {
-              include: {
+              select: {
+                id: true,
+                nombre: true,
+                codigo: true,
+                unidades: true,
+                valoresReferencia: true,
+                opcionesPredefinidas: true,
+                ordenVisual: true,
+                categoriaVisual: true,
+                subcategoriaVisual: true,
                 subcategoria: {
-                  include: {
-                    categoria: true
+                  select: {
+                    id: true,
+                    nombre: true,
+                    esPaquete: true,
+                    categoria: { select: { nombre: true } }
                   }
                 }
               }
             }
           }
         },
-        notasSubcategoria: true
+        notasSubcategoria: { select: { subcategoria: true, nota: true } }
       },
       orderBy: { fechaCreacion: 'desc' }
     });

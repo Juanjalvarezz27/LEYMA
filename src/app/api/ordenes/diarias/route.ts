@@ -36,10 +36,7 @@ export async function GET(req: Request) {
             fechaNacimiento: true,
             esBebe: true,
             sexo: true,
-            telefono: true,
-            correo: true,
-            direccion: true,
-            observaciones: true
+            telefono: true
           }
         },
         estado: { select: { nombre: true } },

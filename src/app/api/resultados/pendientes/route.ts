@@ -3,22 +3,31 @@ import prisma from "@/lib/prisma";
 
 export async function GET() {
   try {
-    // Buscamos órdenes que no estén anuladas y que no tengan los resultados completados
     const ordenes = await prisma.orden.findMany({
       where: {
         resultadosCompletados: false,
         estado: { nombre: { not: "ANULADA" } }
       },
-      include: {
-        paciente: true,
+      take: 50,
+      select: {
+        id: true,
+        fechaCreacion: true,
+        paciente: {
+          select: { nombreCompleto: true, cedula: true }
+        },
         estado: { select: { nombre: true } },
         detalles: {
-          include: {
+          select: {
+            id: true,
             prueba: {
-              include: {
+              select: {
+                nombre: true,
+                codigo: true,
                 subcategoria: {
-                  include: {
-                    categoria: true
+                  select: {
+                    nombre: true,
+                    esPaquete: true,
+                    categoria: { select: { nombre: true } }
                   }
                 }
               }
@@ -26,7 +35,7 @@ export async function GET() {
           }
         }
       },
-      orderBy: { fechaCreacion: 'asc' } // Las más viejas primero (prioridad)
+      orderBy: { fechaCreacion: 'asc' }
     });
 
     return NextResponse.json(ordenes);
@@ -34,4 +43,4 @@ export async function GET() {
     console.error("Error al obtener pendientes:", error);
     return NextResponse.json({ error: `Error interno al cargar pendientes: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
-}
+}

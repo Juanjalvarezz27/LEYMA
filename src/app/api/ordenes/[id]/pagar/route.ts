@@ -42,7 +42,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const ordenActual = await prisma.orden.findUnique({
       where: { id: ordenId as any },
-      include: { pagos: true }
+      select: {
+        id: true,
+        totalUSD: true,
+        pagos: { select: { montoUSD: true } }
+      }
     });
 
     if (!ordenActual) return NextResponse.json({ error: "Orden no encontrada" }, { status: 404 });

@@ -9,7 +9,10 @@ export async function GET() {
       where: {
         estado: { nombre: "BORRADOR" }
       },
-      include: {
+      select: {
+        id: true,
+        fechaCreacion: true,
+        totalUSD: true,
         paciente: { select: { nombreCompleto: true } }
       },
       orderBy: {

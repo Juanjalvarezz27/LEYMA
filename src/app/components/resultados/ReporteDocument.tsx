@@ -440,8 +440,10 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                   {(detalles as any[]).map((det: any) => renderDetalleRow(det, subCatNombre))}
 
                   {(() => {
+                    const firstDet = detalles[0];
+                    const originalSubcatName = (firstDet?.prueba?.subcategoriaVisual || firstDet?.prueba?.subcategoria?.nombre || "PRUEBAS INDIVIDUALES").trim().toUpperCase();
                     const notaObj = orden.notasSubcategoria?.find((ns: any) => 
-                      (ns.subcategoria || "").trim().toUpperCase() === (subCatNombre || "").trim().toUpperCase()
+                      (ns.subcategoria || "").trim().toUpperCase() === originalSubcatName
                     );
                     if (notaObj && notaObj.nota) {
                       return (

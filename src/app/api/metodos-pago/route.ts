@@ -6,7 +6,9 @@ export async function GET() {
     const metodos = await prisma.metodoPago.findMany({
       orderBy: { nombre: 'asc' }
     });
-    return NextResponse.json(metodos);
+    const response = NextResponse.json(metodos);
+    response.headers.set('Cache-Control', 's-maxage=3600, stale-while-revalidate=7200');
+    return response;
   } catch (error: any) {
     return NextResponse.json({ error: `Error al cargar métodos de pago: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }

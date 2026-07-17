@@ -14,7 +14,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const orden = await prisma.orden.findUnique({
       where: { id: ordenId },
       include: {
-        paciente: true,
+        paciente: {
+          select: {
+            id: true, cedula: true, nombreCompleto: true, fechaNacimiento: true,
+            esBebe: true, sexo: true, telefono: true, correo: true, direccion: true, observaciones: true
+          }
+        },
         estado: { select: { nombre: true } },
         tipoDescuento: { select: { nombre: true } },
         detalles: {
@@ -32,8 +37,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           }
         },
         serviciosExtra: {
-          include: {
-            servicio: true
+          select: {
+            id: true,
+            cantidad: true,
+            precioCongeladoUSD: true,
+            servicio: { select: { id: true, nombre: true, precioUSD: true } }
           }
         },
         notasSubcategoria: true

@@ -20,7 +20,12 @@ export async function GET() {
             codigo: true,
             nombre: true,
             precioUSD: true,
-            ordenVisual: true
+            ordenVisual: true,
+            unidades: true,
+            valoresReferencia: true,
+            opcionesPredefinidas: true,
+            categoriaVisual: true,
+            subcategoriaVisual: true
           }
         }
       },

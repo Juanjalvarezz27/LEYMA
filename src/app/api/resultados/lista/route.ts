@@ -41,6 +41,8 @@ export async function GET(req: Request) {
         id: true,
         fechaCreacion: true,
         resultadosCompletados: true,
+        totalUSD: true,
+        totalBS: true,
         paciente: {
           select: {
             nombreCompleto: true,
@@ -49,6 +51,7 @@ export async function GET(req: Request) {
             esBebe: true,
             fechaNacimiento: true,
             telefono: true,
+            correo: true,
             observaciones: true
           }
         },
@@ -57,6 +60,7 @@ export async function GET(req: Request) {
         detalles: {
           select: {
             id: true,
+            cantidad: true,
             resultado: {
               select: {
                 id: true,

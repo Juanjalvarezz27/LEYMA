@@ -11,10 +11,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Debe proporcionar pacienteId o cedula" }, { status: 400 });
     }
 
-    let id: number | string | null = null;
+    let finalPacienteId: string = "";
 
     if (pacienteId) {
-      id = isNaN(Number(pacienteId)) ? pacienteId : Number(pacienteId);
+      finalPacienteId = pacienteId;
     } else if (cedula) {
       // Buscar el paciente por cédula directamente
       const paciente = await prisma.paciente.findFirst({
@@ -25,7 +25,7 @@ export async function GET(req: Request) {
         // No existe el paciente, no hay órdenes posibles
         return NextResponse.json({ tieneOrdenes: false, ordenes: [] });
       }
-      id = paciente.id;
+      finalPacienteId = String(paciente.id);
     }
 
     // Calcular rangos del día de hoy en Venezuela
@@ -64,14 +64,14 @@ export async function GET(req: Request) {
     const [ordenesAbiertas, ordenesHoy] = await Promise.all([
       prisma.orden.findMany({
         where: {
-          pacienteId: id,
+          pacienteId: finalPacienteId,
           estado: { nombre: "ABIERTA" }
         },
         include: includeData
       }),
       prisma.orden.findMany({
         where: {
-          pacienteId: id,
+          pacienteId: finalPacienteId,
           fechaCreacion: {
             gte: fechaInicio,
             lte: fechaFin

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../../app/api/auth/[...nextauth]/route";
+import { gzipSync } from "zlib";
 
 // GET: Traer una sola orden para editarla
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -44,13 +45,33 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
             servicio: { select: { id: true, nombre: true, precioUSD: true } }
           }
         },
+        pagos: {
+          select: {
+            id: true,
+            montoUSD: true,
+            montoBS: true,
+            referencia: true,
+            metodo: { select: { nombre: true } }
+          }
+        },
+        creadoPor: { select: { nombre: true } },
         notasSubcategoria: true
       }
     });
 
     if (!orden) return NextResponse.json({ error: "Orden no encontrada" }, { status: 404 });
 
-    return NextResponse.json(orden);
+    const payload = JSON.stringify(orden);
+    const compressed = gzipSync(Buffer.from(payload));
+
+    return new Response(compressed, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Encoding': 'gzip',
+        'Cache-Control': 'no-store',
+      }
+    });
   } catch (error: any) {
     return NextResponse.json({ error: `Error al cargar la orden: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }

@@ -62,8 +62,32 @@ export default function PerfilPage() {
     }
 
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData(prev => ({ ...prev, firmaUrl: reader.result as string }));
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 400;
+        
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > MAX_WIDTH) {
+          const scaleSize = MAX_WIDTH / img.width;
+          width = MAX_WIDTH;
+          height = img.height * scaleSize;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedBase64 = canvas.toDataURL("image/png");
+          setFormData(prev => ({ ...prev, firmaUrl: compressedBase64 }));
+        }
+      };
+      img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
   };

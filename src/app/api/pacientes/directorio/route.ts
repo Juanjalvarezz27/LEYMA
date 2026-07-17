@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { gzipSync } from "zlib";
 
 export async function GET(req: Request) {
   try {
@@ -84,13 +85,21 @@ export async function GET(req: Request) {
       totalVisitas: p._count.ordenes
     }));
 
-    return NextResponse.json({
+    const payload = {
       data: pacientesAdaptados,
       meta: {
         total: totalPacientes,
         page,
         limit,
         totalPages: Math.ceil(totalPacientes / limit)
+      }
+    };
+
+    const compressedData = gzipSync(Buffer.from(JSON.stringify(payload), 'utf-8'));
+    return new NextResponse(compressedData, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Encoding': 'gzip'
       }
     });
   } catch (error: any) {

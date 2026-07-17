@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { gzipSync } from "zlib";
 
 export async function GET() {
   try {
@@ -11,7 +12,7 @@ export async function GET() {
         activa: true,
         esPaquete: true,
         precioUSD: true,
-        categoria: { select: { id: true, nombre: true } },
+        categoria: { select: { nombre: true } }, // Removido id: true por ser innecesario
         pruebas: {
           where: { activa: true },
           orderBy: { ordenVisual: 'asc' },
@@ -32,9 +33,20 @@ export async function GET() {
       },
       orderBy: { nombre: 'asc' },
     });
-    // Cachear en CDN de Vercel por 5 min, servir stale hasta 10 min
-    const response = NextResponse.json(examenes);
-    response.headers.set('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
+
+    // Compresión nativa con zlib para evitar el masivo "Fast Origin Transfer"
+    const jsonString = JSON.stringify(examenes);
+    const compressedBuffer = gzipSync(Buffer.from(jsonString, 'utf-8'));
+
+    const response = new NextResponse(compressedBuffer, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Encoding': 'gzip',
+        'Cache-Control': 's-maxage=300, stale-while-revalidate=600'
+      }
+    });
+
     return response;
   } catch (error: any) {
     return NextResponse.json({ error: `Error al cargar el catálogo: ${error?.message || 'Desconocido'}` }, { status: 500 });

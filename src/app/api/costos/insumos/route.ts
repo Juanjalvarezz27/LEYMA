@@ -1,12 +1,20 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { gzipSync } from "zlib";
 
 export async function GET() {
   try {
     const insumos = await prisma.insumo.findMany({
       orderBy: { nombre: 'asc' },
     });
-    return NextResponse.json(insumos);
+    
+    const compressedData = gzipSync(Buffer.from(JSON.stringify(insumos), 'utf-8'));
+    return new NextResponse(compressedData, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Encoding': 'gzip'
+      }
+    });
   } catch (error: any) {
     console.error("Error al obtener insumos:", error);
     return NextResponse.json({ error: `Error al obtener insumos: ${error?.message || 'Desconocido'}` }, { status: 500 });

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
+import { gzipSync } from "zlib";
 
 export async function GET() {
   try {
@@ -11,7 +12,13 @@ export async function GET() {
       orderBy: { nombre: 'asc' },
     });
     
-    return NextResponse.json(costosFijos);
+    const compressedData = gzipSync(Buffer.from(JSON.stringify(costosFijos), 'utf-8'));
+    return new NextResponse(compressedData, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Encoding': 'gzip'
+      }
+    });
   } catch (error: any) {
     console.error("Error al obtener costos fijos:", error);
     return NextResponse.json({ error: `Error al obtener costos fijos: ${error?.message || 'Desconocido'}` }, { status: 500 });

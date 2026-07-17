@@ -221,15 +221,28 @@ export default function PacientesPage() {
 
                           {/* Botón para ver PDF */}
                           {orden.resultadosCompletados && (
-                            <button
-                              onClick={() => {
-                                if (!estaPagada) {
-                                  toast.error("La orden debe estar pagada para ver los resultados.");
-                                  return;
-                                }
-                                const ordenParaPDF = { ...orden, paciente: pacienteSeleccionado };
-                                setOrdenPDF(ordenParaPDF);
-                              }}
+                              <button
+                                onClick={() => {
+                                  if (!estaPagada) {
+                                    toast.error("La orden debe estar pagada para ver los resultados.");
+                                    return;
+                                  }
+                                  const loadingId = toast.loading("Cargando resultados...");
+                                  fetch(`/api/ordenes/${orden.id}`)
+                                    .then(res => res.json())
+                                    .then(fullOrden => {
+                                      toast.dismiss(loadingId);
+                                      if(fullOrden.error) {
+                                        toast.error(fullOrden.error);
+                                        return;
+                                      }
+                                      setOrdenPDF(fullOrden);
+                                    })
+                                    .catch(() => {
+                                      toast.dismiss(loadingId);
+                                      toast.error("Error al cargar los resultados de la orden.");
+                                    });
+                                }}
                               className={`shrink-0 flex items-center justify-center gap-2 px-5 py-2.5 font-bold text-sm rounded-xl transition-all shadow-sm ${
                                 !estaPagada 
                                   ? 'bg-slate-100 text-slate-400 cursor-not-allowed'

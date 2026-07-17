@@ -147,17 +147,9 @@ export default function ConstanciaPDF({ orden }: { orden: any }) {
 
         {/* LISTA DE PRUEBAS COMPACTA */}
         <View style={styles.listaPruebas}>
-          {Array.from(
-            new Set(
-              orden.detalles.map((det: any) =>
-                det.prueba?.subcategoria?.esPaquete
-                  ? det.prueba.subcategoria.nombre
-                  : det.prueba.nombre
-              )
-            )
-          ).map((nombreExamen: any, idx: number) => (
+          {orden.examenesResumen?.map((examen: any, idx: number) => (
             <Text key={idx} style={styles.itemPrueba}>
-              • {nombreExamen.toUpperCase()}
+              • {examen.nombre.toUpperCase()}
             </Text>
           ))}
         </View>

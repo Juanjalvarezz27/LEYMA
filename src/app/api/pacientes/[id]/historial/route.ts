@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { gzipSync } from "zlib";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -17,24 +18,21 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           orderBy: {
             fechaCreacion: 'desc' 
           },
-          include: {
+          select: {
+            id: true,
+            fechaCreacion: true,
+            resultadosCompletados: true,
             estado: true,
-            creadoPor: true,
+            creadoPor: { select: { nombre: true } },
             detalles: {
               include: {
-                prueba: {
-                  include: {
-                    subcategoria: {
-                      include: {
-                        categoria: true
-                      }
-                    }
-                  }
-                },
-                resultado: {
-                  include: {
-                    valores: true
-                  }
+                prueba: { 
+                  select: { 
+                    nombre: true, 
+                    subcategoria: { 
+                      select: { nombre: true, esPaquete: true } 
+                    } 
+                  } 
                 }
               }
             }
@@ -47,7 +45,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: "Paciente no encontrado" }, { status: 404 });
     }
 
-    return NextResponse.json(pacienteHistorial);
+    const compressedData = gzipSync(Buffer.from(JSON.stringify(pacienteHistorial), 'utf-8'));
+    return new NextResponse(compressedData, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Encoding': 'gzip'
+      }
+    });
   } catch (error: any) {
     console.error(`Error al obtener historial del paciente:`, error);
     return NextResponse.json({ error: `Error interno al buscar historial: ${error?.message || 'Desconocido'}` }, { status: 500 });

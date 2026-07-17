@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { 
   Microscope, Search, FileEdit, Clock, CheckCircle, FileText, 
   Phone, MessageCircle, User, Calendar, ChevronLeft, ChevronRight, DollarSign, FileSignature, Lock,
-  AlertTriangle, X
+  AlertTriangle, X, Loader2
 } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalCargarResultados from "../../components/resultados/ModalCargarResultados";
@@ -45,6 +45,9 @@ export default function ResultadosPage() {
   const [ordenPDF, setOrdenPDF] = useState<any | null>(null);
   const [whatsAppModalConfig, setWhatsAppModalConfig] = useState<{isOpen: boolean, orden: any, tipoMensaje: 'contacto' | 'cobro'} | null>(null);
 
+  // Estado de carga del detalle (Lazy Loading)
+  const [cargandoDetalle, setCargandoDetalle] = useState<number | null>(null);
+
   const fetchOrdenes = async (b = busqueda, f = fechaFiltro) => {
     setCargando(true);
     try {
@@ -56,13 +59,6 @@ export default function ResultadosPage() {
       if (!res.ok) throw new Error("Error de red");
       const data = await res.json();
       setOrdenes(data);
-      
-      setOrdenSeleccionada((prev: any) => {
-        if (prev) {
-          return data.find((o: any) => o.id === prev.id) || null;
-        }
-        return prev;
-      });
     } catch (error: any) {
       toast.error(error?.message ? `Error al cargar las órdenes.: ${error?.message}` : "Error al cargar las órdenes.");
     } finally {
@@ -70,10 +66,40 @@ export default function ResultadosPage() {
     }
   };
 
+  // Carga el detalle completo de una orden bajo demanda (Lazy Loading)
+  const abrirModalConDetalle = async (ordenId: number) => {
+    setCargandoDetalle(ordenId);
+    try {
+      const res = await fetch(`/api/resultados/detalle/${ordenId}`);
+      if (!res.ok) throw new Error("No se pudo cargar el detalle de la orden.");
+      const detalle = await res.json();
+      setOrdenSeleccionada(detalle);
+    } catch (error: any) {
+      toast.error(error?.message || "Error al cargar el detalle de la orden.");
+    } finally {
+      setCargandoDetalle(null);
+    }
+  };
+
+  // Carga el detalle completo para el PDF bajo demanda
+  const abrirPDFConDetalle = async (ordenId: number) => {
+    setCargandoDetalle(ordenId);
+    try {
+      const res = await fetch(`/api/resultados/detalle/${ordenId}`);
+      if (!res.ok) throw new Error("No se pudo cargar el detalle para el PDF.");
+      const detalle = await res.json();
+      setOrdenPDF(detalle);
+    } catch (error: any) {
+      toast.error(error?.message || "Error al cargar el detalle para el PDF.");
+    } finally {
+      setCargandoDetalle(null);
+    }
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchOrdenes(busqueda, fechaFiltro);
-    }, 400); // Debounce de 400ms para evitar múltiples llamadas al escribir
+    }, 400);
     return () => clearTimeout(timer);
   }, [busqueda, fechaFiltro]);
 
@@ -101,24 +127,11 @@ export default function ResultadosPage() {
     setPaginaActual(1);
   }, [busqueda, tabActiva, fechaFiltro]);
 
+  // Filtro usando el tabStatus calculado en el servidor — sin lógica pesada en el cliente
   const ordenesFiltradas = ordenes.filter(orden => {
-    const tieneResultadosFaltantes = orden.detalles.some((d: any) => {
-      if (!d.resultado) return true;
-      if (!d.resultado.valores || d.resultado.valores.length < d.cantidad) return true;
-      if (d.resultado.valores.some((v: any) => !v.valorIngresado || v.valorIngresado.trim() === '')) return true;
-      if (!d.prueba.valoresReferencia && (!d.resultado.valoresReferencia || d.resultado.valoresReferencia.trim() === '')) return true;
-      return false;
-    });
-    const todoFirmado = orden.resultadosCompletados; 
-
-    if (tabActiva === "PENDIENTES" && !tieneResultadosFaltantes) return false;
-    if (tabActiva === "POR_VALIDAR" && (tieneResultadosFaltantes || todoFirmado)) return false;
-    if (tabActiva === "COMPLETADOS" && !todoFirmado) return false;
-
-    if (fechaFiltro) {
-      const fechaOrden = obtenerFechaCaracas(orden.fechaCreacion);
-      if (fechaOrden !== fechaFiltro) return false;
-    }
+    if (tabActiva === "PENDIENTES" && orden.tabStatus !== "PENDIENTES") return false;
+    if (tabActiva === "POR_VALIDAR" && orden.tabStatus !== "POR_VALIDAR") return false;
+    if (tabActiva === "COMPLETADOS" && orden.tabStatus !== "COMPLETADOS") return false;
 
     if (busqueda) {
       const b = normalizeSearchString(busqueda);
@@ -318,19 +331,7 @@ export default function ResultadosPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {ordenesPaginadas.map((orden) => {
               const estaPagada = orden.estado.nombre === "CERRADA";
-
-              const tagsAgrupados: any[] = [];
-              orden.detalles.forEach((det: any) => {
-                const isPaquete = det.prueba?.subcategoria?.esPaquete;
-                if (isPaquete) {
-                  const subcatId = det.prueba.subcategoria.id;
-                  if (!tagsAgrupados.find(i => i.isPaquete && i.id === subcatId)) {
-                    tagsAgrupados.push({ id: subcatId, nombre: det.prueba.subcategoria.nombre, isPaquete: true });
-                  }
-                } else {
-                  tagsAgrupados.push({ id: det.prueba.id, nombre: det.prueba.nombre, isPaquete: false });
-                }
-              });
+              const estaCargandoEsteDetalle = cargandoDetalle === orden.id;
 
               return (
                 <div key={orden.id} className="bg-white border border-slate-200/80 rounded-[24px] shadow-sm hover:shadow-md transition-all flex flex-col">
@@ -389,14 +390,15 @@ export default function ResultadosPage() {
                     <div className="mt-auto pt-5">
                       <hr className="border-t-2 border-dashed border-slate-200 mb-5" />
                       
+                      {/* Chips de exámenes — usando el resumen ligero del servidor */}
                       <div className="bg-[#F5F5F7] rounded-[16px] p-4 border border-slate-200/60">
                         <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3">Exámenes Solicitados</p>
                         <div className="flex flex-wrap gap-2">
-                          {tagsAgrupados.slice(0, 4).map((tag: any) => (
+                          {(orden.examenesResumen || []).slice(0, 4).map((tag: any) => (
                             <span 
                               key={tag.id} 
                               className={`text-[11px] font-bold px-2.5 py-1 rounded-md shadow-sm border ${
-                                tag.isPaquete 
+                                tag.esPaquete 
                                   ? 'bg-[#0071E3]/10 text-[#0071E3] border-[#0071E3]/20' 
                                   : 'bg-white text-slate-600 border-slate-200/80'
                               }`}
@@ -404,9 +406,9 @@ export default function ResultadosPage() {
                               {tag.nombre}
                             </span>
                           ))}
-                          {tagsAgrupados.length > 4 && (
+                          {(orden.examenesResumen || []).length > 4 && (
                             <span className="text-[11px] font-bold text-slate-500 bg-slate-200/60 px-2.5 py-1 rounded-md">
-                              +{tagsAgrupados.length - 4} más
+                              +{orden.examenesResumen.length - 4} más
                             </span>
                           )}
                         </div>
@@ -423,10 +425,13 @@ export default function ResultadosPage() {
                           toast.error("La orden debe estar pagada para gestionar los resultados.");
                           return;
                         }
-                        setOrdenSeleccionada(orden);
+                        abrirModalConDetalle(orden.id);
                       }}
+                      disabled={estaCargandoEsteDetalle}
                       className={`flex-1 h-[46px] text-sm font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
-                        !estaPagada
+                        estaCargandoEsteDetalle
+                          ? 'bg-slate-100 text-slate-400 cursor-wait'
+                          : !estaPagada
                           ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                           : tabActiva === "PENDIENTES"
                           ? 'bg-[#0071E3] text-white hover:bg-[#0077ED] shadow-sm hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] hover:-translate-y-0.5'
@@ -435,7 +440,9 @@ export default function ResultadosPage() {
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:-translate-y-0.5'
                       }`}
                     >
-                      {!estaPagada ? (
+                      {estaCargandoEsteDetalle ? (
+                        <><Loader2 size={16} className="animate-spin" /> Cargando...</>
+                      ) : !estaPagada ? (
                         <><Lock size={16} /> Pago Requerido</>
                       ) : (
                         <>
@@ -477,10 +484,11 @@ export default function ResultadosPage() {
                         ) : (
                           <div className="relative group/pdf shrink-0 flex flex-col items-center justify-center">
                             <button
-                              onClick={() => setOrdenPDF(orden)}
-                              className="flex items-center justify-center w-[46px] h-[46px] bg-slate-100 text-[#0071E3] hover:bg-[#0071E3] hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] hover:-translate-y-0.5"
+                              onClick={() => abrirPDFConDetalle(orden.id)}
+                              disabled={estaCargandoEsteDetalle}
+                              className="flex items-center justify-center w-[46px] h-[46px] bg-slate-100 text-[#0071E3] hover:bg-[#0071E3] hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] hover:-translate-y-0.5 disabled:opacity-50"
                             >
-                              <FileText size={20} strokeWidth={2.5} />
+                              {estaCargandoEsteDetalle ? <Loader2 size={20} className="animate-spin" /> : <FileText size={20} strokeWidth={2.5} />}
                             </button>
                             <div className="absolute -top-11 opacity-0 group-hover/pdf:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/pdf:-translate-y-1">
                               Generar PDF

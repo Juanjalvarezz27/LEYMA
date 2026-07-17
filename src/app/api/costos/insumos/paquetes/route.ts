@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { gzipSync } from "zlib";
 
 // Obtener todos los paquetes con sus insumos
 export async function GET() {
@@ -13,7 +14,14 @@ export async function GET() {
       },
       orderBy: { nombre: "asc" },
     });
-    return NextResponse.json(paquetes);
+    
+    const compressedData = gzipSync(Buffer.from(JSON.stringify(paquetes), 'utf-8'));
+    return new NextResponse(compressedData, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Encoding': 'gzip'
+      }
+    });
   } catch (error: any) {
     console.error("Error al obtener paquetes de insumos:", error);
     return NextResponse.json({ error: `Error al obtener paquetes: ${error?.message || 'Desconocido'}` }, { status: 500 });

@@ -53,6 +53,7 @@ function ListaDiariaContent() {
   }, [fechaUrl]);
   const [ordenes, setOrdenes] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [cargandoDetalle, setCargandoDetalle] = useState<number | null>(null); // ID de la orden cuyo detalle está cargando
   
   // Estados para Modales
   const [ordenSeleccionada, setOrdenSeleccionada] = useState<any | null>(null);
@@ -87,15 +88,44 @@ function ListaDiariaContent() {
     fetchOrdenes();
   }, [fecha]);
 
-  // Si venimos de un link con ?search=X, abrimos el modal de detalle automáticamente
+
+  // Función reutilizable para cargar el detalle completo de una orden bajo demanda
+  const cargarDetalleOrden = async (ordenId: number): Promise<any | null> => {
+    setCargandoDetalle(ordenId);
+    try {
+      const res = await fetch(`/api/ordenes/${ordenId}`);
+      if (!res.ok) throw new Error("No se pudo cargar el detalle de la orden.");
+      return await res.json();
+    } catch (error: any) {
+      toast.error(error?.message || "Error al cargar el detalle de la orden.");
+      return null;
+    } finally {
+      setCargandoDetalle(null);
+    }
+  };
+
+  // Lazy-load: carga el detalle completo antes de abrir el modal de detalle
+  const abrirModalDetalle = async (ordenId: number) => {
+    const detalle = await cargarDetalleOrden(ordenId);
+    if (detalle) setOrdenSeleccionada(detalle);
+  };
+
+  // Lazy-load: carga el detalle completo antes de abrir el modal de pago
+  const abrirModalPago = async (ordenId: number) => {
+    const detalle = await cargarDetalleOrden(ordenId);
+    if (detalle) setOrdenParaPagar(detalle);
+  };
+
+  // Si venimos de un link con ?search=X, cargamos el detalle y abrimos el modal automáticamente
   useEffect(() => {
-    if (searchUrl && ordenes.length > 0) {
+    if (searchUrl && ordenes.length > 0 && !ordenSeleccionada) {
       const ordenBuscada = ordenes.find(o => o.id.toString() === searchUrl);
-      if (ordenBuscada && !ordenSeleccionada) {
-        setOrdenSeleccionada(ordenBuscada);
+      if (ordenBuscada) {
+        abrirModalDetalle(ordenBuscada.id);
       }
     }
   }, [searchUrl, ordenes]);
+
 
   const ordenesFiltradas = ordenes.filter(orden => {
     const cumpleEstado = filtroEstado === "TODAS" || orden.estado.nombre === filtroEstado;
@@ -113,11 +143,6 @@ function ListaDiariaContent() {
   const totalBorradores = ordenes.filter(o => o.estado.nombre === "BORRADOR").length;
   const ordenesCerradas = ordenes.filter(o => o.estado.nombre === "CERRADA").length;
 
-  const abrirModalPago = (ordenId: number) => {
-    const orden = ordenes.find(o => o.id === ordenId);
-    setOrdenParaPagar(orden);
-  };
-
   const abrirModalEdicion = (ordenId: number) => {
     router.push(`/home/registro?edit=${ordenId}`);
   };
@@ -134,8 +159,9 @@ function ListaDiariaContent() {
   // --- LÓGICA DE ANULAR / ACTIVAR ---
   const pedirClave = (ordenId: number, accion: "ANULAR" | "ACTIVAR") => {
     const orden = ordenes.find(o => o.id === ordenId);
-    // Si la vamos a activar, verificamos si tenía pagos para mandarla a CERRADA, sino a BORRADOR
-    const estadoDestino = accion === "ANULAR" ? "ANULADA" : (orden.pagos?.length > 0 ? "CERRADA" : "BORRADOR");
+    // La lista liviana trae pagos con solo montoUSD, así que verificamos si la suma > 0
+    const tienePagos = orden?.pagos?.reduce((acc: number, p: any) => acc + p.montoUSD, 0) > 0;
+    const estadoDestino = accion === "ANULAR" ? "ANULADA" : (tienePagos ? "CERRADA" : "BORRADOR");
     
     setClaveInput("");
     setModalClave({ visible: true, ordenId, accion, estadoDestino });
@@ -396,7 +422,7 @@ function ListaDiariaContent() {
                     
                     <td className="px-6 py-4 align-middle">
                       <span className="inline-flex items-center justify-center text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1 rounded-lg whitespace-nowrap">
-                        {orden.detalles.length} Prueba(s)
+                        {orden._count.detalles} Prueba(s)
                       </span>
                     </td>
                     
@@ -420,13 +446,14 @@ function ListaDiariaContent() {
                     <td className="px-6 py-4 align-middle">
                       <div className="flex items-center justify-center gap-2 xl:gap-3">
                         
-                        {/* BOTÓN VER DETALLES */}
+                        {/* BOTÓN VER DETALLES (con lazy-load spinner) */}
                         <div className="relative group/ver flex flex-col items-center">
                           <button 
-                            onClick={() => setOrdenSeleccionada(orden)}
-                            className="flex items-center justify-center w-10 h-10 bg-blue-50 text-[#0071E3] hover:bg-[#0071E3] hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] hover:-translate-y-0.5"
+                            onClick={() => abrirModalDetalle(orden.id)}
+                            disabled={cargandoDetalle === orden.id}
+                            className="flex items-center justify-center w-10 h-10 bg-blue-50 text-[#0071E3] hover:bg-[#0071E3] hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-wait"
                           >
-                            <Eye size={18} strokeWidth={2.5} />
+                            {cargandoDetalle === orden.id ? <Loader2 size={18} className="animate-spin" /> : <Eye size={18} strokeWidth={2.5} />}
                           </button>
                           <div className="absolute -top-10 opacity-0 group-hover/ver:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/ver:-translate-y-1">
                             Ver Detalles
@@ -455,8 +482,9 @@ function ListaDiariaContent() {
                           <>
                             <div className="relative group/edit flex flex-col items-center">
                               <button 
-                                onClick={() => abrirModalEdicion(orden.id)} 
-                                className="flex items-center justify-center w-10 h-10 bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(249,115,22,0.3)] hover:-translate-y-0.5"
+                                onClick={() => abrirModalEdicion(orden.id)}
+                                disabled={cargandoDetalle === orden.id}
+                                className="flex items-center justify-center w-10 h-10 bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(249,115,22,0.3)] hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-wait"
                               >
                                 <Edit size={18} strokeWidth={2.5} />
                               </button>
@@ -468,10 +496,11 @@ function ListaDiariaContent() {
 
                             <div className="relative group/pay flex flex-col items-center">
                               <button 
-                                onClick={() => abrirModalPago(orden.id)} 
-                                className="flex items-center justify-center w-10 h-10 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(22,163,74,0.3)] hover:-translate-y-0.5"
+                                onClick={() => abrirModalPago(orden.id)}
+                                disabled={cargandoDetalle === orden.id}
+                                className="flex items-center justify-center w-10 h-10 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-xl transition-all duration-300 hover:shadow-[0_4px_12px_rgba(22,163,74,0.3)] hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-wait"
                               >
-                                <Wallet size={18} strokeWidth={2.5} />
+                                {cargandoDetalle === orden.id ? <Loader2 size={18} className="animate-spin" /> : <Wallet size={18} strokeWidth={2.5} />}
                               </button>
                               <div className="absolute -top-10 opacity-0 group-hover/pay:opacity-100 transition-all duration-300 pointer-events-none bg-[#1D1D1F] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl z-50 translate-y-1 group-hover/pay:-translate-y-1">
                                 Procesar Pago

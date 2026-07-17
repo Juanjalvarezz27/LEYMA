@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import zlib from "zlib";
 import { getCaracasTodayBounds, subtractDaysCaracas, getCaracasThisMonthBounds, getCaracasBoundsForDate, formatToCaracasDateString } from "../../../lib/dateUtils";
 
 export const dynamic = 'force-dynamic';
@@ -38,9 +39,6 @@ export async function GET(req: Request) {
       const boundFin = getCaracasBoundsForDate(finStr);
       fechaInicio = boundInicio.inicio;
       fechaFin = boundFin.fin;
-    } else if (periodo === "HISTORICO") {
-      fechaInicio = new Date("2000-01-01T00:00:00Z");
-      fechaFin = new Date("2100-01-01T00:00:00Z");
     }
 
     // 1. KPIs CON AGGREGATE NATIVO DE PRISMA
@@ -280,7 +278,7 @@ export async function GET(req: Request) {
 
     const historialDescuentos = historialDescuentosRaw.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
 
-    return NextResponse.json({
+    const payloadBuffer = Buffer.from(JSON.stringify({
       tasaBCV,
       kpis: { totalIngresosUSD, totalIngresosBS, totalGastosUSD, totalGastosBS, balanceNetoUSD, balanceNetoBS },
       graficoTendencia,
@@ -289,6 +287,15 @@ export async function GET(req: Request) {
       historial,
       historialDescuentos,
       metodosPago 
+    }));
+
+    const compressedData = zlib.gzipSync(payloadBuffer);
+
+    return new NextResponse(compressedData, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Encoding': 'gzip'
+      }
     });
 
   } catch (error: any) {

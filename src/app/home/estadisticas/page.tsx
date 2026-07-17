@@ -14,10 +14,10 @@ import { toast } from "react-toastify";
 
 const PALETA_COLORES = ['#0071E3', '#10B981', '#FF9500', '#8E44AD', '#FF3B30'];
 
-type PeriodoType = "HOY" | "7DIAS" | "30DIAS" | "MES_ACTUAL" | "HISTORICO" | "CUSTOM";
+type PeriodoType = "HOY" | "7DIAS" | "30DIAS" | "MES_ACTUAL" | "CUSTOM";
 
 export default function EstadisticasPage() {
-  const [periodo, setPeriodo] = useState<PeriodoType>("HISTORICO");
+  const [periodo, setPeriodo] = useState<PeriodoType>("HOY");
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   
@@ -62,10 +62,20 @@ export default function EstadisticasPage() {
       toast.warning("Seleccione ambas fechas para filtrar");
       return;
     }
-    if (new Date(fechaInicio) > new Date(fechaFin)) {
+    
+    const d1 = new Date(fechaInicio);
+    const d2 = new Date(fechaFin);
+    const diferenciaDias = Math.ceil((d2.getTime() - d1.getTime()) / (1000 * 3600 * 24));
+    
+    if (diferenciaDias > 90) {
+      toast.warning("El rango máximo permitido es de 90 días. Por favor, seleccione un período más corto.");
+      return;
+    }
+    if (diferenciaDias < 0) {
       toast.error("La fecha de inicio no puede ser mayor a la fecha fin");
       return;
     }
+
     fetchEstadisticas();
   };
 
@@ -97,7 +107,6 @@ export default function EstadisticasPage() {
               { id: "7DIAS", label: "7 Días" },
               { id: "30DIAS", label: "30 Días" },
               { id: "MES_ACTUAL", label: "Este Mes" },
-              { id: "HISTORICO", label: "Histórico" },
               { id: "CUSTOM", label: "Personalizado" }
             ].map((opt) => (
               <button

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { gzipSync } from "zlib";
 import { getCaracasTodayBounds, getCaracasBoundsForDate, formatToCaracasDateString, getCaracasDateString } from "../../../lib/dateUtils";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
@@ -128,11 +129,13 @@ export async function GET(req: Request) {
         fechaCreacion: orderTimeFilter,
         estado: { nombre: { not: "ANULADA" } }
       },
-      include: {
+      select: {
+        id: true,
+        totalUSD: true,
+        tasaBCV: true,
         paciente: { select: { nombreCompleto: true, cedula: true } },
-        estado: true,
         creadoPor: { select: { nombre: true } },
-        pagos: { include: { metodo: true } }
+        pagos: { select: { montoUSD: true, metodo: { select: { nombre: true } } } }
       },
       orderBy: { fechaCreacion: 'desc' }
     });
@@ -194,7 +197,7 @@ export async function GET(req: Request) {
       };
     });
 
-    return NextResponse.json({
+    const payload = {
       tituloCaja,
       fechaTarget,
       esAtrasado,
@@ -223,6 +226,15 @@ export async function GET(req: Request) {
           metodoUsado: (o.pagos && o.pagos.length > 0) ? o.pagos[0].metodo.nombre : "NINGUNO"
         };
       })
+    };
+
+    const compressed = gzipSync(Buffer.from(JSON.stringify(payload), 'utf-8'));
+    return new NextResponse(compressed, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Encoding': 'gzip'
+      }
     });
 
   } catch (error: any) {

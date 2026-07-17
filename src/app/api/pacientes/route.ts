@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { gzipSync } from "zlib";
 
 export function normalizarNombre(nombre: string): string {
   if (!nombre) return "";
@@ -26,9 +27,33 @@ export async function GET(req: Request) {
         ]
       },
       take: 10,
-      orderBy: { nombreCompleto: "asc" }
+      orderBy: { nombreCompleto: "asc" },
+      select: {
+        id: true,
+        cedula: true,
+        nombreCompleto: true,
+        fechaNacimiento: true,
+        esBebe: true,
+        sexo: true,
+        telefono: true,
+        correo: true,
+        direccion: true,
+        observaciones: true
+      }
     });
-    return NextResponse.json(pacientes);
+
+    const jsonString = JSON.stringify(pacientes);
+    const compressedBuffer = gzipSync(Buffer.from(jsonString, 'utf-8'));
+
+    return new NextResponse(compressedBuffer, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Encoding': 'gzip',
+        // Opcional: Cache corto para no machacar el backend si escriben la misma letra rápido
+        'Cache-Control': 's-maxage=10, stale-while-revalidate=30'
+      }
+    });
   } catch (error: any) {
     return NextResponse.json({ error: `Error al buscar pacientes: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }

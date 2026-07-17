@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { gzipSync } from "zlib";
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
@@ -10,22 +13,17 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Debe proporcionar una fecha" }, { status: 400 });
     }
 
-    // Aseguramos la franja horaria de Venezuela (UTC-4) para buscar en el día exacto
     const fechaInicio = new Date(`${fechaParam}T00:00:00.000-04:00`);
     const fechaFin = new Date(`${fechaParam}T23:59:59.999-04:00`);
 
+    // Solo los campos que la tabla y los KPIs necesitan para renderizarse
     const ordenes = await prisma.orden.findMany({
       where: {
-        fechaCreacion: {
-          gte: fechaInicio,
-          lte: fechaFin
-        }
+        fechaCreacion: { gte: fechaInicio, lte: fechaFin }
       },
       select: {
         id: true,
         fechaCreacion: true,
-        subtotalUSD: true,
-        descuentoGeneral: true,
         totalUSD: true,
         totalBS: true,
         tasaBCV: true,
@@ -33,68 +31,33 @@ export async function GET(req: Request) {
           select: {
             nombreCompleto: true,
             cedula: true,
-            fechaNacimiento: true,
-            esBebe: true,
-            sexo: true,
-            telefono: true
+            telefono: true // Necesario para el tooltip de WhatsApp y el modal
           }
         },
         estado: { select: { nombre: true } },
-        tipoDescuento: { select: { nombre: true } }, 
-        detalles: {
-          select: {
-            id: true,
-            cantidad: true,
-            precioCongeladoUSD: true,
-            descuento: true,
-            tipoDescuento: { select: { nombre: true } },
-            prueba: {
-              select: {
-                nombre: true,
-                codigo: true,
-                subcategoria: {
-                  select: {
-                    id: true,
-                    nombre: true,
-                    esPaquete: true,
-                    categoria: { select: { nombre: true } }
-                  }
-                }
-              }
-            }
-          }
-        },
-        serviciosExtra: {
-          select: {
-            id: true,
-            cantidad: true,
-            precioCongeladoUSD: true,
-            servicio: { select: { nombre: true } }
-          }
-        },
+        // Conteo liviano para la columna "Pruebas"
+        _count: { select: { detalles: true } },
+        // Pagos previos para calcular la deuda restante al abrir ModalProcesarPago
         pagos: {
           select: {
-            id: true,
-            montoUSD: true,
-            montoBS: true,
-            referencia: true,
-            metodo: { select: { nombre: true } }
-          }
-        },
-        creadoPor: { select: { nombre: true } },
-        notasSubcategoria: {
-          select: {
-            subcategoria: true,
-            nota: true
+            montoUSD: true
           }
         }
       },
-      orderBy: {
-        fechaCreacion: 'desc' 
-      }
+      orderBy: { fechaCreacion: 'desc' }
     });
 
-    return NextResponse.json(ordenes);
+    const payload = JSON.stringify(ordenes);
+    const compressed = gzipSync(Buffer.from(payload));
+
+    return new Response(compressed, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Encoding': 'gzip',
+        'Cache-Control': 'no-store',
+      }
+    });
   } catch (error: any) {
     console.error("Error al obtener lista diaria:", error);
     return NextResponse.json({ error: `Error al cargar las órdenes: ${error?.message || 'Desconocido'}` }, { status: 500 });

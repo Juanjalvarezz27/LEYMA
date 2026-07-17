@@ -18,7 +18,7 @@ import { normalizeSearchString } from "../../../lib/stringUtils";
 
 const PALETA_GASTOS = ['#EF4444', '#F59E0B', '#8B5CF6', '#F43F5E', '#D946EF'];
 const PALETA_INGRESOS = ['#10B981', '#0EA5E9', '#3B82F6', '#14B8A6', '#06B6D4']; 
-type PeriodoType = "HOY" | "7DIAS" | "30DIAS" | "MES_ACTUAL" | "HISTORICO" | "CUSTOM";
+type PeriodoType = "HOY" | "7DIAS" | "30DIAS" | "MES_ACTUAL" | "CUSTOM";
 
 const formatearMetodo = (str: string) => {
   if (!str) return "N/A";
@@ -28,7 +28,7 @@ const formatearMetodo = (str: string) => {
 export default function MonederoPage() {
   const { tasa: tasaBCV, loading: loadingTasa } = useTasaBCV(); 
   
-  const [periodo, setPeriodo] = useState<PeriodoType>("HISTORICO");
+  const [periodo, setPeriodo] = useState<PeriodoType>("HOY");
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   
@@ -116,6 +116,18 @@ export default function MonederoPage() {
 
   const aplicarFiltroCustom = () => {
     if (!fechaInicio || !fechaFin) return toast.warning("Seleccione ambas fechas");
+    
+    const d1 = new Date(fechaInicio);
+    const d2 = new Date(fechaFin);
+    const diferenciaDias = Math.ceil((d2.getTime() - d1.getTime()) / (1000 * 3600 * 24));
+    
+    if (diferenciaDias > 90) {
+      return toast.warning("El rango máximo permitido es de 90 días. Por favor, seleccione un período más corto.");
+    }
+    if (diferenciaDias < 0) {
+      return toast.warning("La fecha de inicio debe ser anterior a la fecha de fin.");
+    }
+
     fetchMonedero();
   };
 
@@ -247,7 +259,7 @@ export default function MonederoPage() {
           </button>
 
           <div className="flex items-center bg-[#F5F5F7] p-1.5 rounded-xl border border-slate-200/60 w-max">
-            {["HOY", "7DIAS", "30DIAS", "MES_ACTUAL", "HISTORICO", "CUSTOM"].map((opt) => (
+            {["HOY", "7DIAS", "30DIAS", "MES_ACTUAL", "CUSTOM"].map((opt) => (
               <button
                 key={opt}
                 onClick={() => setPeriodo(opt as PeriodoType)}
@@ -255,7 +267,7 @@ export default function MonederoPage() {
                   periodo === opt ? "bg-white text-[#0071E3] shadow-sm" : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                {opt === "CUSTOM" ? "Personalizado" : opt === "HISTORICO" ? "Histórico" : opt.replace('DIAS', ' Días').replace('_', ' ').toLowerCase()}
+                {opt === "CUSTOM" ? "Personalizado" : opt.replace('DIAS', ' Días').replace('_', ' ').toLowerCase()}
               </button>
             ))}
           </div>

@@ -300,7 +300,7 @@ export default function ConstanciasPage() {
                                           
                                           <td className="px-6 py-4 align-middle">
                                             <span className="text-[13px] font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg">
-                                              {orden.detalles.length} Exámen(es) procesados
+                                              {orden.examenesResumen ? orden.examenesResumen.length : 0} Exámen(es) procesados
                                             </span>
                                           </td>
                                           

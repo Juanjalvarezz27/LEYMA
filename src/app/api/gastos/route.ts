@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
+import zlib from "zlib";
 
 // ESTO ES VITAL: Obliga a Next.js a calcular esto en tiempo real siempre, sin caché.
 export const dynamic = 'force-dynamic'; 
@@ -169,13 +170,22 @@ export async function GET(req: Request) {
 
     const historial = historialRaw.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
 
-    return NextResponse.json({
+    const payloadBuffer = Buffer.from(JSON.stringify({
       kpis: { totalIngresosUSD, totalIngresosBS, totalGastosUSD, totalGastosBS, balanceNetoUSD, balanceNetoBS },
       graficoTendencia,
       graficoGastos,
       topGastos,
       historial,
       metodosPago 
+    }));
+
+    const compressedData = zlib.gzipSync(payloadBuffer);
+
+    return new NextResponse(compressedData, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Encoding': 'gzip'
+      }
     });
 
   } catch (error: any) {

@@ -19,6 +19,7 @@ export async function GET() {
             id: true,
             codigo: true,
             nombre: true,
+            activa: true,
             precioUSD: true,
             ordenVisual: true,
             unidades: true,

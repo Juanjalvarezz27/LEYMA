@@ -21,6 +21,7 @@ function ListaDiariaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fechaUrl = searchParams.get('fecha');
+  const searchUrl = searchParams.get('search');
 
   const [fecha, setFecha] = useState(fechaUrl || obtenerFechaHoyVzla());
   const [globalPendientes, setGlobalPendientes] = useState<{ total: number, fechas: number } | null>(null);
@@ -65,7 +66,7 @@ function ListaDiariaContent() {
   const [claveInput, setClaveInput] = useState("");
   const [procesandoClave, setProcesandoClave] = useState(false);
 
-  const [busqueda, setBusqueda] = useState("");
+  const [busqueda, setBusqueda] = useState(searchUrl || "");
   const [filtroEstado, setFiltroEstado] = useState<"TODAS" | "BORRADOR" | "CERRADA" | "ANULADA">("TODAS");
 
   const fetchOrdenes = async () => {
@@ -85,6 +86,16 @@ function ListaDiariaContent() {
   useEffect(() => {
     fetchOrdenes();
   }, [fecha]);
+
+  // Si venimos de un link con ?search=X, abrimos el modal de detalle automáticamente
+  useEffect(() => {
+    if (searchUrl && ordenes.length > 0) {
+      const ordenBuscada = ordenes.find(o => o.id.toString() === searchUrl);
+      if (ordenBuscada && !ordenSeleccionada) {
+        setOrdenSeleccionada(ordenBuscada);
+      }
+    }
+  }, [searchUrl, ordenes]);
 
   const ordenesFiltradas = ordenes.filter(orden => {
     const cumpleEstado = filtroEstado === "TODAS" || orden.estado.nombre === filtroEstado;

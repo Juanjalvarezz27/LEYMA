@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { ClipboardList, Calculator, User, Percent, ClipboardCheck } from "lucide-react";
 import { toast } from "react-toastify";
 
 import useTasaBCV from "../../hooks/useTasaBcv";
 import SeleccionPruebas from "../../components/registro/SeleccionPruebas";
 import ServiciosExtras from "../../components/registro/ServiciosExtras";
-import ModalPreviewPresupuesto from "../../components/presupuestos/ModalPreviewPresupuesto";
+const ModalPreviewPresupuesto = dynamic(() => import("../../components/presupuestos/ModalPreviewPresupuesto"), { ssr: false });
 import { useRouter } from "next/navigation";
 
 export default function PresupuestosPage() {

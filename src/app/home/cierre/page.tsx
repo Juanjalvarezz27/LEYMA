@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import dynamic from "next/dynamic";
 import {
   Calculator, Users, Wallet, Landmark, Filter, Search, Loader2, CheckCircle,
   AlertTriangle, ChevronLeft, ChevronRight, Lock, AlertCircle, Save, X,
@@ -11,10 +12,7 @@ import useTasaBCV from "../../hooks/useTasaBcv";
 import ModalCierre from "../../components/cierre/ModalCierre";
 import ModalConfirmacion from "../../components/ui/ModalConfirmacion";
 import { normalizeSearchString } from "../../../lib/stringUtils";
-import { pdf } from "@react-pdf/renderer";
-import CierreDiarioPDF from "../../components/cierre/CierreDiarioPDF";
-import HistorialCierresPDF from "../../components/cierre/HistorialCierresPDF";
-import ModalPreviewCierrePDF from "../../components/cierre/ModalPreviewCierrePDF";
+const ModalPreviewCierrePDF = dynamic(() => import("../../components/cierre/ModalPreviewCierrePDF"), { ssr: false });
 
 type VistaType = "HOY" | "HISTORIAL";
 type PeriodoType = "HOY" | "CUSTOM";

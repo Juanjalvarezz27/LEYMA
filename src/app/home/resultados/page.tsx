@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { 
   Microscope, Search, FileEdit, Clock, CheckCircle, FileText, 
   Phone, MessageCircle, User, Calendar, ChevronLeft, ChevronRight, DollarSign, FileSignature, Lock,
@@ -8,7 +9,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalCargarResultados from "../../components/resultados/ModalCargarResultados";
-import ModalPreviewPDF from "../../components/resultados/ModalPreviewPDF";
+const ModalPreviewPDF = dynamic(() => import("../../components/resultados/ModalPreviewPDF"), { ssr: false });
 import ModalAsistenteWhatsApp from "../../components/ModalAsistenteWhatsApp";
 import { normalizeSearchString } from "../../../lib/stringUtils";
 

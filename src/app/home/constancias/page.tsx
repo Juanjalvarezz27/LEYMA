@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, Fragment } from "react";
+import dynamic from "next/dynamic";
 import { Search, FileBadge, Calendar, ChevronLeft, ChevronRight, FileText, Activity, User, ChevronDown, ChevronUp, History, MessageCircle } from "lucide-react";
 import { toast } from "react-toastify";
-import ModalConstancia from "../../components/constancias/ModalConstancia";
+const ModalConstancia = dynamic(() => import("../../components/constancias/ModalConstancia"), { ssr: false });
 import ModalAsistenteWhatsApp from "../../components/ModalAsistenteWhatsApp";
 import { normalizeSearchString } from "../../../lib/stringUtils";
 

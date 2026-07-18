@@ -26,10 +26,12 @@ export async function GET(req: Request) {
     let oldestPendingOrder: any = null;
     let tasaDelDiaFija: number | null = null;
     let observacionesCierre: string | null = null;
+    let cierreEspecificoObj: any = null;
 
     if (cierreId) {
       const cierreEspecifico = await prisma.cierreCaja.findUnique({ where: { id: cierreId } });
       if (!cierreEspecifico) throw new Error("Cierre no encontrado");
+      cierreEspecificoObj = cierreEspecifico;
       fechaInicio = cierreEspecifico.fechaApertura;
       fechaFin = cierreEspecifico.fechaCierre;
       tituloCaja = `Cierre del ${fechaFin.toLocaleDateString("es-VE", { timeZone: "America/Caracas" })}`;
@@ -210,7 +212,14 @@ export async function GET(req: Request) {
         totalEnCajaBS: totalCajaBS,
         cuentasPorCobrarUSD: totalCuentasPorCobrarUSD,
         cuentasPorCobrarBS: totalCuentasPorCobrarBS,
-        pacientesAtendidos: ordenes.length
+        pacientesAtendidos: ordenes.length,
+        // Valores históricos si es un cierre ya guardado
+        totalCalculadoUSD: cierreEspecificoObj?.totalCalculadoUSD ?? null,
+        totalCalculadoBS: cierreEspecificoObj?.totalCalculadoBS ?? null,
+        totalDeclaradoUSD: cierreEspecificoObj?.totalDeclaradoUSD ?? null,
+        totalDeclaradoBS: cierreEspecificoObj?.totalDeclaradoBS ?? null,
+        descuadreUSD: cierreEspecificoObj?.descuadreUSD ?? null,
+        descuadreBS: cierreEspecificoObj?.descuadreBS ?? null
       },
       desglosesCaja,
       flujoPacientes: ordenes.map(o => {

@@ -90,12 +90,13 @@ const styles = StyleSheet.create({
   },
   gridResumen: {
     flexDirection: "row",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     marginBottom: 15,
     gap: 12,
   },
   cardResumen: {
-    flex: 1,
+    width: "48%",
     borderWidth: 1,
     borderColor: "#e2e8f0",
     borderRadius: 6,
@@ -219,16 +220,43 @@ export default function CierreDiarioPDF({ data, tasaBCV }: { data: any, tasaBCV:
 
         {/* RESUMEN FINANCIERO */}
         <View style={styles.gridResumen}>
-          <View style={[styles.cardResumen, { borderColor: "#bbf7d0", backgroundColor: "#f0fdf4" }]}>
-            <Text style={styles.cardResumenLabel}>Líquido Real (Caja)</Text>
-            <Text style={[styles.cardResumenValue, { color: "#166534", marginTop: 0 }]}>
-              {formatMoney(data?.resumen?.totalEnCajaUSD || 0)} <Text style={[styles.cardResumenSubvalue, { color: "#166534" }]}> - {formatMoney(data?.resumen?.totalEnCajaBS || 0, true)}</Text>
+          
+          {/* DEBERÍA HABER (SISTEMA) */}
+          <View style={[styles.cardResumen, { borderColor: "#bae6fd", backgroundColor: "#f0f9ff" }]}>
+            <Text style={styles.cardResumenLabel}>Debería Haber (Sistema)</Text>
+            <Text style={[styles.cardResumenValue, { color: "#0369a1", marginTop: 0 }]}>
+              {formatMoney(esCerrado ? (data?.resumen?.totalCalculadoUSD || 0) : (data?.resumen?.totalEnCajaUSD || 0))} 
+              <Text style={[styles.cardResumenSubvalue, { color: "#0369a1" }]}> / {formatMoney(esCerrado ? (data?.resumen?.totalCalculadoBS || 0) : (data?.resumen?.totalEnCajaBS || 0), true)}</Text>
             </Text>
           </View>
-          <View style={[styles.cardResumen, { borderColor: "#fef08a", backgroundColor: "#fefce8" }]}>
+
+          {/* LÍQUIDO REAL (DECLARADO) - Solo si ya cerró */}
+          {esCerrado && (
+            <View style={[styles.cardResumen, { borderColor: "#bbf7d0", backgroundColor: "#f0fdf4" }]}>
+              <Text style={styles.cardResumenLabel}>Líquido Real (Declarado)</Text>
+              <Text style={[styles.cardResumenValue, { color: "#166534", marginTop: 0 }]}>
+                {formatMoney(data?.resumen?.totalDeclaradoUSD || 0)} 
+                <Text style={[styles.cardResumenSubvalue, { color: "#166534" }]}> / {formatMoney(data?.resumen?.totalDeclaradoBS || 0, true)}</Text>
+              </Text>
+            </View>
+          )}
+
+          {/* DESCUADRE - Solo si ya cerró */}
+          {esCerrado && (
+            <View style={[styles.cardResumen, { borderColor: (data?.resumen?.descuadreUSD === 0) ? "#e2e8f0" : ((data?.resumen?.descuadreUSD || 0) < 0 ? "#fecaca" : "#fef08a"), backgroundColor: (data?.resumen?.descuadreUSD === 0) ? "#f8fafc" : ((data?.resumen?.descuadreUSD || 0) < 0 ? "#fef2f2" : "#fefce8") }]}>
+              <Text style={styles.cardResumenLabel}>Descuadre</Text>
+              <Text style={[styles.cardResumenValue, { color: (data?.resumen?.descuadreUSD === 0) ? "#475569" : ((data?.resumen?.descuadreUSD || 0) < 0 ? "#b91c1c" : "#854d0e"), marginTop: 0 }]}>
+                {data?.resumen?.descuadreUSD > 0 ? "+" : ""}{formatMoney(data?.resumen?.descuadreUSD || 0)} 
+                <Text style={[styles.cardResumenSubvalue, { color: (data?.resumen?.descuadreUSD === 0) ? "#475569" : ((data?.resumen?.descuadreUSD || 0) < 0 ? "#b91c1c" : "#854d0e") }]}> / {data?.resumen?.descuadreBS > 0 ? "+" : ""}{formatMoney(data?.resumen?.descuadreBS || 0, true)}</Text>
+              </Text>
+            </View>
+          )}
+
+          {/* CUENTAS POR COBRAR */}
+          <View style={[styles.cardResumen, { borderColor: "#fed7aa", backgroundColor: "#fff7ed" }]}>
             <Text style={styles.cardResumenLabel}>Cuentas por Cobrar</Text>
-            <Text style={[styles.cardResumenValue, { color: "#854d0e", marginTop: 0 }]}>
-              {formatMoney(data?.resumen?.cuentasPorCobrarUSD || 0)} <Text style={[styles.cardResumenSubvalue, { color: "#854d0e" }]}> - {formatMoney(data?.resumen?.cuentasPorCobrarBS || 0, true)}</Text>
+            <Text style={[styles.cardResumenValue, { color: "#c2410c", marginTop: 0 }]}>
+              {formatMoney(data?.resumen?.cuentasPorCobrarUSD || 0)} <Text style={[styles.cardResumenSubvalue, { color: "#c2410c" }]}> / {formatMoney(data?.resumen?.cuentasPorCobrarBS || 0, true)}</Text>
             </Text>
           </View>
         </View>

@@ -173,8 +173,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         "Content-Type": "application/pdf",
         "Content-Disposition": `inline; filename="${nombreArchivo}"`,
         "Content-Length": buffer.length.toString(),
-        // Evitar que browsers intermediarios cacheen PDFs personales
-        "Cache-Control": "no-store",
+        // Caché privada por 5 minutos — el PDF no cambia en ese lapso
+        "Cache-Control": "private, max-age=300",
       },
     });
   } catch (error: any) {

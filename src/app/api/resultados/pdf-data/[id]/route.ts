@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { gzipSync } from "zlib";
 
 export async function GET(request: Request, { params }: { params: any }) {
   try {
@@ -12,38 +13,61 @@ export async function GET(request: Request, { params }: { params: any }) {
 
     const orden = await prisma.orden.findUnique({
       where: { id: ordenId },
-      include: {
-        paciente: true,
+      select: {
+        id: true,
+        fechaCreacion: true,
+        resultadosCompletados: true,
+        paciente: {
+          select: {
+            nombreCompleto: true, cedula: true, fechaNacimiento: true,
+            esBebe: true, sexo: true, telefono: true, correo: true,
+            direccion: true, observaciones: true
+          }
+        },
         estado: { select: { nombre: true } },
         creadoPor: { select: { nombre: true } },
         detalles: {
-          include: {
-            resultado: { 
-              include: { 
-                valores: true,
-                procesadoPor: { 
-                  select: { 
-                    id: true, 
-                    nombre: true, 
-                    firmaUrl: true,
-                    mpps: true,
-                    col: true
-                  } 
+          select: {
+            id: true,
+            cantidad: true,
+            resultado: {
+              select: {
+                id: true,
+                firmado: true,
+                observaciones: true,
+                fechaProcesado: true,
+                valoresReferencia: true,
+                valores: { select: { id: true, pruebaId: true, valorIngresado: true } },
+                procesadoPor: {
+                  select: { id: true, nombre: true, firmaUrl: true, mpps: true, col: true }
                 }
-              } 
-            }, 
+              }
+            },
             prueba: {
-              include: {
+              select: {
+                id: true,
+                nombre: true,
+                codigo: true,
+                unidades: true,
+                valoresReferencia: true,
+                opcionesPredefinidas: true,
+                ordenVisual: true,
+                categoriaVisual: true,
+                subcategoriaVisual: true,
                 subcategoria: {
-                  include: {
-                    categoria: true
+                  select: {
+                    id: true,
+                    nombre: true,
+                    esPaquete: true,
+                    categoria: { select: { nombre: true } }
                   }
                 }
               }
             }
           }
-        }
-      },
+        },
+        notasSubcategoria: { select: { subcategoria: true, nota: true } }
+      }
     });
 
     if (!orden) {
@@ -54,7 +78,14 @@ export async function GET(request: Request, { params }: { params: any }) {
       return NextResponse.json({ error: "Los resultados aún no están listos" }, { status: 403 });
     }
 
-    return NextResponse.json(orden);
+    const compressed = gzipSync(Buffer.from(JSON.stringify(orden), 'utf-8'));
+    return new NextResponse(compressed, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Encoding': 'gzip'
+      }
+    });
   } catch (error: any) {
     console.error("Error al obtener datos del PDF:", error);
     return NextResponse.json({ error: `Error interno del servidor: ${error?.message || 'Desconocido'}` }, { status: 500 });

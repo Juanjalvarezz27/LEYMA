@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { gzipSync } from "zlib";
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
@@ -38,9 +41,17 @@ export async function GET() {
       orderBy: { fechaCreacion: 'asc' }
     });
 
-    return NextResponse.json(ordenes);
+    const compressed = gzipSync(Buffer.from(JSON.stringify(ordenes), 'utf-8'));
+    return new NextResponse(compressed, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Encoding': 'gzip'
+      }
+    });
   } catch (error: any) {
     console.error("Error al obtener pendientes:", error);
     return NextResponse.json({ error: `Error interno al cargar pendientes: ${error?.message || 'Desconocido'}` }, { status: 500 });
   }
-}
+}
+

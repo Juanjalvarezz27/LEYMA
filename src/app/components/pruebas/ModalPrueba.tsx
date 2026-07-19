@@ -120,7 +120,20 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
         esPaquete: pruebaEditar.esPaquete || false,
         precioPaqueteUSD: pruebaEditar.precioUSD ? pruebaEditar.precioUSD.toString() : ""
       });
-        setPruebas(pruebaEditar.pruebas.map((p: any) => ({
+      const pruebasOrdenadas = [...pruebaEditar.pruebas].sort((a: any, b: any) => (a.ordenVisual || 0) - (b.ordenVisual || 0));
+      
+      const grouped = pruebasOrdenadas.reduce((acc: any, p: any) => {
+        const cat = (p.categoriaVisual || "SIN CATEGORIA").trim().toUpperCase();
+        const sub = (p.subcategoriaVisual || "SIN SUBCATEGORIA").trim().toUpperCase();
+        const key = `${cat}|${sub}`;
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(p);
+        return acc;
+      }, {} as Record<string, any[]>);
+      
+      const flatPruebas = Object.values(grouped).flat();
+
+      setPruebas(flatPruebas.map((p: any) => ({
         tempId: p.id || Math.random().toString(36).substring(7),
         id: p.id,
         codigo: p.codigo,

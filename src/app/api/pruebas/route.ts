@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { gzipSync } from "zlib";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const examenes = await prisma.subcategoriaPrueba.findMany({
@@ -43,7 +45,9 @@ export async function GET() {
       headers: {
         'Content-Type': 'application/json',
         'Content-Encoding': 'gzip',
-        'Cache-Control': 's-maxage=300, stale-while-revalidate=600'
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     });
 

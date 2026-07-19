@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 // GET: Devuelve el catálogo de servicios extra activos
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -12,7 +14,9 @@ export async function GET(req: Request) {
       orderBy: { precioUSD: "asc" },
     });
     const response = NextResponse.json(servicios);
-    response.headers.set('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
     return response;
   } catch (error: any) {
     console.error("Error al cargar servicios extra:", error);

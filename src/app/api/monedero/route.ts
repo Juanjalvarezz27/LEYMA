@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import zlib from "zlib";
+import { promisify } from "util";
+import { gzip as gzipCallback } from "zlib";
+const gzip = promisify(gzipCallback);
 import { getCaracasTodayBounds, subtractDaysCaracas, getCaracasThisMonthBounds, getCaracasBoundsForDate, formatToCaracasDateString } from "../../../lib/dateUtils";
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 15;
 
 export async function GET(req: Request) {
   try {
@@ -289,7 +291,7 @@ export async function GET(req: Request) {
       metodosPago 
     }));
 
-    const compressedData = zlib.gzipSync(payloadBuffer);
+    const compressedData = await gzip(payloadBuffer);
 
     return new NextResponse(compressedData, {
       headers: {

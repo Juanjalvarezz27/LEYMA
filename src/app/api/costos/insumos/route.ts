@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { gzipSync } from "zlib";
+import { promisify } from "util";
+import { gzip as gzipCallback } from "zlib";
+const gzip = promisify(gzipCallback);
 
 export async function GET() {
   try {
@@ -8,7 +10,7 @@ export async function GET() {
       orderBy: { nombre: 'asc' },
     });
     
-    const compressedData = gzipSync(Buffer.from(JSON.stringify(insumos), 'utf-8'));
+    const compressedData = await gzip(Buffer.from(JSON.stringify(insumos), 'utf-8'));
     return new NextResponse(compressedData, {
       headers: {
         'Content-Type': 'application/json',

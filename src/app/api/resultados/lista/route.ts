@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { gzipSync } from "zlib";
+import { promisify } from "util";
+import { gzip as gzipCallback } from "zlib";
+const gzip = promisify(gzipCallback);
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 15;
 
 export async function GET(req: Request) {
   try {
@@ -134,7 +136,7 @@ export async function GET(req: Request) {
     });
 
     const payload = Buffer.from(JSON.stringify(ordenesConStatus));
-    const compressed = gzipSync(payload);
+    const compressed = await gzip(payload);
 
     return new NextResponse(compressed, {
       status: 200,

@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { gzipSync } from "zlib";
+import { promisify } from "util";
+import { gzip as gzipCallback } from "zlib";
+const gzip = promisify(gzipCallback);
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 15;
 
 export async function GET() {
   try {
@@ -41,7 +43,7 @@ export async function GET() {
       orderBy: { fechaCreacion: 'asc' }
     });
 
-    const compressed = gzipSync(Buffer.from(JSON.stringify(ordenes), 'utf-8'));
+    const compressed = await gzip(Buffer.from(JSON.stringify(ordenes), 'utf-8'));
     return new NextResponse(compressed, {
       status: 200,
       headers: {

@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { gzipSync } from "zlib";
+import { promisify } from "util";
+import { gzip as gzipCallback } from "zlib";
+const gzip = promisify(gzipCallback);
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 15;
 
 export async function GET() {
   try {
@@ -38,7 +40,7 @@ export async function GET() {
 
     // Compresión nativa con zlib para evitar el masivo "Fast Origin Transfer"
     const jsonString = JSON.stringify(examenes);
-    const compressedBuffer = gzipSync(Buffer.from(jsonString, 'utf-8'));
+    const compressedBuffer = await gzip(Buffer.from(jsonString, 'utf-8'));
 
     const response = new NextResponse(compressedBuffer, {
       status: 200,

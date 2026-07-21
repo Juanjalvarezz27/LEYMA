@@ -35,54 +35,31 @@ export default function HomeDashboardPage() {
     const fechaString = new Date().toLocaleDateString('es-VE', opciones);
     setFechaActual(fechaString.charAt(0).toUpperCase() + fechaString.slice(1));
 
-    const fetchPendientes = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const res = await fetch('/api/ordenes/pendientes');
+        const res = await fetch('/api/dashboard-summary');
         if (res.ok) {
           const data = await res.json();
-          setOrdenesPendientes(data);
-        }
-      } catch (error) {
-        console.error("Error fetching pendientes:", error);
-      } finally {
-        setCargandoPendientes(false);
-      }
-    };
-
-    const fetchResultados = async () => {
-      try {
-        const res = await fetch('/api/resultados/pendientes');
-        if (res.ok) {
-          const data = await res.json();
-          setOrdenesPendientesResultados(data.slice(0, 20));
-        }
-      } catch (error) {
-        console.error("Error fetching pendientes resultados:", error);
-      } finally {
-        setCargandoResultados(false);
-      }
-    };
-
-    const fetchCierreAnterior = async () => {
-      try {
-        const res = await fetch('/api/cierre-caja/estado-anterior');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.faltaCierreAnterior && data.fechaFaltante) {
+          
+          setOrdenesPendientes(data.ordenesPendientes || []);
+          setOrdenesPendientesResultados(data.ordenesPendientesResultados || []);
+          
+          if (data.cierreAnterior?.faltaCierreAnterior && data.cierreAnterior?.fechaFaltante) {
             setFaltaCierreAyer(true);
-            const dateObj = new Date(`${data.fechaFaltante}T12:00:00`);
+            const dateObj = new Date(`${data.cierreAnterior.fechaFaltante}T12:00:00`);
             const fechaFormateada = dateObj.toLocaleDateString('es-VE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             setFechaFaltante(fechaFormateada.charAt(0).toUpperCase() + fechaFormateada.slice(1));
           }
         }
       } catch (error) {
-        console.error("Error fetching estado cierre anterior:", error);
+        console.error("Error fetching dashboard summary:", error);
+      } finally {
+        setCargandoPendientes(false);
+        setCargandoResultados(false);
       }
     };
 
-    fetchPendientes();
-    fetchResultados();
-    fetchCierreAnterior();
+    fetchDashboardData();
   }, []);
 
   const nombreUsuario = session?.user?.name || "";

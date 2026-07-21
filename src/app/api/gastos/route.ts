@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
-import zlib from "zlib";
+import { promisify } from "util";
+import { gzip as gzipCallback } from "zlib";
+const gzip = promisify(gzipCallback);
 
 // ESTO ES VITAL: Obliga a Next.js a calcular esto en tiempo real siempre, sin caché.
-export const dynamic = 'force-dynamic'; 
+export const revalidate = 15; 
 
 import { getCaracasTodayBounds, subtractDaysCaracas, getCaracasThisMonthBounds, getCaracasBoundsForDate, formatToCaracasDateString } from "../../../lib/dateUtils";
 
@@ -179,7 +181,7 @@ export async function GET(req: Request) {
       metodosPago 
     }));
 
-    const compressedData = zlib.gzipSync(payloadBuffer);
+    const compressedData = await gzip(payloadBuffer);
 
     return new NextResponse(compressedData, {
       headers: {

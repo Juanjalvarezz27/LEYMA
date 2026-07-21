@@ -145,6 +145,7 @@ model Orden {
   @@index([fechaCreacion])
   @@index([estadoId])
   @@index([pacienteId])
+  @@index([resultadosCompletados])
 }
 
 model DetalleOrden {

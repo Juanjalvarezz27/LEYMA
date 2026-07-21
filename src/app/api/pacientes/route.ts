@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { gzipSync } from "zlib";
+import { promisify } from "util";
+import { gzip as gzipCallback } from "zlib";
+const gzip = promisify(gzipCallback);
 
 export function normalizarNombre(nombre: string): string {
   if (!nombre) return "";
@@ -43,7 +45,7 @@ export async function GET(req: Request) {
     });
 
     const jsonString = JSON.stringify(pacientes);
-    const compressedBuffer = gzipSync(Buffer.from(jsonString, 'utf-8'));
+    const compressedBuffer = await gzip(Buffer.from(jsonString, 'utf-8'));
 
     return new NextResponse(compressedBuffer, {
       status: 200,

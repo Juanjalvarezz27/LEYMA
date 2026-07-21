@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 import bcrypt from "bcryptjs";
-import { gzipSync } from "zlib";
+import { promisify } from "util";
+import { gzip as gzipCallback } from "zlib";
+const gzip = promisify(gzipCallback);
 
 export async function GET(req: NextRequest) {
   try {
@@ -24,7 +26,7 @@ export async function GET(req: NextRequest) {
 
     if (!usuario) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
 
-    const compressedData = gzipSync(Buffer.from(JSON.stringify(usuario), 'utf-8'));
+    const compressedData = await gzip(Buffer.from(JSON.stringify(usuario), 'utf-8'));
     return new NextResponse(compressedData, {
       headers: {
         'Content-Type': 'application/json',

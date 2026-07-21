@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { gzipSync } from "zlib";
+import { promisify } from "util";
+import { gzip as gzipCallback } from "zlib";
+const gzip = promisify(gzipCallback);
 import { getCaracasTodayBounds, getCaracasBoundsForDate, formatToCaracasDateString, getCaracasDateString } from "../../../lib/dateUtils";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 15;
 
 export async function GET(req: Request) {
   try {
@@ -237,7 +239,7 @@ export async function GET(req: Request) {
       })
     };
 
-    const compressed = gzipSync(Buffer.from(JSON.stringify(payload), 'utf-8'));
+    const compressed = await gzip(Buffer.from(JSON.stringify(payload), 'utf-8'));
     return new NextResponse(compressed, {
       status: 200,
       headers: {

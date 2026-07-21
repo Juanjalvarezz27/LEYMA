@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { gzipSync } from "zlib";
+import { promisify } from "util";
+import { gzip as gzipCallback } from "zlib";
+const gzip = promisify(gzipCallback);
 
 export async function GET(request: Request, { params }: { params: any }) {
   try {
@@ -78,7 +80,7 @@ export async function GET(request: Request, { params }: { params: any }) {
       return NextResponse.json({ error: "Los resultados aún no están listos" }, { status: 403 });
     }
 
-    const compressed = gzipSync(Buffer.from(JSON.stringify(orden), 'utf-8'));
+    const compressed = await gzip(Buffer.from(JSON.stringify(orden), 'utf-8'));
     return new NextResponse(compressed, {
       status: 200,
       headers: {

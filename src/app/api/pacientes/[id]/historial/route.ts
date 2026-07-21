@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { gzipSync } from "zlib";
+import { promisify } from "util";
+import { gzip as gzipCallback } from "zlib";
+const gzip = promisify(gzipCallback);
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -45,7 +47,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: "Paciente no encontrado" }, { status: 404 });
     }
 
-    const compressedData = gzipSync(Buffer.from(JSON.stringify(pacienteHistorial), 'utf-8'));
+    const compressedData = await gzip(Buffer.from(JSON.stringify(pacienteHistorial), 'utf-8'));
     return new NextResponse(compressedData, {
       headers: {
         'Content-Type': 'application/json',

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 // GET: Devuelve el catálogo de servicios extra activos
-export const dynamic = 'force-dynamic';
+export const revalidate = 15;
 
 export async function GET(req: Request) {
   try {

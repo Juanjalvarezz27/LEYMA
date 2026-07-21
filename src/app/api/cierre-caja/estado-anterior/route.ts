@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCaracasTodayBounds, formatToCaracasDateString, getCaracasBoundsForDate } from "@/lib/dateUtils";
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 15;
 
 export async function GET() {
   try {

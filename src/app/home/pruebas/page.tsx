@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { fetchJSON } from "@/lib/fetchWithRetry";
 import { Plus, Edit2, Ban, CheckCircle2, Search, TestTubes, DollarSign, ClipboardList, ChevronDown, ChevronUp, Activity, FlaskConical, Tags, Filter, SlidersHorizontal, Check, Trash2, Package, Briefcase, GripVertical } from "lucide-react";
 import { DndContext, useDraggable, useDroppable, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
@@ -281,13 +282,11 @@ export default function PruebasPage() {
 
   const handleSavePruebaIndividual = async (formData: any) => {
     try {
-      const res = await fetch(`/api/pruebas/item/${itemEditando.id}`, {
+      await fetchJSON(`/api/pruebas/item/${itemEditando.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Ocurrió un error inesperado");
       
       toast.success("Prueba individual actualizada");
       setIsModalItemOpen(false);
@@ -299,7 +298,7 @@ export default function PruebasPage() {
 
   const toggleEstadoSubcategoria = async (id: string, estadoActual: boolean) => {
     try {
-      const res = await fetch(`/api/pruebas/${id}`, {
+      const res = await fetchJSON(`/api/pruebas/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ activa: !estadoActual }),
@@ -315,7 +314,7 @@ export default function PruebasPage() {
 
   const toggleEstadoPruebaIndividual = async (id: string, estadoActual: boolean) => {
     try {
-      const res = await fetch(`/api/pruebas/item/${id}`, {
+      const res = await fetchJSON(`/api/pruebas/item/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ activa: !estadoActual }),
@@ -353,7 +352,7 @@ export default function PruebasPage() {
 
   const toggleEstadoServicio = async (id: string, estadoActual: boolean) => {
     try {
-      const res = await fetch(`/api/servicios-extra/${id}`, {
+      const res = await fetchJSON(`/api/servicios-extra/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ activo: !estadoActual }),

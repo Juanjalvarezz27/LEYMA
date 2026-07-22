@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { X, Baby, User, UserCheck, Edit2, Save, Ban, Loader2 } from "lucide-react";
+import { Edit2, Save, X, Phone, Calendar, Hash, IdCard, Loader2, Baby, User, UserCheck, Ban } from "lucide-react";
+import { fetchJSON } from "@/lib/fetchWithRetry";
 import { toast } from "react-toastify";
 
 interface TarjetaPacienteProps {
@@ -62,14 +63,11 @@ export default function TarjetaPaciente({ paciente, limpiarSeleccion, onActualiz
 
     setGuardando(true);
     try {
-      const res = await fetch(`/api/pacientes/${paciente.id}`, {
+      const data = await fetchJSON(`/api/pacientes/${paciente.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...formData, fechaNacimiento: fechaISO })
       });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error al actualizar paciente");
 
       toast.success("¡Datos del paciente actualizados!");
       setIsEditing(false);

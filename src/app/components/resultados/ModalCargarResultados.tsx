@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { fetchJSON } from "@/lib/fetchWithRetry";
 import { X, Microscope, CheckCircle, Save, Loader2, AlertCircle, FileSignature, Lock, Check, ChevronDown, Plus, Minus } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -253,7 +254,7 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
 
     setGuardando(true);
     try {
-      const res = await fetch("/api/resultados", {
+      await fetchJSON("/api/resultados", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -265,9 +266,6 @@ export default function ModalCargarResultados({ orden, onClose, onSuccess }: Mod
           notasSubcategoria: payloadNotasSubcategoria
         })
       });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error al procesar");
 
       setGuardando(false);
 

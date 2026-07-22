@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { fetchJSON } from "@/lib/fetchWithRetry";
 import { X, Printer, MessageCircle, Mail } from "lucide-react";
 import { toast } from "react-toastify";
 import { PDFViewer, pdf } from "@react-pdf/renderer";
@@ -114,7 +115,7 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
       
       const fileName = `Resultados_${orden.paciente.nombreCompleto.replace(/\s+/g, "_")}_#${orden.id}.pdf`;
 
-      const res = await fetch("/api/enviar-correo", {
+      await fetchJSON("/api/enviar-correo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -125,9 +126,6 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
           pdfBase64: base64String,
         }),
       });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error al enviar el correo.");
 
       toast.update(toastId, { render: "Correo enviado exitosamente", type: "success", isLoading: false, autoClose: 3000 });
     } catch (error: any) {

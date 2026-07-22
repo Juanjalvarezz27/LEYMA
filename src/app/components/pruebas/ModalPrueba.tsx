@@ -1,5 +1,6 @@
 "use client";
 import { X, Plus, Trash2, ChevronDown, ChevronUp, Loader2, Package, LayoutList, Search, Edit2, Check, GripVertical } from "lucide-react";
+import { fetchJSON } from "@/lib/fetchWithRetry";
 import { DndContext, PointerSensor, useSensor, useSensors, DragEndEvent, closestCenter, useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -251,7 +252,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
       const p = nuevas[index];
       if (p.id && campo === 'opcionesPredefinidas') {
         try {
-          await fetch(`/api/pruebas/item/${p.id}`, {
+          await fetchJSON(`/api/pruebas/item/${p.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -276,7 +277,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
     const p = nuevas[index];
     if (p.id && campo === 'opcionesPredefinidas') {
       try {
-        await fetch(`/api/pruebas/item/${p.id}`, {
+        await fetchJSON(`/api/pruebas/item/${p.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -303,7 +304,7 @@ export default function ModalPrueba({ isOpen, onClose, onSave, pruebaEditar, cat
 
     if (p.id) {
       try {
-        await fetch(`/api/pruebas/item/${p.id}`, {
+        await fetchJSON(`/api/pruebas/item/${p.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

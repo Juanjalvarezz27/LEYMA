@@ -15,7 +15,7 @@ export default function TarjetaPaciente({ paciente, limpiarSeleccion, onActualiz
   const [isEditing, setIsEditing] = useState(false);
   const [guardando, setGuardando] = useState(false);
 
-  // Utilidad para extraer YYYY-MM-DD a DD/MM/AAAA sin sufrir por zonas horarias
+  // Utilidad para extraer YYYY-MM-DD a DD/MM/AAAA sin sufrir por zonas horariassss
   const formatearFechaParaInput = (fechaStr: string) => {
     if (!fechaStr) return "";
     try {

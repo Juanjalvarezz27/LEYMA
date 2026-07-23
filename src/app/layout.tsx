@@ -3,6 +3,7 @@ import { Inter, Montserrat } from "next/font/google";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css"; 
 import "./globals.css";
+import PaymentBlocker from "@/components/PaymentBlocker";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -45,6 +46,7 @@ export default function RootLayout({
           pauseOnHover
           theme="light"
         />
+        <PaymentBlocker />
         {children}
       </body>
     </html>

@@ -379,8 +379,8 @@ export default function CierreCajaPage() {
                   historialPaginado.map((c: any) => (
                     <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-8 py-5 whitespace-nowrap text-base font-extrabold text-[#111827]">
-                        {new Date(c.fechaCierre).toLocaleDateString('es-VE')}
-                        <span className="text-xs font-bold text-slate-400 ml-2">{new Date(c.fechaCierre).toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit'})}</span>
+                        {new Date(c.fechaCierre).toLocaleDateString('es-VE', { timeZone: 'America/Caracas' })}
+                        <span className="text-xs font-bold text-slate-400 ml-2">{new Date(c.fechaCierre).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Caracas' })}</span>
                       </td>
                       <td className="px-8 py-5 whitespace-nowrap text-sm font-bold text-slate-600">
                         {c.realizadoPor?.nombre || "N/A"}

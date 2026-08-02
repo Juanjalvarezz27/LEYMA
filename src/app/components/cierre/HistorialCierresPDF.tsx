@@ -183,9 +183,9 @@ export default function HistorialCierresPDF({ historial }: { historial: any[] })
         <View>
           {historial.map((c: any, i: number) => {
             const esDescuadrado = c.descuadreUSD !== 0 || c.descuadreBS !== 0;
-            const diaApertura = new Date(c.fechaApertura).toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: '2-digit' });
-            const horaApertura = new Date(c.fechaApertura).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
-            const horaCierre = new Date(c.fechaCierre).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
+            const diaApertura = new Date(c.fechaApertura).toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'America/Caracas' });
+            const horaApertura = new Date(c.fechaApertura).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Caracas' });
+            const horaCierre = new Date(c.fechaCierre).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Caracas' });
 
             return (
               <View style={styles.card} key={i} wrap={false}>

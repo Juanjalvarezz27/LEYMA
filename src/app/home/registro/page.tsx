@@ -430,6 +430,8 @@ function RegistroContent() {
         router.push("/home/diaria");
       } else {
         limpiarSeleccion();
+        setPruebasSeleccionadas([]);
+        setServiciosSeleccionados([]);
       }
     } catch (error: any) {
       toast.error(error.message ? `Error al procesar la orden: ${error.message}` : "Error al procesar la orden");
@@ -600,7 +602,7 @@ function RegistroContent() {
                               {orden.estado?.nombre}
                             </span>
                             <span className="text-sm font-medium text-slate-500 ml-2">
-                              Creada: {new Date(orden.fechaCreacion).toLocaleDateString('es-VE')} a las {new Date(orden.fechaCreacion).toLocaleTimeString('es-VE', {hour: '2-digit', minute: '2-digit'})}
+                              Creada: {new Date(orden.fechaCreacion).toLocaleDateString('es-VE', { timeZone: 'America/Caracas' })} a las {new Date(orden.fechaCreacion).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Caracas' })}
                             </span>
                           </div>
                           <div className="flex items-center gap-3">

@@ -432,7 +432,7 @@ const ReporteDocumentServer = ({
             <View style={pdfStyles.patientRow}>
               <Text style={pdfStyles.patientLabel}>Dirección:</Text>
               <Text style={pdfStyles.patientValue}>
-                {orden.paciente.direccion || "No registrada"}
+                {orden.paciente.direccion || "---"}
               </Text>
             </View>
             <View style={pdfStyles.patientRow}>
@@ -462,10 +462,7 @@ const ReporteDocumentServer = ({
                 {orden.paciente.telefono || "No registrado"}
               </Text>
             </View>
-            <View style={pdfStyles.patientRow}>
-              <Text style={pdfStyles.patientLabel}>Ubicación:</Text>
-              <Text style={pdfStyles.patientValue}>MATRIZ</Text>
-            </View>
+
           </View>
         </View>
 

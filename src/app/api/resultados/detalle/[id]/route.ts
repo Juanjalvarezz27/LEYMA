@@ -32,6 +32,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
             fechaNacimiento: true,
             telefono: true,
             correo: true,
+            direccion: true,
             observaciones: true
           }
         },

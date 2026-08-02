@@ -361,7 +361,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
             </View>
             <View style={pdfStyles.patientRow}>
               <Text style={pdfStyles.patientLabel}>Dirección:</Text>
-              <Text style={pdfStyles.patientValue}>{orden.paciente.direccion || 'No registrada'}</Text>
+              <Text style={pdfStyles.patientValue}>{orden.paciente.direccion || '---'}</Text>
             </View>
             <View style={pdfStyles.patientRow}>
               <Text style={pdfStyles.patientLabel}>Observaciones:</Text>
@@ -382,10 +382,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
               <Text style={pdfStyles.patientLabel}>Teléfono:</Text>
               <Text style={pdfStyles.patientValue}>{orden.paciente.telefono || 'No registrado'}</Text>
             </View>
-            <View style={pdfStyles.patientRow}>
-              <Text style={pdfStyles.patientLabel}>Ubicación:</Text>
-              <Text style={pdfStyles.patientValue}>MATRIZ</Text>
-            </View>
+
           </View>
         </View>
 

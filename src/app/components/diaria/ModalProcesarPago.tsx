@@ -49,6 +49,21 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
   const actualizarPago = (index: number, campo: string, valor: any) => {
     const nuevosPagos = [...pagos];
     nuevosPagos[index] = { ...nuevosPagos[index], [campo]: valor };
+    
+    // Auto-limitar el monto para que nunca exceda la deuda restante
+    const deudaPendienteUSD = totalFacturadoUSD - pagosPreviosUSD;
+    const otrosPagosUSD = nuevosPagos.filter((_, i) => i !== index).reduce((acc, p) => {
+      return acc + (p.moneda === "USD" ? (p.monto || 0) : ((p.monto || 0) / orden.tasaBCV));
+    }, 0);
+    
+    const maxCapUSD = Math.max(0, deudaPendienteUSD - otrosPagosUSD);
+    const monedaActual = nuevosPagos[index].moneda;
+    const maxCapLocal = monedaActual === "USD" ? maxCapUSD : (maxCapUSD * orden.tasaBCV);
+    
+    if ((nuevosPagos[index].monto || 0) > maxCapLocal) {
+      nuevosPagos[index].monto = Number(maxCapLocal.toFixed(2));
+    }
+
     setPagos(nuevosPagos);
   };
 
@@ -69,7 +84,16 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pagos: pagosValidos, tasaBCV: orden.tasaBCV })
       });
-      if (!res.ok) throw new Error();
+      
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch (e) {}
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Error desconocido en el servidor");
+      }
+
       toast.success("¡Orden cerrada con éxito!");
       onSuccess(); 
     } catch (error: any) {
@@ -79,12 +103,12 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100] overflow-y-auto custom-scrollbar animate-in fade-in duration-200">
       {dropdownAbierto !== null && <div className="fixed inset-0 z-30" onClick={() => setDropdownAbierto(null)}></div>}
-      <div className="absolute inset-0 bg-[#1D1D1F]/60" onClick={!guardando ? onClose : undefined}></div>
+      <div className="fixed inset-0 bg-[#1D1D1F]/60" onClick={!guardando ? onClose : undefined}></div>
 
-      {/* overflow-visible es vital para que el dropdown que sale hacia arriba se vea */}
-      <div className="relative w-full max-w-4xl bg-white rounded-[32px] shadow-2xl flex flex-col overflow-visible animate-in zoom-in-95 duration-300">
+      <div className="min-h-full flex items-center justify-center p-4 sm:p-6">
+        <div className="relative w-full max-w-5xl min-h-[75vh] bg-white rounded-[32px] shadow-2xl flex flex-col overflow-visible animate-in zoom-in-95 duration-300">
         
         <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100 bg-slate-50/50 rounded-t-[32px]">
           <div className="flex items-center gap-4">
@@ -101,8 +125,7 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
           </button>
         </div>
 
-        {/* Se agregó max-h-[80vh] y overflow-y-auto para el scroll interno */}
-        <div className="p-8 overflow-y-auto max-h-[80vh] custom-scrollbar">
+        <div className="p-8 flex-1 flex flex-col">
           
           <div className="flex items-center justify-between bg-[#F5F5F7] border border-slate-200/60 rounded-[24px] p-6 mb-8">
             <div>
@@ -187,9 +210,8 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
                     <ChevronDown size={18} className="text-slate-400" />
                   </button>
 
-                  {/* Cambiado a top-full mt-2 (hacia abajo) para evitar cortes con el scroll interno del contenedor superior */}
                   {dropdownAbierto === idx && (
-                    <div className="absolute top-full left-0 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] overflow-hidden z-[110] py-1 animate-in slide-in-from-top-2 duration-200">
+                    <div className="absolute bottom-full left-0 mb-2 w-full bg-white border border-slate-200 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] overflow-hidden z-[110] py-1 animate-in slide-in-from-bottom-2 duration-200">
                       {metodosBD.map((m) => (
                         <button 
                           key={m.id} 
@@ -247,12 +269,13 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
           <button 
             onClick={procesarPagoFinal}
             disabled={guardando || restanteUSD > 0.005}
-            className="w-full py-4 bg-[#0071E3] hover:bg-[#0077ED] disabled:bg-slate-300 text-white font-black rounded-xl shadow-[0_4px_20px_rgba(0,113,227,0.3)] transition-all flex items-center justify-center gap-2 text-lg"
+            className="w-full mt-auto py-4 bg-[#0071E3] hover:bg-[#0077ED] disabled:bg-slate-300 text-white font-black rounded-xl shadow-[0_4px_20px_rgba(0,113,227,0.3)] transition-all flex items-center justify-center gap-2 text-lg"
           >
             {guardando ? <><Loader2 size={22} className="animate-spin" /> Procesando...</> : <><CheckCircle size={22} /> Certificar Pago y Cerrar Orden</>}
           </button>
 
         </div>
+      </div>
       </div>
     </div>
   );

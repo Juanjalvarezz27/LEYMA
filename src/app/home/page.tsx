@@ -192,7 +192,7 @@ export default function HomeDashboardPage() {
                     </h3>
                     <p className="text-[12px] font-bold text-slate-500 flex items-center gap-1.5">
                       <CalendarIcon size={12} />
-                      {new Date(orden.fechaCreacion).toLocaleDateString('es-VE')} - {new Date(orden.fechaCreacion).toLocaleTimeString('es-VE', {hour: '2-digit', minute:'2-digit'})}
+                      {new Date(orden.fechaCreacion).toLocaleDateString('es-VE', { timeZone: 'America/Caracas' })} - {new Date(orden.fechaCreacion).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Caracas' })}
                     </p>
                   </div>
                 </div>
@@ -237,7 +237,7 @@ export default function HomeDashboardPage() {
                     </h3>
                     <p className="text-[12px] font-bold text-slate-500 flex items-center gap-1.5">
                       <CalendarIcon size={12} />
-                      {new Date(orden.fechaCreacion).toLocaleDateString('es-VE')} - {new Date(orden.fechaCreacion).toLocaleTimeString('es-VE', {hour: '2-digit', minute:'2-digit'})}
+                      {new Date(orden.fechaCreacion).toLocaleDateString('es-VE', { timeZone: 'America/Caracas' })} - {new Date(orden.fechaCreacion).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Caracas' })}
                     </p>
                   </div>
                 </div>

@@ -28,18 +28,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const estadoCerrada = await prisma.estadoOrden.findUnique({ where: { nombre: "CERRADA" } });
     if (!estadoCerrada) return NextResponse.json({ error: "Estado CERRADA no configurado" }, { status: 500 });
 
-    const pagosData = body.pagos.map((p: any) => {
-      const montoEnUSD = p.moneda === "USD" ? p.monto : (p.monto / body.tasaBCV);
-      const montoEnBS = p.moneda === "BS" ? p.monto : (p.monto * body.tasaBCV);
-
-      return {
-        metodoId: parseId(p.metodoId), // <-- CORREGIDO
-        montoUSD: parseFloat(montoEnUSD.toFixed(2)),
-        montoBS: parseFloat(montoEnBS.toFixed(2)),
-        referencia: p.referencia || null
-      };
-    });
-
     const ordenActual = await prisma.orden.findUnique({
       where: { id: ordenId as any },
       select: {
@@ -52,13 +40,33 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!ordenActual) return NextResponse.json({ error: "Orden no encontrada" }, { status: 404 });
 
     const pagosPreviosUSD = ordenActual.pagos.reduce((acc: number, p: any) => acc + Number(p.montoUSD), 0);
-    const sumaNuevosPagosUSD = pagosData.reduce((acc: number, p: any) => acc + p.montoUSD, 0);
     const totalDeudaUSD = Number(ordenActual.totalUSD);
 
-    if (pagosPreviosUSD + sumaNuevosPagosUSD > totalDeudaUSD + 0.05) {
-      return NextResponse.json({ 
-        error: `El pago (${sumaNuevosPagosUSD} USD) excede la deuda restante de la orden (${Math.max(0, totalDeudaUSD - pagosPreviosUSD).toFixed(2)} USD).` 
-      }, { status: 400 });
+    const pagosData: any[] = [];
+    let deudaPendienteUSD = Math.max(0, totalDeudaUSD - pagosPreviosUSD);
+
+    for (const p of body.pagos) {
+      if (deudaPendienteUSD <= 0) break;
+
+      let montoEnUSD = p.moneda === "USD" ? p.monto : (p.monto / body.tasaBCV);
+      
+      if (montoEnUSD > deudaPendienteUSD) {
+        montoEnUSD = deudaPendienteUSD;
+      }
+      
+      let montoEnBS = p.moneda === "BS" ? (montoEnUSD * body.tasaBCV) : (montoEnUSD * body.tasaBCV);
+      if (p.moneda === "BS" && montoEnUSD < deudaPendienteUSD) {
+         montoEnBS = p.monto;
+      }
+
+      pagosData.push({
+        metodoId: parseId(p.metodoId),
+        montoUSD: parseFloat(montoEnUSD.toFixed(2)),
+        montoBS: parseFloat(montoEnBS.toFixed(2)),
+        referencia: p.referencia || null
+      });
+
+      deudaPendienteUSD -= montoEnUSD;
     }
 
     const ordenActualizada = await prisma.orden.update({

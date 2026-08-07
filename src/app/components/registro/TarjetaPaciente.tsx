@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Edit2, Save, X, Phone, Calendar, Hash, IdCard, Loader2, Baby, User, UserCheck, Ban } from "lucide-react";
 import { fetchJSON } from "@/lib/fetchWithRetry";
+import { calcularEdadExacta } from "@/lib/dateUtils";
 import { toast } from "react-toastify";
 
 interface TarjetaPacienteProps {
@@ -36,17 +37,6 @@ export default function TarjetaPaciente({ paciente, limpiarSeleccion, onActualiz
     observaciones: paciente.observaciones || ""
   });
 
-  const calcularEdad = (fechaNac: string) => {
-    if (!fechaNac) return "N/A";
-    const hoy = new Date();
-    const nacimiento = new Date(fechaNac);
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    const m = hoy.getMonth() - nacimiento.getMonth();
-    if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) {
-      edad--;
-    }
-    return edad;
-  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -168,7 +158,7 @@ export default function TarjetaPaciente({ paciente, limpiarSeleccion, onActualiz
             {!paciente.esBebe && (
               <><span>C.I: {paciente.cedula}</span> <span className="w-1 h-1 bg-slate-300 rounded-full"></span></>
             )}
-            <span>{calcularEdad(paciente.fechaNacimiento)} {paciente.esBebe ? 'Meses/Días' : 'Años'}</span>
+            <span>{calcularEdadExacta(paciente.fechaNacimiento)}</span>
             <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
             <span>{paciente.sexo === 'M' ? 'Masculino' : 'Femenino'}</span>
           </div>

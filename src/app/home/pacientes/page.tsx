@@ -10,6 +10,7 @@ import { toast } from "react-toastify";
 const ModalPreviewPDF = dynamic(() => import("../../components/resultados/ModalPreviewPDF"), { ssr: false });
 import ModalAsistenteWhatsApp from "../../components/ModalAsistenteWhatsApp";
 import { normalizeSearchString } from "../../../lib/stringUtils";
+import { calcularEdadExacta } from "../../../lib/dateUtils";
 
 export default function PacientesPage() {
   const [pacientes, setPacientes] = useState<any[]>([]);
@@ -86,15 +87,6 @@ export default function PacientesPage() {
     return d.toLocaleDateString('es-VE', { year: 'numeric', month: 'short', day: '2-digit' });
   };
 
-  const calcularEdad = (fechaNac: string, esBebe: boolean) => {
-    if (!fechaNac) return "N/A";
-    const hoy = new Date();
-    const nacimiento = new Date(fechaNac);
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    const m = hoy.getMonth() - nacimiento.getMonth();
-    if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
-    return `${edad} ${esBebe ? 'Meses' : 'Años'}`;
-  };
 
   const enviarWhatsAppContacto = (paciente: any) => {
     if (!paciente.telefono) {
@@ -130,7 +122,7 @@ export default function PacientesPage() {
                   <h2 className="text-2xl font-black text-[#1D1D1F] uppercase tracking-tight">{pacienteSeleccionado.nombreCompleto}</h2>
                   <div className="flex flex-wrap gap-3 mt-1.5 text-sm font-bold text-slate-500">
                     <span className="bg-slate-100 px-2.5 py-1 rounded-md">C.I: {pacienteSeleccionado.cedula || 'S/N'}</span>
-                    <span className="bg-slate-100 px-2.5 py-1 rounded-md">{calcularEdad(pacienteSeleccionado.fechaNacimiento, pacienteSeleccionado.esBebe)}</span>
+                    <span className="bg-slate-100 px-2.5 py-1 rounded-md">{calcularEdadExacta(pacienteSeleccionado.fechaNacimiento)}</span>
                     <span className="bg-slate-100 px-2.5 py-1 rounded-md">{pacienteSeleccionado.sexo === 'M' ? 'Masculino' : 'Femenino'}</span>
                     {pacienteSeleccionado.telefono && (
                       <span className="flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-md text-[#0071E3]">
@@ -346,7 +338,7 @@ export default function PacientesPage() {
                           {paciente.nombreCompleto}
                         </span>
                         <span className="text-xs font-bold text-slate-400 mt-0.5 block">
-                          Edad: {calcularEdad(paciente.fechaNacimiento, paciente.esBebe)}
+                          Edad: {calcularEdadExacta(paciente.fechaNacimiento)}
                         </span>
                       </td>
                       

@@ -1,23 +1,12 @@
 "use client";
 
 import { X, FileText, User, Activity, Wallet, Calendar, MapPin, Mail, Stethoscope, Hash, FlaskConical, Package, Syringe, ChevronDown } from "lucide-react";
+import { calcularEdadExacta } from "@/lib/dateUtils";
 
 interface ModalDetalleOrdenProps {
   orden: any;
   onClose: () => void;
 }
-
-const calcularEdad = (fechaString: string) => {
-  if (!fechaString) return "N/A";
-  const hoy = new Date();
-  const fechaNac = new Date(fechaString);
-  let edad = hoy.getFullYear() - fechaNac.getFullYear();
-  const m = hoy.getMonth() - fechaNac.getMonth();
-  if (m < 0 || (m === 0 && hoy.getDate() < fechaNac.getDate())) {
-    edad--;
-  }
-  return edad;
-};
 
 export default function ModalDetalleOrden({ orden, onClose }: ModalDetalleOrdenProps) {
   if (!orden) return null;
@@ -148,7 +137,7 @@ export default function ModalDetalleOrden({ orden, onClose }: ModalDetalleOrdenP
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Edad</p>
-                  <p className="font-semibold text-[#1D1D1F] text-sm">{calcularEdad(paciente.fechaNacimiento)} años</p>
+                  <p className="font-semibold text-[#1D1D1F] text-sm">{calcularEdadExacta(paciente.fechaNacimiento)}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Sexo</p>

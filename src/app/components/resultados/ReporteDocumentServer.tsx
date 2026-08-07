@@ -5,6 +5,7 @@
 import { Document, Page, Text, View, StyleSheet, Image, Font } from "@react-pdf/renderer";
 
 import path from "path";
+import { calcularEdadExacta } from "@/lib/dateUtils";
 
 // Registro de fuentes
 Font.register({
@@ -231,15 +232,6 @@ function formatFechaHora(dateString: string): string {
   return `${dateStr} ${timeStr}`;
 }
 
-function calcularEdad(fechaNac: string, esBebe: boolean): string {
-  if (!fechaNac) return "N/A";
-  const hoy = new Date();
-  const nacimiento = new Date(fechaNac);
-  let edad = hoy.getFullYear() - nacimiento.getFullYear();
-  const m = hoy.getMonth() - nacimiento.getMonth();
-  if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
-  return `${edad} ${esBebe ? "Meses" : "Años"}`;
-}
 
 interface ReporteDocumentServerProps {
   orden: any;
@@ -426,7 +418,7 @@ const ReporteDocumentServer = ({
             <View style={pdfStyles.patientRow}>
               <Text style={pdfStyles.patientLabel}>Edad:</Text>
               <Text style={pdfStyles.patientValue}>
-                {calcularEdad(orden.paciente.fechaNacimiento, orden.paciente.esBebe)}
+                {calcularEdadExacta(orden.paciente.fechaNacimiento)}
               </Text>
             </View>
             <View style={pdfStyles.patientRow}>

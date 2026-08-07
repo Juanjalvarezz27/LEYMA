@@ -1,6 +1,7 @@
 "use client";
 
 import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
+import { calcularEdadExacta } from '@/lib/dateUtils';
 
 // Registro de fuentes
 Font.register({
@@ -195,15 +196,6 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
     return `${dateStr} ${timeStr}`;
   };
 
-  const calcularEdad = (fechaNac: string, esBebe: boolean) => {
-    if (!fechaNac) return "N/A";
-    const hoy = new Date();
-    const nacimiento = new Date(fechaNac);
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    const m = hoy.getMonth() - nacimiento.getMonth();
-    if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
-    return `${edad} ${esBebe ? 'Meses' : 'Años'}`;
-  };
 
   const allSigners = new Map();
   const groupedByCategory = orden.detalles.reduce((acc: any, det: any) => {
@@ -357,7 +349,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
             </View>
             <View style={pdfStyles.patientRow}>
               <Text style={pdfStyles.patientLabel}>Edad:</Text>
-              <Text style={pdfStyles.patientValue}>{calcularEdad(orden.paciente.fechaNacimiento, orden.paciente.esBebe)}</Text>
+              <Text style={pdfStyles.patientValue}>{calcularEdadExacta(orden.paciente.fechaNacimiento)}</Text>
             </View>
             <View style={pdfStyles.patientRow}>
               <Text style={pdfStyles.patientLabel}>Dirección:</Text>

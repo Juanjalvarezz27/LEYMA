@@ -50,3 +50,37 @@ export function getCaracasThisMonthBounds() {
 export function formatToCaracasDateString(date: Date): string {
   return getCaracasDateString(date);
 }
+
+export function calcularEdadExacta(fechaString: string | Date | undefined): string {
+  if (!fechaString) return "N/A";
+  
+  const hoy = new Date();
+  const fechaNac = new Date(fechaString);
+  
+  if (isNaN(fechaNac.getTime())) return "N/A";
+
+  let anos = hoy.getFullYear() - fechaNac.getFullYear();
+  let meses = hoy.getMonth() - fechaNac.getMonth();
+  let dias = hoy.getDate() - fechaNac.getDate();
+
+  if (dias < 0) {
+    meses--;
+    const ultimoDiaMesAnterior = new Date(hoy.getFullYear(), hoy.getMonth(), 0).getDate();
+    dias += ultimoDiaMesAnterior;
+  }
+  
+  if (meses < 0) {
+    anos--;
+    meses += 12;
+  }
+
+  if (anos > 0) {
+    return `${anos} ${anos === 1 ? 'Año' : 'Años'}`;
+  } else if (meses > 0) {
+    return `${meses} ${meses === 1 ? 'Mes' : 'Meses'}`;
+  } else {
+    // Si tiene 0 días (nació hoy), mostrar 1 Día para no poner 0 Días
+    const diasMostrar = dias === 0 ? 1 : dias;
+    return `${diasMostrar} ${diasMostrar === 1 ? 'Día' : 'Días'}`;
+  }
+}

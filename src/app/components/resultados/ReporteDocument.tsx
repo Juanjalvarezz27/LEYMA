@@ -145,8 +145,8 @@ export const pdfStyles = StyleSheet.create({
     paddingHorizontal: 6,
     borderRadius: 2,
   },
-  obsLabel: { fontSize: 8, fontWeight: 700, color: '#4B5563' }, 
-  obsText: { fontSize: 8, fontWeight: 400, color: '#4B5563', flex: 1 }, 
+  obsLabel: { fontSize: 8, fontWeight: 700, color: '#000000' }, 
+  obsText: { fontSize: 8, fontWeight: 400, color: '#000000', flex: 1 }, 
   footerSignaturesContainer: {
     marginTop: 30,
     paddingBottom: 0,

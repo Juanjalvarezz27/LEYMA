@@ -150,6 +150,7 @@ export const pdfStyles = StyleSheet.create({
   footerSignaturesContainer: {
     marginTop: 30,
     paddingBottom: 0,
+    position: 'relative',
   },
   footerSignaturesRow: {
     flexDirection: "row",
@@ -185,10 +186,30 @@ export const pdfStyles = StyleSheet.create({
     color: "#000000",
     marginTop: 2,
     textAlign: "center",
-  }, 
+  },
+  footerWsBlock: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    width: 130,
+  },
+  footerWsQr: {
+    width: 35,
+    height: 35,
+    marginBottom: 3,
+  },
+  footerWsText: {
+    fontSize: 7.5,
+    textAlign: "center",
+    color: "#000000",
+    fontWeight: 700,
+    fontFamily: 'Inter',
+    lineHeight: 1.4,
+  },
 });
 
-const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fechaImpresa: string, qrCodeUrl: string }) => {
+const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl, wsQrCodeUrl }: { orden: any, fechaImpresa: string, qrCodeUrl: string, wsQrCodeUrl: string }) => {
   const formatFechaHora = (dateString: string) => {
     const d = new Date(dateString);
     const dateStr = d.toLocaleDateString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'America/Caracas' });
@@ -454,6 +475,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
         {/* FIRMAS */}
         <View style={pdfStyles.fixedFooter}>
           <View style={pdfStyles.footerSignaturesContainer}>
+            {/* Firmas centradas — protagonistas */}
             <View style={pdfStyles.footerSignaturesRow}>
               {allSigners.size > 0 ? (
                 Array.from(allSigners.values()).map((bio: any) => (
@@ -484,6 +506,16 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl }: { orden: any, fecha
                 </View>
               )}
             </View>
+
+            {/* QR de WhatsApp — esquina inferior derecha, no interfiere con centrado */}
+            {wsQrCodeUrl ? (
+              <View style={pdfStyles.footerWsBlock}>
+                <Image src={wsQrCodeUrl} style={pdfStyles.footerWsQr} />
+                <Text style={pdfStyles.footerWsText}>
+                  {"\u00bfNecesitas un sistema\npara tu laboratorio?\nEscr\u00edbenos"}
+                </Text>
+              </View>
+            ) : null}
           </View>
         </View>
       </Page>

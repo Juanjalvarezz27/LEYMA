@@ -18,7 +18,8 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
   const [isMounted, setIsMounted] = useState(false);
   const [fechaImpresa, setFechaImpresa] = useState("");
   const [qrCodeUrl, setQrCodeUrl] = useState("");
-  
+  const [wsQrCodeUrl, setWsQrCodeUrl] = useState("");
+
   // Estados para el modal de correo
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailInput, setEmailInput] = useState("");
@@ -44,6 +45,15 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
           color: { dark: "#000000", light: "#FFFFFF" },
         });
         setQrCodeUrl(base64Data);
+
+        // QR de WhatsApp para el footer del PDF
+        const wsUrl = "https://wa.me/584129164371?text=Hola%2C+necesito+un+sistema+para+laboratorio%2C+me+puedes+contactar%3F";
+        const wsBase64 = await QRCodeNode.toDataURL(wsUrl, {
+          margin: 1,
+          width: 200,
+          color: { dark: "#000000", light: "#FFFFFF" },
+        });
+        setWsQrCodeUrl(wsBase64);
       } catch (err: any) {
         console.error("Error generando QR", err);
       }
@@ -62,7 +72,7 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
     const toastId = toast.loading("Preparando impresión...");
     try {
       const blob = await pdf(
-        <ReporteDocument orden={orden} fechaImpresa={fechaImpresa} qrCodeUrl={qrCodeUrl} />
+        <ReporteDocument orden={orden} fechaImpresa={fechaImpresa} qrCodeUrl={qrCodeUrl} wsQrCodeUrl={wsQrCodeUrl} />
       ).toBlob();
       const url = URL.createObjectURL(blob);
       const iframe = document.createElement("iframe");
@@ -96,13 +106,13 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
       toast.error("Correo electrónico inválido.");
       return;
     }
-    
+
     setShowEmailModal(false);
     const toastId = toast.loading("Enviando correo...");
     try {
       // 1. Generar el Blob del PDF
       const blob = await pdf(
-        <ReporteDocument orden={orden} fechaImpresa={fechaImpresa} qrCodeUrl={qrCodeUrl} />
+        <ReporteDocument orden={orden} fechaImpresa={fechaImpresa} qrCodeUrl={qrCodeUrl} wsQrCodeUrl={wsQrCodeUrl} />
       ).toBlob();
 
       // 2. Convertir a Base64
@@ -112,7 +122,7 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
       // 3. Enviar al endpoint
       const link = `${window.location.origin}/validar/${orden.id}`;
       const mensaje = `Hola ${orden.paciente.nombreCompleto},\n\nAdjunto encontrarás tus resultados de laboratorio.\n\nTambién puedes verificarlos en línea en el siguiente enlace:\n${link}\n\n¡Cualquier consulta estamos a tu orden. Feliz día!`;
-      
+
       const fileName = `Resultados_${orden.paciente.nombreCompleto.replace(/\s+/g, "_")}_#${orden.id}.pdf`;
 
       await fetchJSON("/api/enviar-correo", {
@@ -179,7 +189,7 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
       {/* VISOR PDF (solo funciona bien en desktop/Chrome) */}
       <div className="w-full max-w-[850px] flex-1 bg-white rounded-xl overflow-hidden shadow-2xl">
         <PDFViewer width="100%" height="100%" showToolbar={false}>
-          <ReporteDocument orden={orden} fechaImpresa={fechaImpresa} qrCodeUrl={qrCodeUrl} />
+          <ReporteDocument orden={orden} fechaImpresa={fechaImpresa} qrCodeUrl={qrCodeUrl} wsQrCodeUrl={wsQrCodeUrl} />
         </PDFViewer>
       </div>
 
@@ -191,12 +201,12 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
               <Mail size={24} />
               <h3 className="font-bold text-lg">Enviar documento por correo</h3>
             </div>
-            
+
             <form onSubmit={confirmarEnvioCorreo} className="p-6">
               <p className="text-slate-600 text-sm font-medium mb-4">
                 Ingresa la dirección de correo electrónico a la que deseas enviar el PDF de resultados.
               </p>
-              
+
               <div className="mb-6">
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
                   Correo del paciente
@@ -233,7 +243,7 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
       )}
 
       {/* MODAL ASISTENTE WHATSAPP */}
-      <ModalAsistenteWhatsApp 
+      <ModalAsistenteWhatsApp
         isOpen={showWhatsAppModal}
         onClose={() => setShowWhatsAppModal(false)}
         pacienteNombre={orden.paciente.nombreCompleto}

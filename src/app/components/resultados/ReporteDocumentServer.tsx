@@ -176,6 +176,7 @@ const pdfStyles = StyleSheet.create({
   footerSignaturesContainer: {
     marginTop: 30,
     paddingBottom: 0,
+    position: 'relative',
   },
   footerSignaturesRow: {
     flexDirection: "row",
@@ -212,6 +213,26 @@ const pdfStyles = StyleSheet.create({
     marginTop: 2,
     textAlign: "center",
   },
+  footerWsBlock: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    width: 130,
+  },
+  footerWsQr: {
+    width: 35,
+    height: 35,
+    marginBottom: 3,
+  },
+  footerWsText: {
+    fontSize: 7.5,
+    textAlign: "center",
+    color: "#000000",
+    fontWeight: 700,
+    fontFamily: 'Inter',
+    lineHeight: 1.4,
+  },
 });
 
 // Helpers
@@ -237,6 +258,7 @@ interface ReporteDocumentServerProps {
   orden: any;
   fechaImpresa: string;
   qrCodeUrl: string;
+  wsQrCodeUrl?: string;
   logoBase64?: string;
 }
 
@@ -244,6 +266,7 @@ const ReporteDocumentServer = ({
   orden,
   fechaImpresa,
   qrCodeUrl,
+  wsQrCodeUrl,
   logoBase64,
 }: ReporteDocumentServerProps) => {
   const allSigners = new Map();
@@ -542,6 +565,7 @@ const ReporteDocumentServer = ({
         {/* FIRMAS */}
         <View style={pdfStyles.fixedFooter}>
           <View style={pdfStyles.footerSignaturesContainer}>
+            {/* Firmas centradas — protagonistas */}
             <View style={pdfStyles.footerSignaturesRow}>
               {allSigners.size > 0 ? (
                 Array.from(allSigners.values()).map((bio: any) => (
@@ -572,6 +596,16 @@ const ReporteDocumentServer = ({
                 </View>
               )}
             </View>
+
+            {/* QR de WhatsApp — esquina inferior derecha, no interfiere con centrado */}
+            {wsQrCodeUrl ? (
+              <View style={pdfStyles.footerWsBlock}>
+                <Image src={wsQrCodeUrl} style={pdfStyles.footerWsQr} />
+                <Text style={pdfStyles.footerWsText}>
+                  {"\u00bfNecesitas un sistema\npara tu laboratorio?\nEscr\u00edbenos"}
+                </Text>
+              </View>
+            ) : null}
           </View>
         </View>
       </Page>

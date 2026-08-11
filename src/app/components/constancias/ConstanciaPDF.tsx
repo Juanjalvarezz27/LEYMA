@@ -95,13 +95,33 @@ const styles = StyleSheet.create({
     color: "#1d1d1f",
     marginTop: 1,
     fontWeight: 400,
-  }
+  },
+  wsBlock: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    width: 130,
+  },
+  wsQr: {
+    width: 35,
+    height: 35,
+    marginBottom: 3,
+  },
+  wsText: {
+    fontSize: 7.5,
+    textAlign: "center",
+    color: "#000000",
+    fontWeight: 700,
+    fontFamily: 'Inter',
+    lineHeight: 1.4,
+  },
 });
 
 // ---------------------------------------------------------------------------
 // 3. COMPONENTE DEL PDF
 // ---------------------------------------------------------------------------
-export default function ConstanciaPDF({ orden }: { orden: any }) {
+export default function ConstanciaPDF({ orden, wsQrCodeUrl }: { orden: any; wsQrCodeUrl?: string }) {
   const fechaOrden = new Date(orden.fechaCreacion);
   const fechaFormateada = fechaOrden.toLocaleDateString("es-VE", {
     year: "numeric",
@@ -162,10 +182,20 @@ export default function ConstanciaPDF({ orden }: { orden: any }) {
         </View>
 
         {/* FIRMA Y SELLO */}
-        <View style={styles.firmaSeccion}>
+        <View style={[styles.firmaSeccion, { position: 'relative' }]}>
           <View style={styles.lineaFirma}>
             <Text style={styles.textoFirmaPrincipal}>Lic. Bioanalista Responsable</Text>
           </View>
+
+          {/* QR de WhatsApp — esquina inferior derecha */}
+          {wsQrCodeUrl ? (
+            <View style={styles.wsBlock}>
+              <Image src={wsQrCodeUrl} style={styles.wsQr} />
+              <Text style={styles.wsText}>
+                {"\u00bfNecesitas un sistema\npara tu laboratorio?\nEscr\u00edbenos"}
+              </Text>
+            </View>
+          ) : null}
         </View>
         
       </Page>

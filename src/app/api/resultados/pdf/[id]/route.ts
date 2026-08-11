@@ -121,10 +121,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         timeZone: "America/Caracas"
       });
 
-    // Generar QR como Data URL base64
+    // Generar QR de verificación como Data URL base64
     const origin = new URL(request.url).origin;
     const urlValidacion = `${origin}/validar/${ordenId}`;
     const qrCodeUrl = await QRCode.toDataURL(urlValidacion, {
+      margin: 1,
+      width: 200,
+      color: { dark: "#000000", light: "#FFFFFF" },
+    });
+
+    // Generar QR de WhatsApp para el footer
+    const wsUrl = "https://wa.me/584129164371?text=Hola%2C+necesito+un+sistema+para+laboratorio%2C+me+puedes+contactar%3F";
+    const wsQrCodeUrl = await QRCode.toDataURL(wsUrl, {
       margin: 1,
       width: 200,
       color: { dark: "#000000", light: "#FFFFFF" },
@@ -161,6 +169,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         orden: ordenConFirmas,
         fechaImpresa,
         qrCodeUrl,
+        wsQrCodeUrl,
         logoBase64: logoBase64 ?? undefined,
       }) as React.ReactElement<any>
     );

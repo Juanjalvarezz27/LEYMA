@@ -402,10 +402,7 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl, wsQrCodeUrl }: { orde
         {/* CUERPO DEL REPORTE */}
         {Object.entries(groupedByCategory).map(([groupKey, catData]: [string, any]) => {
           const catNombre = catData.catNombreOriginal;
-          const bioanalistasText = catData.signers.size > 0 
-            ? ` - PROCESADO POR: ${Array.from(catData.signers.values()).map((b: any) => b.nombre).join(" / ")}` 
-            : "";
-          const isLongTitle = (catNombre + bioanalistasText).length > 65;
+          const isLongTitle = catNombre.length > 65;
           return (
             <View key={groupKey} style={pdfStyles.categoryBlock}>
               {Object.entries(catData.subcategorias).map(([subCatNombre, detalles]: [string, any], index: number) => (
@@ -415,9 +412,6 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl, wsQrCodeUrl }: { orde
                     <View style={pdfStyles.catTitleView} minPresenceAhead={20}>
                       <Text style={[pdfStyles.catTitleText, isLongTitle ? { fontSize: 11 } : {}]}>
                         {catNombre}
-                        {bioanalistasText && (
-                          <Text style={[pdfStyles.catBioanalistaText, isLongTitle ? { fontSize: 11 } : {}]}>{bioanalistasText}</Text>
-                        )}
                       </Text>
                     </View>
                   )}

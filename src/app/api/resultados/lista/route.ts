@@ -44,6 +44,8 @@ export async function GET(req: Request) {
         id: true,
         fechaCreacion: true,
         resultadosCompletados: true,
+        contadorImpresiones: true,
+        contadorWhatsApp: true,
         totalUSD: true,
         totalBS: true,
         paciente: {
@@ -126,6 +128,8 @@ export async function GET(req: Request) {
         id: orden.id,
         fechaCreacion: orden.fechaCreacion,
         resultadosCompletados: orden.resultadosCompletados,
+        contadorImpresiones: orden.contadorImpresiones,
+        contadorWhatsApp: orden.contadorWhatsApp,
         totalUSD: orden.totalUSD,
         totalBS: orden.totalBS,
         paciente: orden.paciente,

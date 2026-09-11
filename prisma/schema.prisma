@@ -136,6 +136,8 @@ model Orden {
   totalBS               Float
   tasaBCV               Float
   resultadosCompletados Boolean           @default(false)
+  contadorImpresiones   Int               @default(0)
+  contadorWhatsApp      Int               @default(0)
   fechaCreacion         DateTime          @default(now())
   pagos                 Pago[]
   detalles              DetalleOrden[]

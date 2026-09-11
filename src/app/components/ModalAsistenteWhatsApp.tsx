@@ -15,9 +15,10 @@ interface ModalAsistenteWhatsAppProps {
     montoBS?: number;
     ordenId?: number;
   };
+  onSuccess?: () => void;
 }
 
-export default function ModalAsistenteWhatsApp({ isOpen, onClose, pacienteNombre, telefono, tipoMensaje, datosAdicionales }: ModalAsistenteWhatsAppProps) {
+export default function ModalAsistenteWhatsApp({ isOpen, onClose, pacienteNombre, telefono, tipoMensaje, datosAdicionales, onSuccess }: ModalAsistenteWhatsAppProps) {
   const [paso, setPaso] = useState(1);
   const [saludoActual, setSaludoActual] = useState("");
   const [mensajeActual, setMensajeActual] = useState("");
@@ -245,6 +246,8 @@ export default function ModalAsistenteWhatsApp({ isOpen, onClose, pacienteNombre
               <button 
                 onClick={() => {
                   toast.success("¡Proceso completado con éxito!");
+                  // Notificar que el WhatsApp fue enviado exitosamente
+                  onSuccess?.();
                   onClose();
                 }}
                 disabled={paso < 3}

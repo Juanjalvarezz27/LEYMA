@@ -12,9 +12,11 @@ import ModalAsistenteWhatsApp from "../ModalAsistenteWhatsApp";
 interface ModalPreviewPDFProps {
   orden: any;
   onClose: () => void;
+  onContadorImpresion?: () => void;
+  onContadorWhatsApp?: () => void;
 }
 
-export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps) {
+export default function ModalPreviewPDF({ orden, onClose, onContadorImpresion, onContadorWhatsApp }: ModalPreviewPDFProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [fechaImpresa, setFechaImpresa] = useState("");
   const [qrCodeUrl, setQrCodeUrl] = useState("");
@@ -82,6 +84,8 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
       iframe.onload = () => {
         iframe.contentWindow?.print();
         toast.dismiss(toastId);
+        // Incrementar contador de impresión al confirmar que se lanzó el diálogo
+        onContadorImpresion?.();
         setTimeout(() => {
           URL.revokeObjectURL(url);
           document.body.removeChild(iframe);
@@ -250,6 +254,7 @@ export default function ModalPreviewPDF({ orden, onClose }: ModalPreviewPDFProps
         telefono={orden.paciente.telefono || ""}
         tipoMensaje="resultados"
         datosAdicionales={{ link: `${window.location.origin}/validar/${orden.id}` }}
+        onSuccess={onContadorWhatsApp}
       />
     </div>
   );

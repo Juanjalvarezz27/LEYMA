@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { 
   Microscope, Search, FileEdit, Clock, CheckCircle, FileText, 
   Phone, MessageCircle, User, Calendar, ChevronLeft, ChevronRight, DollarSign, FileSignature, Lock,
-  AlertTriangle, X, Loader2
+  AlertTriangle, X, Loader2, Printer
 } from "lucide-react";
 import { toast } from "react-toastify";
 import ModalCargarResultados from "../../components/resultados/ModalCargarResultados";
@@ -48,6 +48,25 @@ export default function ResultadosPage() {
 
   // Estado de carga del detalle (Lazy Loading)
   const [cargandoDetalle, setCargandoDetalle] = useState<number | null>(null);
+
+  // Incrementa un contador en BD y actualiza la orden localmente sin re-fetch
+  const incrementarContador = async (ordenId: number, tipo: "IMPRESION" | "WHATSAPP") => {
+    try {
+      const res = await fetch(`/api/resultados/contadores/${ordenId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tipo }),
+      });
+      if (!res.ok) return;
+      const { contadorImpresiones, contadorWhatsApp } = await res.json();
+      // Actualizar solo la orden afectada en el estado local
+      setOrdenes(prev => prev.map(o =>
+        o.id === ordenId ? { ...o, contadorImpresiones, contadorWhatsApp } : o
+      ));
+    } catch {
+      // Fallo silencioso — el contador no es crítico
+    }
+  };
 
   const fetchOrdenes = async (b = busqueda, f = fechaFiltro) => {
     setCargando(true);
@@ -193,6 +212,8 @@ export default function ResultadosPage() {
         <ModalPreviewPDF
           orden={ordenPDF}
           onClose={() => setOrdenPDF(null)}
+          onContadorImpresion={() => incrementarContador(ordenPDF.id, "IMPRESION")}
+          onContadorWhatsApp={() => incrementarContador(ordenPDF.id, "WHATSAPP")}
         />
       )}
 
@@ -337,7 +358,7 @@ export default function ResultadosPage() {
               return (
                 <div key={orden.id} className="bg-white border border-slate-200/80 rounded-[24px] shadow-sm hover:shadow-md transition-all flex flex-col">
                   
-                  {/* CABECERA DE LA TARJETA */}
+                  {/* CABECERA DE LA TARJETA — sin cambios de layout */}
                   <div className="p-5 border-b border-slate-100 bg-slate-50/50 rounded-t-[24px] flex justify-between items-center shrink-0">
                     <span className="text-[14px] font-bold text-slate-500 tracking-tight">
                       #{orden.id.toString().padStart(5, '0')}
@@ -365,9 +386,33 @@ export default function ResultadosPage() {
                         </span>
                       )}
                       {tabActiva === "COMPLETADOS" && (
-                        <span className="flex items-center gap-1 px-2.5 py-1 bg-[#0071E3]/10 text-[#0071E3] text-[10px] font-bold uppercase tracking-wider rounded-md border border-[#0071E3]/20">
-                          <CheckCircle size={10} strokeWidth={3} /> Procesado
-                        </span>
+                        <>
+                          <span className="flex items-center gap-1 px-2.5 py-1 bg-[#0071E3]/10 text-[#0071E3] text-[10px] font-bold uppercase tracking-wider rounded-md border border-[#0071E3]/20">
+                            <CheckCircle size={10} strokeWidth={3} /> Procesado
+                          </span>
+                          <span
+                            title={orden.contadorImpresiones > 0 ? `Impreso ${orden.contadorImpresiones} ${orden.contadorImpresiones === 1 ? 'vez' : 'veces'}` : "No impreso aún"}
+                            className={`flex items-center gap-1 px-1.5 py-1 text-[10px] font-black rounded-md border transition-colors ${
+                              orden.contadorImpresiones > 0
+                                ? "bg-indigo-50 text-indigo-600 border-indigo-200"
+                                : "bg-white text-slate-300 border-slate-200"
+                            }`}
+                          >
+                            <Printer size={10} strokeWidth={2.5} />
+                            {orden.contadorImpresiones > 0 ? <span>{orden.contadorImpresiones}</span> : null}
+                          </span>
+                          <span
+                            title={orden.contadorWhatsApp > 0 ? `WhatsApp enviado ${orden.contadorWhatsApp} ${orden.contadorWhatsApp === 1 ? 'vez' : 'veces'}` : "No enviado por WhatsApp aún"}
+                            className={`flex items-center gap-1 px-1.5 py-1 text-[10px] font-black rounded-md border transition-colors ${
+                              orden.contadorWhatsApp > 0
+                                ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                                : "bg-white text-slate-300 border-slate-200"
+                            }`}
+                          >
+                            <MessageCircle size={10} strokeWidth={2.5} />
+                            {orden.contadorWhatsApp > 0 ? <span>{orden.contadorWhatsApp}</span> : null}
+                          </span>
+                        </>
                       )}
                     </div>
                   </div>
@@ -419,7 +464,8 @@ export default function ResultadosPage() {
 
                   {/* ACCIONES DE LA TARJETA */}
                   <div className="p-5 pt-0 flex items-center gap-3">
-                    
+
+
                     <button
                       onClick={() => {
                         if (!estaPagada) {
@@ -545,6 +591,7 @@ export default function ResultadosPage() {
             montoBS: whatsAppModalConfig.tipoMensaje === 'cobro' ? whatsAppModalConfig.orden.totalBS : undefined,
             ordenId: whatsAppModalConfig.orden.id
           }}
+          onSuccess={() => incrementarContador(whatsAppModalConfig.orden.id, "WHATSAPP")}
         />
       )}
 

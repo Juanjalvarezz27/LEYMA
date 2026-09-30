@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { DollarSign, Percent, Plus, Trash2, CheckCircle, ChevronDown, Save, AlertCircle, Lock, X, ShieldAlert } from "lucide-react";
+import { useState, useEffect } from "react";
+import { DollarSign, Percent, Plus, Trash2, CheckCircle, ChevronDown, Save, AlertCircle, X } from "lucide-react";
 import { toast } from "react-toastify";
 
 interface ResumenPagoProps {
@@ -27,13 +27,6 @@ export default function ResumenPago({
 
   const [pagos, setPagos] = useState([{ metodoId: "", monto: 0, moneda: "USD", referencia: "" }]);
   const [dropdownAbierto, setDropdownAbierto] = useState<number | null>(null);
-
-  // Modal de clave maestra para descuentos
-  const [modalClave, setModalClave] = useState(false);
-  const [claveInput, setClaveInput] = useState("");
-  const [verificandoClave, setVerificandoClave] = useState(false);
-  const [accionPendiente, setAccionPendiente] = useState<(() => void) | null>(null);
-  const claveRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/metodos-pago").then(res => res.json()).then(setMetodosBD);
@@ -77,49 +70,6 @@ export default function ResumenPago({
     if (tipoDescGral === "MONTO" && valor > subtotalUSD) valor = subtotalUSD;
     if (tipoDescGral === "PORCENTAJE" && valor > 100) valor = 100;
     setDescuentoGeneral(valor);
-  };
-
-  // Detecta si la orden tiene algún descuento activo (individual o general)
-  const tieneDescuento = descuentoGeneral > 0 || pruebasSeleccionadas.some(p => (p.descInd || 0) > 0);
-
-  // Intercepta la acción: si hay descuento abre modal de clave, si no ejecuta directo
-  const handleAccionConDescuento = (accion: () => void) => {
-    if (tieneDescuento) {
-      setAccionPendiente(() => accion);
-      setClaveInput("");
-      setModalClave(true);
-      setTimeout(() => claveRef.current?.focus(), 100);
-    } else {
-      accion();
-    }
-  };
-
-  const confirmarClaveMaestra = async () => {
-    if (!claveInput.trim()) {
-      toast.warning("Ingrese la clave maestra.");
-      return;
-    }
-    setVerificandoClave(true);
-    try {
-      const res = await fetch("/api/verificar-clave", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clave: claveInput.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Clave incorrecta.");
-      // Clave correcta: cerrar modal y ejecutar la acción pendiente
-      setModalClave(false);
-      setClaveInput("");
-      accionPendiente?.();
-      setAccionPendiente(null);
-    } catch (error: any) {
-      toast.error(error.message);
-      setClaveInput("");
-      claveRef.current?.focus();
-    } finally {
-      setVerificandoClave(false);
-    }
   };
 
   const montoDescGral = tipoDescGral === "PORCENTAJE" ? Number((subtotalUSD * (descuentoGeneral / 100)).toFixed(2)) : descuentoGeneral;
@@ -444,12 +394,10 @@ export default function ResumenPago({
             </div>
           </div>
 
-          {/* BOTONES - interceptados por modal de clave si hay descuento */}
+          {/* BOTONES */}
           <div className="flex flex-col sm:flex-row lg:flex-col gap-3 w-full lg:w-auto shrink-0 pl-0 lg:pl-6 mt-3 lg:mt-0">
             <button
-              onClick={() => handleAccionConDescuento(() =>
-                onFinalizar({ subtotalUSD, totalFinalUSD, totalFinalBS, pagos, descuentoGeneral, tipoDescGral, estado: "BORRADOR", restanteUSD })
-              )}
+              onClick={() => onFinalizar({ subtotalUSD, totalFinalUSD, totalFinalBS, pagos, descuentoGeneral, tipoDescGral, estado: "BORRADOR", restanteUSD })}
               disabled={guardandoOrden || restanteBS <= 0.01}
               title={restanteBS <= 0.01 ? "No puede guardar como borrador una orden pagada en su totalidad" : ""}
               className="w-full sm:w-1/2 lg:w-56 py-3 bg-white/20 hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
@@ -468,9 +416,7 @@ export default function ResumenPago({
                     return;
                   }
                 }
-                handleAccionConDescuento(() =>
-                  onFinalizar({ subtotalUSD, totalFinalUSD, totalFinalBS, pagos, descuentoGeneral, tipoDescGral, estado: "CERRADA", restanteUSD })
-                );
+                onFinalizar({ subtotalUSD, totalFinalUSD, totalFinalBS, pagos, descuentoGeneral, tipoDescGral, estado: "CERRADA", restanteUSD });
               }}
               disabled={guardandoOrden}
               className="w-full sm:w-1/2 lg:w-56 py-3 bg-[#0071E3] hover:bg-[#0077ED] disabled:opacity-50 disabled:cursor-not-allowed text-white font-black rounded-xl shadow-[0_0_25px_rgba(0,113,227,0.3)] transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
@@ -481,71 +427,6 @@ export default function ResumenPago({
         </div>
       </div>
 
-      {/* MODAL DE CLAVE MAESTRA */}
-      {modalClave && (
-        <div
-          className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-all duration-200 bg-black/20`}
-          onClick={() => { setModalClave(false); setClaveInput(""); }}
-        >
-          <div
-            className="bg-white border border-slate-200 w-full max-w-[400px] rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] animate-in zoom-in-95 fade-in duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="p-6 pb-0 flex justify-between items-start">
-              <div className="p-3 rounded-2xl bg-amber-50 text-amber-500">
-                <ShieldAlert size={24} strokeWidth={2.5} />
-              </div>
-              <button
-                onClick={() => { setModalClave(false); setClaveInput(""); }}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-              >
-                <X size={20} strokeWidth={2.5} />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="p-6 pt-4">
-              <h3 className="text-xl font-bold text-[#1D1D1F] mb-2">Autorización Requerida</h3>
-              <p className="text-[#86868B] font-medium leading-relaxed mb-4">
-                Esta orden tiene descuentos aplicados. Ingrese la clave maestra para continuar.
-              </p>
-              <input
-                ref={claveRef}
-                type="password"
-                placeholder="Ingrese la CLAVE MAESTRA"
-                value={claveInput}
-                onChange={(e) => setClaveInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") confirmarClaveMaestra(); }}
-                disabled={verificandoClave}
-                className="w-full px-4 py-3 bg-[#F5F5F7] rounded-xl text-sm font-bold text-[#1D1D1F] focus:ring-2 focus:ring-[#0071E3]/20 focus:outline-none border border-transparent focus:border-[#0071E3] transition-all"
-              />
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 px-6 bg-slate-50 border-t border-slate-100 rounded-b-[32px] flex gap-3">
-              <button
-                onClick={() => { setModalClave(false); setClaveInput(""); }}
-                disabled={verificandoClave}
-                className="flex-1 py-3 px-4 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-100 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmarClaveMaestra}
-                disabled={verificandoClave || !claveInput.trim()}
-                className="flex-1 py-3 px-4 bg-[#0071E3] hover:bg-[#0077ED] text-white font-semibold rounded-xl shadow-sm shadow-blue-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {verificandoClave ? (
-                  <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Verificando...</>
-                ) : (
-                  <><Lock size={16} strokeWidth={2.5} /> Confirmar</>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 }

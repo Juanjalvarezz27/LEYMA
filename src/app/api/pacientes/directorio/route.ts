@@ -17,12 +17,20 @@ export async function GET(req: Request) {
     const whereClause: any = {};
     const AND = [];
 
-    // Búsqueda por nombre, cédula, o ID de orden
-    if (q) {
-      const qNum = parseInt(q, 10);
+    // Búsqueda por nombre, cédula, o ID de orden (soporta múltiples palabras como "Carlos Santos")
+    if (q && q.trim()) {
+      const qTrim = q.trim();
+      const words = qTrim.split(/\s+/).filter(Boolean);
+      const nombreConditions = words.map(w => ({
+        nombreCompleto: { contains: w, mode: "insensitive" }
+      }));
+
+      const cleanNumStr = qTrim.replace(/[^\d]/g, "");
+      const qNum = cleanNumStr ? parseInt(cleanNumStr, 10) : NaN;
+
       const orConditions: any[] = [
-        { nombreCompleto: { contains: q, mode: "insensitive" } },
-        { cedula: { contains: q, mode: "insensitive" } },
+        { AND: nombreConditions },
+        { cedula: { contains: qTrim, mode: "insensitive" } },
       ];
 
       if (!isNaN(qNum)) {
@@ -30,6 +38,9 @@ export async function GET(req: Request) {
           ordenes: {
             some: { id: qNum }
           }
+        });
+        orConditions.push({
+          cedula: { contains: cleanNumStr }
         });
       }
       

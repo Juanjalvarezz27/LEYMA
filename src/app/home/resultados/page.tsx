@@ -147,21 +147,48 @@ export default function ResultadosPage() {
     setPaginaActual(1);
   }, [busqueda, tabActiva, fechaFiltro]);
 
-  // Filtro usando el tabStatus calculado en el servidor — sin lógica pesada en el cliente
-  const ordenesFiltradas = ordenes.filter(orden => {
+  // 1. Filtrar órdenes que coinciden con el texto de búsqueda (independiente de la pestaña)
+  const ordenesCoincidentes = ordenes.filter(orden => {
+    if (!busqueda.trim()) return true;
+    const b = normalizeSearchString(busqueda);
+    const words = b.split(/\s+/).filter(Boolean);
+    const nombreNorm = normalizeSearchString(orden.paciente?.nombreCompleto || "");
+    const coincideNombre = words.every(w => nombreNorm.includes(w));
+
+    const busquedaDigits = busqueda.replace(/\D/g, "");
+    const cedulaNorm = orden.paciente?.cedula ? normalizeSearchString(orden.paciente.cedula).replace(/\D/g, "") : "";
+    const coincideCedula = orden.paciente?.cedula && (
+      normalizeSearchString(orden.paciente.cedula).includes(b) ||
+      (busquedaDigits && cedulaNorm.includes(busquedaDigits))
+    );
+
+    const coincideOrden = orden.id.toString().includes(busquedaDigits || busqueda.replace(/^#/, ""));
+
+    return coincideNombre || coincideCedula || coincideOrden;
+  });
+
+  const conteoPendientes = ordenesCoincidentes.filter(o => o.tabStatus === "PENDIENTES").length;
+  const conteoPorValidar = ordenesCoincidentes.filter(o => o.tabStatus === "POR_VALIDAR").length;
+  const conteoCompletados = ordenesCoincidentes.filter(o => o.tabStatus === "COMPLETADOS").length;
+
+  // Auto-cambio inteligente de pestaña si la actual no tiene resultados pero otra sí al buscar
+  useEffect(() => {
+    if (busqueda.trim() && ordenes.length > 0) {
+      if (tabActiva === "PENDIENTES" && conteoPendientes === 0) {
+        if (conteoCompletados > 0) {
+          setTabActiva("COMPLETADOS");
+        } else if (conteoPorValidar > 0) {
+          setTabActiva("POR_VALIDAR");
+        }
+      }
+    }
+  }, [ordenes, busqueda]);
+
+  // 2. Filtro usando el tabStatus calculado en el servidor
+  const ordenesFiltradas = ordenesCoincidentes.filter(orden => {
     if (tabActiva === "PENDIENTES" && orden.tabStatus !== "PENDIENTES") return false;
     if (tabActiva === "POR_VALIDAR" && orden.tabStatus !== "POR_VALIDAR") return false;
     if (tabActiva === "COMPLETADOS" && orden.tabStatus !== "COMPLETADOS") return false;
-
-    if (busqueda) {
-      const b = normalizeSearchString(busqueda);
-      const coincide = 
-        normalizeSearchString(orden.paciente.nombreCompleto).includes(b) ||
-        (orden.paciente.cedula && normalizeSearchString(orden.paciente.cedula).includes(b)) ||
-        normalizeSearchString(orden.id.toString()).includes(b);
-      if (!coincide) return false;
-    }
-
     return true;
   });
 
@@ -286,7 +313,7 @@ export default function ResultadosPage() {
         </div>
 
         {/* TABS DE ESTADO */}
-        <div className="flex bg-[#F5F5F7] p-1.5 rounded-xl w-full xl:w-[500px] shrink-0">
+        <div className="flex bg-[#F5F5F7] p-1.5 rounded-xl w-full xl:w-[540px] shrink-0">
           <button
             onClick={() => setTabActiva("PENDIENTES")}
             className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
@@ -294,6 +321,11 @@ export default function ResultadosPage() {
             }`}
           >
             <Clock size={16} /> Pendientes
+            {busqueda.trim() && (
+              <span className={`text-[11px] font-black px-2 py-0.5 rounded-full ${tabActiva === "PENDIENTES" ? "bg-orange-100 text-orange-700" : "bg-slate-200 text-slate-600"}`}>
+                {conteoPendientes}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setTabActiva("POR_VALIDAR")}
@@ -302,6 +334,11 @@ export default function ResultadosPage() {
             }`}
           >
             <FileSignature size={16} /> Por Validar
+            {busqueda.trim() && (
+              <span className={`text-[11px] font-black px-2 py-0.5 rounded-full ${tabActiva === "POR_VALIDAR" ? "bg-blue-100 text-blue-700" : "bg-slate-200 text-slate-600"}`}>
+                {conteoPorValidar}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setTabActiva("COMPLETADOS")}
@@ -310,6 +347,11 @@ export default function ResultadosPage() {
             }`}
           >
             <CheckCircle size={16} /> Completados
+            {busqueda.trim() && (
+              <span className={`text-[11px] font-black px-2 py-0.5 rounded-full ${tabActiva === "COMPLETADOS" ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"}`}>
+                {conteoCompletados}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -322,7 +364,41 @@ export default function ResultadosPage() {
         </div>
       ) : ordenesPaginadas.length === 0 ? (
         <div className="bg-white border-2 border-dashed border-slate-200 rounded-[32px] p-16 flex flex-col items-center justify-center text-center">
-          {tabActiva === "PENDIENTES" ? (
+          {busqueda.trim() && (conteoPendientes > 0 || conteoPorValidar > 0 || conteoCompletados > 0) ? (
+            <div className="flex flex-col items-center max-w-md">
+              <Search size={48} className="text-[#0071E3] mb-4" strokeWidth={2} />
+              <h3 className="text-xl font-bold text-[#1D1D1F]">Resultados en otra pestaña</h3>
+              <p className="text-slate-500 mt-2 font-medium text-sm">
+                No hay órdenes en la pestaña actual ({tabActiva.toLowerCase()}), pero encontramos coincidencias en:
+              </p>
+              <div className="flex flex-wrap gap-2 justify-center mt-4">
+                {conteoPendientes > 0 && tabActiva !== "PENDIENTES" && (
+                  <button
+                    onClick={() => setTabActiva("PENDIENTES")}
+                    className="px-4 py-2 bg-orange-50 text-orange-700 border border-orange-200 rounded-xl text-xs font-bold hover:bg-orange-100 transition-colors"
+                  >
+                    Ver {conteoPendientes} en Pendientes
+                  </button>
+                )}
+                {conteoPorValidar > 0 && tabActiva !== "POR_VALIDAR" && (
+                  <button
+                    onClick={() => setTabActiva("POR_VALIDAR")}
+                    className="px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold hover:bg-blue-100 transition-colors"
+                  >
+                    Ver {conteoPorValidar} en Por Validar
+                  </button>
+                )}
+                {conteoCompletados > 0 && tabActiva !== "COMPLETADOS" && (
+                  <button
+                    onClick={() => setTabActiva("COMPLETADOS")}
+                    className="px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-colors"
+                  >
+                    Ver {conteoCompletados} en Completados
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : tabActiva === "PENDIENTES" ? (
             <>
               <CheckCircle size={48} className="text-emerald-400 mb-4" strokeWidth={2} />
               <h3 className="text-xl font-bold text-[#1D1D1F]">¡Bandeja Limpia!</h3>

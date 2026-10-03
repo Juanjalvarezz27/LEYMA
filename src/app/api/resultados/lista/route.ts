@@ -17,19 +17,35 @@ export async function GET(req: Request) {
       estado: { nombre: { not: "ANULADA" } }
     };
 
-    if (fechaFiltro) {
+    // Priorizar búsqueda si el usuario ingresó un término (para encontrar pacientes viejos en cualquier fecha)
+    if (busqueda && busqueda.trim()) {
+      const qTrim = busqueda.trim();
+      const words = qTrim.split(/\s+/).filter(Boolean);
+      const nombreConditions = words.map(w => ({
+        paciente: { nombreCompleto: { contains: w, mode: "insensitive" } }
+      }));
+
+      const cleanNumStr = qTrim.replace(/[^\d]/g, "");
+      const bNum = cleanNumStr ? parseInt(cleanNumStr, 10) : NaN;
+
+      const orConditions: any[] = [
+        { AND: nombreConditions },
+        { paciente: { cedula: { contains: qTrim, mode: "insensitive" } } }
+      ];
+
+      if (!isNaN(bNum)) {
+        orConditions.push({ id: bNum });
+        orConditions.push({
+          paciente: { cedula: { contains: cleanNumStr } }
+        });
+      }
+
+      whereClause.OR = orConditions;
+      // No restringimos por fechaCreacion para que aparezcan órdenes históricas
+    } else if (fechaFiltro) {
       const fechaInicio = new Date(`${fechaFiltro}T00:00:00.000-04:00`);
       const fechaFin = new Date(`${fechaFiltro}T23:59:59.999-04:00`);
       whereClause.fechaCreacion = { gte: fechaInicio, lte: fechaFin };
-    } else if (busqueda) {
-      const bNum = parseInt(busqueda, 10);
-      whereClause.OR = [
-        { paciente: { nombreCompleto: { contains: busqueda, mode: "insensitive" } } },
-        { paciente: { cedula: { contains: busqueda, mode: "insensitive" } } }
-      ];
-      if (!isNaN(bNum)) {
-        whereClause.OR.push({ id: bNum });
-      }
     } else {
       const fechaLimite = new Date();
       fechaLimite.setDate(fechaLimite.getDate() - dias);

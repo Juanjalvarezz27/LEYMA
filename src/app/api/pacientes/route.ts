@@ -24,8 +24,9 @@ export async function GET(req: Request) {
     const pacientes = await prisma.paciente.findMany({
       where: {
         OR: [
-          { cedula: { contains: q } },
-          { nombreCompleto: { contains: q, mode: "insensitive" } }
+          { cedula: { contains: q.trim(), mode: "insensitive" } },
+          ...(q.replace(/[^\d]/g, "") ? [{ cedula: { contains: q.replace(/[^\d]/g, "") } }] : []),
+          { AND: q.trim().split(/\s+/).filter(Boolean).map(w => ({ nombreCompleto: { contains: w, mode: "insensitive" } })) }
         ]
       },
       take: 10,

@@ -104,6 +104,20 @@ export default function PacientesPage() {
         <ModalPreviewPDF
           orden={ordenPDF}
           onClose={() => setOrdenPDF(null)}
+          onContadorImpresion={() => {
+            fetch(`/api/resultados/contadores/${ordenPDF.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ tipo: "IMPRESION" }),
+            }).catch(() => {});
+          }}
+          onContadorWhatsApp={() => {
+            fetch(`/api/resultados/contadores/${ordenPDF.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ tipo: "WHATSAPP" }),
+            }).catch(() => {});
+          }}
         />
       )}
 
@@ -221,7 +235,7 @@ export default function PacientesPage() {
                                     return;
                                   }
                                   const loadingId = toast.loading("Cargando resultados...");
-                                  fetch(`/api/ordenes/${orden.id}`)
+                                  fetch(`/api/resultados/detalle/${orden.id}`)
                                     .then(res => res.json())
                                     .then(fullOrden => {
                                       toast.dismiss(loadingId);

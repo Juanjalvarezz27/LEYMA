@@ -36,7 +36,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                 }
               }
             },
-            tipoDescuento: { select: { nombre: true } }
+            tipoDescuento: { select: { nombre: true } },
+            resultado: {
+              include: {
+                valores: true,
+                procesadoPor: {
+                  select: { id: true, nombre: true, firmaUrl: true, mpps: true, col: true }
+                }
+              }
+            }
           }
         },
         serviciosExtra: {

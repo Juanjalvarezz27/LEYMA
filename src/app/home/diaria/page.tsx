@@ -307,8 +307,8 @@ function ListaDiariaContent() {
                   <Lock size={18} className="text-slate-400 shrink-0" />
                   $ ••••••
                 </h3>
-                <p className="text-xs font-bold text-slate-400">
-                  Bs •••••• (Solo Admin)
+                <p className="text-sm font-bold text-slate-400">
+                  Bs ••••••
                 </p>
               </>
             )}

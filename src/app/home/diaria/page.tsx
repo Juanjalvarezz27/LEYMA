@@ -4,8 +4,9 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
   Calendar as CalendarIcon, Search, Eye, Edit, Ban, 
-  DollarSign, Clock, CheckCircle, Wallet, RefreshCw, KeyRound, Loader2, X, MessageCircle, AlertTriangle 
+  DollarSign, Clock, CheckCircle, Wallet, RefreshCw, KeyRound, Loader2, X, MessageCircle, AlertTriangle, Lock 
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { toast } from "react-toastify";
 
 import ModalDetalleOrden from "../../components/diaria/ModalDetalleOrden";
@@ -20,6 +21,8 @@ const obtenerFechaHoyVzla = () => {
 function ListaDiariaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
+  const esAdmin = (session?.user as any)?.rol?.toUpperCase() === "ADMIN";
   const fechaUrl = searchParams.get('fecha');
   const searchUrl = searchParams.get('search');
 
@@ -286,15 +289,29 @@ function ListaDiariaContent() {
       {/* MÉTRICAS (Kpis) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white border border-slate-200/80 rounded-[24px] p-6 shadow-sm flex items-center gap-5">
-          <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0">
+          <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${esAdmin ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-400'}`}>
             <DollarSign size={28} strokeWidth={2.5} />
           </div>
           <div>
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Ingreso Cerrado</p>
-            <h3 className="text-3xl font-black text-[#1D1D1F] leading-none mb-1.5">${totalIngresosUSD.toFixed(2)}</h3>
-            <p className="text-sm font-bold text-slate-500">
-              Bs {totalIngresosBS.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-            </p>
+            {esAdmin ? (
+              <>
+                <h3 className="text-3xl font-black text-[#1D1D1F] leading-none mb-1.5">${totalIngresosUSD.toFixed(2)}</h3>
+                <p className="text-sm font-bold text-slate-500">
+                  Bs {totalIngresosBS.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="text-2xl font-black text-slate-400 leading-none mb-1.5 tracking-wider flex items-center gap-1.5">
+                  <Lock size={18} className="text-slate-400 shrink-0" />
+                  $ ••••••
+                </h3>
+                <p className="text-xs font-bold text-slate-400">
+                  Bs •••••• (Solo Admin)
+                </p>
+              </>
+            )}
           </div>
         </div>
 

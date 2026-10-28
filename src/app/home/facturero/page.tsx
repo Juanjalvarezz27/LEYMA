@@ -105,6 +105,11 @@ function FacturaPreview({
     }
   });
 
+  // Factor de descuento general si la orden tiene descuento
+  const subtotalUSD = Number(orden.subtotalUSD) || 0;
+  const totalUSD = Number(orden.totalUSD) || 0;
+  const factorDescuento = subtotalUSD > 0 && totalUSD < subtotalUSD ? totalUSD / subtotalUSD : 1;
+
   // Servicios extra: calcular monto total en Bs
   let totalServiciosExtraBS = 0;
   (orden.serviciosExtra || []).forEach((s: any) => {
@@ -115,21 +120,24 @@ function FacturaPreview({
 
   // Prorrateo equitativo de los servicios extra entre los ítems de la factura
   const numItems = itemsAgrupados.length;
-  const extraPorItemBS = numItems > 0 ? totalServiciosExtraBS / numItems : 0;
+  const extraPorItemBS = numItems > 0 ? (totalServiciosExtraBS * factorDescuento) / numItems : 0;
 
   // Total base de pruebas para cuadre exacto de céntimos
   let basePruebasBS = 0;
   itemsAgrupados.forEach((it) => {
     basePruebasBS += tasa ? it.montoUSD * tasa : 0;
   });
-  const totalFacturaBS = Math.round((basePruebasBS + totalServiciosExtraBS) * 100) / 100;
+  const totalFacturaBS =
+    Number(orden.totalBS) > 0
+      ? Number(orden.totalBS)
+      : Math.round((basePruebasBS + totalServiciosExtraBS) * factorDescuento * 100) / 100;
 
   const renglones: { concepto: string; cantidad: number; precioBS: number; montoBS: number }[] = [];
   let acumuladorRenglonesBS = 0;
 
   itemsAgrupados.forEach((item, index) => {
     const cant = item.cantidad || 1;
-    const baseMontoBS = tasa ? item.montoUSD * tasa : 0;
+    const baseMontoBS = (tasa ? item.montoUSD * tasa : 0) * factorDescuento;
     const esUltimo = index === numItems - 1;
 
     // Repartir equitativamente y ajustar céntimos residuales en el último renglón
@@ -153,7 +161,7 @@ function FacturaPreview({
   if (numItems === 0 && totalServiciosExtraBS > 0) {
     (orden.serviciosExtra || []).forEach((s: any) => {
       const precioUSD = Number(s.precioCongeladoUSD) || 0;
-      const precioBS = tasa ? precioUSD * tasa : 0;
+      const precioBS = (tasa ? precioUSD * tasa : 0) * factorDescuento;
       const cant = s.cantidad || 1;
       const montoBS = precioBS * cant;
       acumuladorRenglonesBS += montoBS;
@@ -395,11 +403,20 @@ function FacturaPreview({
                   </span>
                   <span>
                     Descuentos{" "}
-                    <span className="inline-block w-3.5 h-3.5 border border-black rounded align-middle ml-0.5"></span>
+                    <span className="inline-flex items-center justify-center w-3.5 h-3.5 border border-black rounded align-middle ml-0.5 text-[9px] font-bold leading-none">
+                      {orden.descuentoGeneral > 0 ? "✓" : ""}
+                    </span>
                   </span>
                   <span>
                     Bs.{" "}
-                    <span className="inline-block w-16 border-b border-black align-middle ml-0.5"></span>
+                    <span className="inline-block min-w-16 border-b border-black align-middle ml-0.5 text-center px-1 font-semibold text-[10px]">
+                      {orden.descuentoGeneral > 0
+                        ? ((Number(orden.subtotalUSD) - Number(orden.totalUSD)) * tasa).toLocaleString("es-VE", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })
+                        : ""}
+                    </span>
                   </span>
                 </div>
               </div>
@@ -547,6 +564,16 @@ function FacturaPreview({
                     maximumFractionDigits: 2,
                   })}{" "}
                   por servicios adicionales (toma de muestra / extracción), prorrateados equitativamente entre los ítems para que la sumatoria de los renglones coincida exactamente con el total a pagar.
+                </span>
+              )}
+              {orden.descuentoGeneral > 0 && (
+                <span className="block mt-1 text-[11px] text-blue-600 font-medium">
+                  * Descuento aplicado: {orden.descuentoGeneral}% (Bs.{" "}
+                  {((Number(orden.subtotalUSD) - Number(orden.totalUSD)) * tasa).toLocaleString("es-VE", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                  ), reflejado en el precio neto de cada examen.
                 </span>
               )}
             </p>

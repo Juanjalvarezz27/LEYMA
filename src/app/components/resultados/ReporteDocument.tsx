@@ -219,7 +219,15 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl, wsQrCodeUrl }: { orde
 
 
   const allSigners = new Map();
-  const groupedByCategory = orden.detalles.reduce((acc: any, det: any) => {
+  // Ordenar detalles por ordenVisual antes de agrupar
+  const sortedDetalles = [...(orden.detalles || [])].sort((a: any, b: any) => {
+    const ordenA = Number(a.prueba?.ordenVisual) || 0;
+    const ordenB = Number(b.prueba?.ordenVisual) || 0;
+    if (ordenA !== ordenB) return ordenA - ordenB;
+    return (a.prueba?.codigo || "").localeCompare(b.prueba?.codigo || "");
+  });
+
+  const groupedByCategory = sortedDetalles.reduce((acc: any, det: any) => {
     let catNombreOriginal = (det.prueba?.categoriaVisual || det.prueba?.subcategoria?.categoria?.nombre || "OTROS").trim().toUpperCase();
     let subcatNombre = (det.prueba?.subcategoriaVisual || det.prueba?.subcategoria?.nombre || "PRUEBAS INDIVIDUALES").trim().toUpperCase();
 
@@ -416,12 +424,12 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl, wsQrCodeUrl }: { orde
                     </View>
                   )}
 
-                  {index === 0 && subCatNombre === "PRUEBAS INDIVIDUALES" && (
+                  {index === 0 && (subCatNombre === "PRUEBAS INDIVIDUALES" || subCatNombre === catNombre) && (
                     <View style={{ height: 8 }} />
                   )}
 
-                  {/* Subcategoría */}
-                  {subCatNombre !== "PRUEBAS INDIVIDUALES" && (
+                  {/* Subcategoría sin duplicar si coincide con la categoría */}
+                  {subCatNombre !== "PRUEBAS INDIVIDUALES" && subCatNombre !== catNombre && (
                     <View minPresenceAhead={20}>
                       <View style={pdfStyles.subcatTitleView}>
                         <Text style={pdfStyles.subcatTitleText}>{subCatNombre}</Text>
@@ -440,8 +448,16 @@ const ReporteDocument = ({ orden, fechaImpresa, qrCodeUrl, wsQrCodeUrl }: { orde
 
                   <View style={{ height: 3 }} />
 
-                  {/* TODAS las filas fluyen libremente */}
-                  {(detalles as any[]).map((det: any) => renderDetalleRow(det, subCatNombre))}
+                  {/* Filas ordenadas por ordenVisual */}
+                  {(detalles as any[])
+                    .slice()
+                    .sort((a: any, b: any) => {
+                      const ordenA = Number(a.prueba?.ordenVisual) || 0;
+                      const ordenB = Number(b.prueba?.ordenVisual) || 0;
+                      if (ordenA !== ordenB) return ordenA - ordenB;
+                      return (a.prueba?.codigo || "").localeCompare(b.prueba?.codigo || "");
+                    })
+                    .map((det: any) => renderDetalleRow(det, subCatNombre))}
 
                   {(() => {
                     const firstDet = detalles[0];

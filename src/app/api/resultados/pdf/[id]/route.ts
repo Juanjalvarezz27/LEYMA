@@ -104,6 +104,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                 categoriaVisual: true,
                 subcategoriaVisual: true,
                 codigo: true,
+                ordenVisual: true,
                 subcategoria: {
                   select: {
                     nombre: true,
@@ -150,7 +151,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         timeZone: "America/Caracas"
       });
 
-    const cacheKey = `${ordenId}-${orden.detalles.length}-${orden.fechaCreacion.getTime()}`;
+    // Versión de la plantilla para invalidar caché al actualizar layout u ordenamiento
+    const PDF_TEMPLATE_VERSION = "v2";
+    const cacheKey = `${ordenId}-${orden.detalles.length}-${orden.fechaCreacion.getTime()}-${PDF_TEMPLATE_VERSION}`;
 
     // ETag para evitar retransferencia si el cliente ya lo tiene en caché (304 Not Modified)
     const etag = `W/"pdf-orden-${cacheKey}"`;

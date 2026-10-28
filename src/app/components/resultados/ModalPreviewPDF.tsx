@@ -64,9 +64,18 @@ export default function ModalPreviewPDF({ orden, onClose, onContadorImpresion, o
     if (orden?.id) generarQR();
   }, [orden]);
 
-  // Abre el PDF del servidor en nueva pestaña — el navegador lo muestra nativamente
-  const handleVerPDF = () => {
-    window.open(`/api/resultados/pdf/${orden.id}`, "_blank");
+  // Abre el PDF generado en el cliente mediante Blob URL para consumir 0 bytes de transferencia del servidor
+  const handleVerPDF = async () => {
+    try {
+      const blob = await pdf(
+        <ReporteDocument orden={orden} fechaImpresa={fechaImpresa} qrCodeUrl={qrCodeUrl} wsQrCodeUrl={wsQrCodeUrl} />
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      window.open(`/api/resultados/pdf/${orden.id}`, "_blank");
+    }
   };
 
   // Impresión: usa blob local solo para el iframe (solo desktop)

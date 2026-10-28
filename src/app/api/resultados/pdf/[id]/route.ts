@@ -7,6 +7,35 @@ import fs from "fs";
 import React from "react";
 import ReporteDocumentServer from "../../../../components/resultados/ReporteDocumentServer";
 
+// Caché en memoria de buffers para responder en 1ms en peticiones repetidas a la misma instancia
+const pdfBufferCache = new Map<string, { buffer: Uint8Array; nombreArchivo: string }>();
+
+// Cache de assets estáticos a nivel de módulo (se cargan una sola vez en el contenedor)
+let cachedWsQrCodeUrl: string | null = null;
+let cachedLogoBase64: string | null = null;
+
+async function obtenerWsQrCode(): Promise<string> {
+  if (cachedWsQrCodeUrl) return cachedWsQrCodeUrl;
+  const wsUrl = "https://wa.me/584129164371?text=Hola%2C+necesito+un+sistema+para+laboratorio%2C+me+puedes+contactar%3F";
+  cachedWsQrCodeUrl = await QRCode.toDataURL(wsUrl, {
+    margin: 1,
+    width: 120,
+    color: { dark: "#000000", light: "#FFFFFF" },
+  });
+  return cachedWsQrCodeUrl;
+}
+
+function obtenerLogoBase64(): string | null {
+  if (cachedLogoBase64 !== null) return cachedLogoBase64 || null;
+  const logoPdfPath = path.join(process.cwd(), "public", "Logo2_pdf.png");
+  const logoFallbackPath = path.join(process.cwd(), "public", "Logo2.png");
+  const logoPathToUse = fs.existsSync(logoPdfPath) ? logoPdfPath : logoFallbackPath;
+  cachedLogoBase64 = fs.existsSync(logoPathToUse)
+    ? `data:image/png;base64,${fs.readFileSync(logoPathToUse).toString("base64")}`
+    : "";
+  return cachedLogoBase64 || null;
+}
+
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const resolvedParams = await params;
@@ -121,28 +150,43 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         timeZone: "America/Caracas"
       });
 
-    // Generar QR de verificación como Data URL base64
+    const cacheKey = `${ordenId}-${orden.detalles.length}-${orden.fechaCreacion.getTime()}`;
+
+    // ETag para evitar retransferencia si el cliente ya lo tiene en caché (304 Not Modified)
+    const etag = `W/"pdf-orden-${cacheKey}"`;
+    if (request.headers.get("if-none-match") === etag) {
+      return new NextResponse(null, { status: 304 });
+    }
+
+    // Servir desde la memoria de la instancia serverless caliente (responde en 1ms sin tocar la CPU)
+    if (pdfBufferCache.has(cacheKey)) {
+      const cached = pdfBufferCache.get(cacheKey)!;
+      return new NextResponse(Buffer.from(cached.buffer), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `inline; filename="${cached.nombreArchivo}"`,
+          "Content-Length": cached.buffer.length.toString(),
+          "Cache-Control": "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400",
+          "ETag": etag,
+        },
+      });
+    }
+
+    // Generar QR de verificación (120px es ideal para 35x35pt a 300DPI y procesa el doble de rápido)
     const origin = new URL(request.url).origin;
     const urlValidacion = `${origin}/validar/${ordenId}`;
     const qrCodeUrl = await QRCode.toDataURL(urlValidacion, {
       margin: 1,
-      width: 200,
+      width: 120,
       color: { dark: "#000000", light: "#FFFFFF" },
     });
 
-    // Generar QR de WhatsApp para el footer
-    const wsUrl = "https://wa.me/584129164371?text=Hola%2C+necesito+un+sistema+para+laboratorio%2C+me+puedes+contactar%3F";
-    const wsQrCodeUrl = await QRCode.toDataURL(wsUrl, {
-      margin: 1,
-      width: 200,
-      color: { dark: "#000000", light: "#FFFFFF" },
-    });
-
-    // Logo: leer del filesystem como base64 (react-pdf en servidor necesita ruta absoluta o buffer)
-    const logoPath = path.join(process.cwd(), "public", "Logo2.png");
-    const logoBase64 = fs.existsSync(logoPath)
-      ? `data:image/png;base64,${fs.readFileSync(logoPath).toString("base64")}`
-      : null;
+    // QR de WhatsApp y logo pre-cacheados en memoria
+    const [wsQrCodeUrl, logoBase64] = await Promise.all([
+      obtenerWsQrCode(),
+      Promise.resolve(obtenerLogoBase64()),
+    ]);
 
     // Firmas: convertir URLs relativas a base64 si existen en el filesystem público
     const ordenConFirmas = {
@@ -175,15 +219,24 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     );
 
     const nombreArchivo = `Resultados_${orden.paciente.nombreCompleto.replace(/\s+/g, "_")}_#${ordenId}.pdf`;
+    const uint8Buffer = new Uint8Array(buffer);
 
-    return new NextResponse(new Uint8Array(buffer), {
+    // Guardar en la caché en memoria (límite de 50 entradas para mantener la RAM limpia)
+    if (pdfBufferCache.size > 50) {
+      const primerClave = pdfBufferCache.keys().next().value;
+      if (primerClave) pdfBufferCache.delete(primerClave);
+    }
+    pdfBufferCache.set(cacheKey, { buffer: uint8Buffer, nombreArchivo });
+
+    return new NextResponse(Buffer.from(uint8Buffer), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `inline; filename="${nombreArchivo}"`,
-        "Content-Length": buffer.length.toString(),
-        // Caché privada por 5 minutos — el PDF no cambia en ese lapso
-        "Cache-Control": "private, max-age=300",
+        "Content-Length": uint8Buffer.length.toString(),
+        // Permitir caché pública en CDN/Edge de Vercel por 7 días (evita invocar la función serverless y ahorra Fast Data Transfer)
+        "Cache-Control": "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400",
+        "ETag": etag,
       },
     });
   } catch (error: any) {

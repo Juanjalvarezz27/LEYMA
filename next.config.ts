@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Compresión gzip/brotli en respuestas HTTP
+  compress: true,
+
+  // Quitar header "X-Powered-By: Next.js"
+  poweredByHeader: false,
 };
 
 export default nextConfig;

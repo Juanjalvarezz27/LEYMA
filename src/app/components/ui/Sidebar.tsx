@@ -23,7 +23,8 @@ import {
   ClipboardList, // <-- ÍCONO DE PRESUPUESTO
   Settings,
   ChevronDown,
-  CircleDollarSign
+  CircleDollarSign,
+  Receipt
 } from "lucide-react";
 import ModalConfirmacion from "./ModalConfirmacion";
 
@@ -53,6 +54,7 @@ export default function Sidebar() {
     { nombre: "Cierre de Caja", ruta: "/home/cierre", icono: Calculator },
     { nombre: "Mi Perfil", ruta: "/home/perfil", icono: UserCog },
     { nombre: "Estructura Costos", ruta: "/home/costos", icono: CircleDollarSign },
+    { nombre: "Facturero", ruta: "/home/facturero", icono: Receipt },
   ];
 
   const rutasPermitidasUsuario = [

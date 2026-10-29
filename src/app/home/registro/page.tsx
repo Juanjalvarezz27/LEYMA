@@ -42,6 +42,9 @@ function RegistroContent() {
   const [pruebasSeleccionadas, setPruebasSeleccionadas] = useState<any[]>([]);
   const [serviciosCatalogo, setServiciosCatalogo] = useState<any[]>([]);
   const [serviciosSeleccionados, setServiciosSeleccionados] = useState<any[]>([]);
+  const [descuentoGeneral, setDescuentoGeneral] = useState(0);
+  const [tipoDescGral, setTipoDescGral] = useState<"PORCENTAJE" | "MONTO">("PORCENTAJE");
+  const [pagosIniciales, setPagosIniciales] = useState<any[]>([]);
   const { tasa } = useTasaBCV();
   const tasaBCV = tasa ?? 36.5;
 
@@ -119,10 +122,21 @@ function RegistroContent() {
 
           if (res.ok && orden) {
             setPacienteSeleccionado(orden.paciente);
+            
+            // Cargar descuento general y tipo de descuento de la orden
+            setDescuentoGeneral(Number(orden.descuentoGeneral) || 0);
+            setTipoDescGral(orden.tipoDescuento?.nombre === "MONTO" ? "MONTO" : "PORCENTAJE");
+
             const pruebasReconstruidas: any[] = [];
             const paquetesMap = new Map<string, any>();
 
             orden.detalles.forEach((d: any) => {
+              const tipoDesc = d.tipoDescuento?.nombre || "PORCENTAJE";
+              const descValor = d.descuento || 0;
+              const precioBase = d.precioCongeladoUSD || 0;
+              const rebaja = tipoDesc === "PORCENTAJE" ? (precioBase * (descValor / 100)) : descValor;
+              const precioFinal = Math.max(0, precioBase - rebaja);
+
               if (d.prueba?.subcategoria?.esPaquete) {
                 const subcatId = d.prueba.subcategoria.id;
                 if (!paquetesMap.has(subcatId)) {
@@ -131,9 +145,10 @@ function RegistroContent() {
                     id: subcatId,
                     codigo: d.prueba.codigo.split('-')[0] || "PK",
                     nombre: d.prueba.subcategoria.nombre,
-                    precioUSD: d.precioCongeladoUSD || 0,
-                    descInd: d.descuento || 0,
-                    tipoDescInd: d.tipoDescuento?.nombre || "PORCENTAJE",
+                    precioUSD: precioBase,
+                    descInd: descValor,
+                    tipoDescInd: tipoDesc,
+                    precioFinal: precioFinal,
                     cantidad: d.cantidad || 1,
                     pruebasHijas: [d.prueba],
                     categoriaNombre: d.prueba.subcategoria.categoria?.nombre || "S/C",
@@ -142,10 +157,11 @@ function RegistroContent() {
                 } else {
                   const paq = paquetesMap.get(subcatId);
                   paq.pruebasHijas.push(d.prueba);
-                  if (d.precioCongeladoUSD > 0) {
-                    paq.precioUSD = d.precioCongeladoUSD;
-                    paq.descInd = d.descuento || 0;
-                    paq.tipoDescInd = d.tipoDescuento?.nombre || "PORCENTAJE";
+                  if (precioBase > 0) {
+                    paq.precioUSD = precioBase;
+                    paq.descInd = descValor;
+                    paq.tipoDescInd = tipoDesc;
+                    paq.precioFinal = precioFinal;
                   }
                 }
               } else {
@@ -154,9 +170,10 @@ function RegistroContent() {
                   idReal: d.prueba.id,
                   tipo: "INDIVIDUAL", 
                   cantidad: d.cantidad,
-                  precioUSD: d.precioCongeladoUSD,
-                  descInd: d.descuento,
-                  tipoDescInd: d.tipoDescuento?.nombre || "PORCENTAJE",
+                  precioUSD: precioBase,
+                  descInd: descValor,
+                  tipoDescInd: tipoDesc,
+                  precioFinal: precioFinal,
                   categoriaNombre: d.prueba?.subcategoria?.categoria?.nombre || "Desconocida",
                   subcategoriaNombre: d.prueba?.subcategoria?.nombre || "Desconocida"
                 });
@@ -171,6 +188,16 @@ function RegistroContent() {
               setServiciosSeleccionados(orden.serviciosExtra.map((se: any) => ({
                 ...se.servicio,
                 cantidad: se.cantidad || 1
+              })));
+            }
+
+            // Cargar pagos previos si existen
+            if (orden.pagos && orden.pagos.length > 0) {
+              setPagosIniciales(orden.pagos.map((p: any) => ({
+                metodoId: p.metodoId || p.metodo?.id,
+                monto: p.montoUSD,
+                moneda: "USD",
+                referencia: p.referencia || ""
               })));
             }
 
@@ -342,6 +369,9 @@ function RegistroContent() {
     setCedulaBusqueda("");
     setResultadosBusqueda([]);
     setIsCreandoNuevo(false);
+    setDescuentoGeneral(0);
+    setTipoDescGral("PORCENTAJE");
+    setPagosIniciales([]);
     setFormData({
       esBebe: false, cedula: "", nombreCompleto: "", fechaNacimiento: "",
       sexo: "M", telefono: "", correo: "", direccion: "", observaciones: ""
@@ -432,6 +462,9 @@ function RegistroContent() {
         limpiarSeleccion();
         setPruebasSeleccionadas([]);
         setServiciosSeleccionados([]);
+        setDescuentoGeneral(0);
+        setTipoDescGral("PORCENTAJE");
+        setPagosIniciales([]);
       }
     } catch (error: any) {
       toast.error(error.message ? `Error al procesar la orden: ${error.message}` : "Error al procesar la orden");
@@ -506,9 +539,17 @@ function RegistroContent() {
 
       {pruebasSeleccionadas.length > 0 && (
         <ResumenPago
-          pruebasSeleccionadas={pruebasSeleccionadas} setPruebasSeleccionadas={setPruebasSeleccionadas}
+          pruebasSeleccionadas={pruebasSeleccionadas}
+          setPruebasSeleccionadas={setPruebasSeleccionadas}
           serviciosSeleccionados={serviciosSeleccionados}
-          tasaBCV={tasaBCV} onFinalizar={finalizarOrden} guardandoOrden={guardandoOrden}
+          tasaBCV={tasaBCV}
+          onFinalizar={finalizarOrden}
+          guardandoOrden={guardandoOrden}
+          descuentoGeneral={descuentoGeneral}
+          setDescuentoGeneral={setDescuentoGeneral}
+          tipoDescGral={tipoDescGral}
+          setTipoDescGral={setTipoDescGral}
+          pagosIniciales={pagosIniciales}
         />
       )}
 

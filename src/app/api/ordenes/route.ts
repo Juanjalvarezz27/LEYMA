@@ -56,13 +56,13 @@ export async function POST(req: Request) {
     }) : [];
 
     const sumaPagosUSD = pagosData.reduce((acc: number, p: any) => acc + p.montoUSD, 0);
-    if (sumaPagosUSD > Number(body.totalUSD) + 0.05) {
+    if (sumaPagosUSD > Number(body.totalUSD) + 0.15) {
       return NextResponse.json({ error: `La suma de los pagos en USD (${sumaPagosUSD}) no puede exceder el total de la orden (${body.totalUSD})` }, { status: 400 });
     }
 
     // Auto-cierre de órdenes y protección contra cierre falso
     let estadoFinalId = estado.id;
-    const esPagoCompleto = sumaPagosUSD >= (Number(body.totalUSD) - 0.02);
+    const esPagoCompleto = sumaPagosUSD >= (Number(body.totalUSD) - 0.05);
     const estadoCerrada = await prisma.estadoOrden.findUnique({ where: { nombre: "CERRADA" } });
 
     if (esPagoCompleto && estadoCerrada) {
@@ -71,14 +71,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No se puede cerrar una orden con saldo pendiente." }, { status: 400 });
     }
 
+    const descGralNum = Number(body.descuentoGeneral) || 0;
     const nuevaOrden = await prisma.orden.create({
       data: {
         pacienteId: parseId(body.pacienteId),
         usuarioId: usuarioId,
         estadoId: estadoFinalId,
         subtotalUSD: Number(Number(body.subtotalUSD).toFixed(2)),
-        descuentoGeneral: body.descuentoGeneral || 0,
-        tipoDescuentoId: body.descuentoGeneral > 0 ? getIdDescuento(body.tipoDescuentoGral) : null,
+        descuentoGeneral: descGralNum,
+        tipoDescuentoId: descGralNum > 0 ? getIdDescuento(body.tipoDescuentoGral || "PORCENTAJE") : null,
         totalUSD: Number(Number(body.totalUSD).toFixed(2)),
         totalBS: Number(Number(body.totalBS).toFixed(2)),
         tasaBCV: body.tasaBCV,

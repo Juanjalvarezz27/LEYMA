@@ -16,6 +16,13 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
   const [dropdownAbierto, setDropdownAbierto] = useState<number | null>(null);
   const [guardando, setGuardando] = useState(false);
 
+  // Descuento general de la orden
+  const subtotalUSD = Number(orden.subtotalUSD || orden.totalUSD);
+  const [descuentoGeneral, setDescuentoGeneral] = useState(Number(orden.descuentoGeneral) || 0);
+  const [tipoDescGral, setTipoDescGral] = useState<"PORCENTAJE" | "MONTO">(
+    orden.tipoDescuento?.nombre === "MONTO" ? "MONTO" : "PORCENTAJE"
+  );
+
   useEffect(() => {
     fetch("/api/metodos-pago").then(res => res.json()).then(setMetodosBD);
   }, []);
@@ -32,7 +39,10 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
     return map[str] || str.split('_').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
   };
 
-  const totalFacturadoUSD = orden.totalUSD;
+  const montoDescGral = tipoDescGral === "PORCENTAJE"
+    ? Number((subtotalUSD * (descuentoGeneral / 100)).toFixed(2))
+    : descuentoGeneral;
+  const totalFacturadoUSD = Number(Math.max(0, subtotalUSD - montoDescGral).toFixed(2));
   const pagosPreviosUSD = orden.pagos?.reduce((acc: number, p: any) => acc + p.montoUSD, 0) || 0;
   
   const pagosNuevosUSD = pagos.reduce((acc, pago) => {
@@ -43,9 +53,9 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
   const totalPagadoUSD = pagosPreviosUSD + pagosNuevosUSD;
   const restanteUSD = Math.max(0, totalFacturadoUSD - totalPagadoUSD);
   const restanteBS = restanteUSD * orden.tasaBCV;
-  const cambioUSD = totalPagadoUSD > totalFacturadoUSD ? (totalPagadoUSD - totalFacturadoUSD) : 0;
 
   const agregarPago = () => setPagos([...pagos, { metodoId: "", monto: 0, moneda: "USD", referencia: "" }]);
+
   const actualizarPago = (index: number, campo: string, valor: any) => {
     const nuevosPagos = [...pagos];
     nuevosPagos[index] = { ...nuevosPagos[index], [campo]: valor };
@@ -82,7 +92,12 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
       const res = await fetch(`/api/ordenes/${orden.id}/pagar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pagos: pagosValidos, tasaBCV: orden.tasaBCV })
+        body: JSON.stringify({
+          pagos: pagosValidos,
+          tasaBCV: orden.tasaBCV,
+          descuentoGeneral,
+          tipoDescuentoGral: tipoDescGral
+        })
       });
       
       let data: any = {};
@@ -127,15 +142,60 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
 
         <div className="p-8 flex-1 flex flex-col">
           
-          <div className="flex items-center justify-between bg-[#F5F5F7] border border-slate-200/60 rounded-[24px] p-6 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-[#F5F5F7] border border-slate-200/60 rounded-[24px] p-5 mb-8">
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Subtotal</p>
+              <p className="text-2xl font-black text-[#1D1D1F] leading-none">${subtotalUSD.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Desc. General</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <input
+                  type="number"
+                  min="0"
+                  value={descuentoGeneral || ""}
+                  placeholder="0"
+                  onChange={(e) => {
+                    let v = parseFloat(e.target.value) || 0;
+                    if (tipoDescGral === "PORCENTAJE" && v > 100) v = 100;
+                    if (tipoDescGral === "MONTO" && v > subtotalUSD) v = subtotalUSD;
+                    setDescuentoGeneral(v);
+                  }}
+                  className="w-16 px-2 py-1 bg-white border border-slate-200 rounded-lg text-sm font-black outline-none focus:ring-2 focus:ring-[#0071E3]/20"
+                />
+                <div className="flex bg-slate-200 p-0.5 rounded-lg text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (tipoDescGral !== "PORCENTAJE") {
+                        setTipoDescGral("PORCENTAJE");
+                        if (descuentoGeneral > 100) setDescuentoGeneral(100);
+                      }
+                    }}
+                    className={`px-2 py-0.5 rounded ${tipoDescGral === "PORCENTAJE" ? "bg-white text-black shadow-sm font-black" : "text-slate-600"}`}
+                  >%</button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (tipoDescGral !== "MONTO") {
+                        setTipoDescGral("MONTO");
+                        if (descuentoGeneral > subtotalUSD) setDescuentoGeneral(subtotalUSD);
+                      }
+                    }}
+                    className={`px-2 py-0.5 rounded ${tipoDescGral === "MONTO" ? "bg-white text-black shadow-sm font-black" : "text-slate-600"}`}
+                  >$</button>
+                </div>
+              </div>
+            </div>
             <div>
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Total Orden</p>
-              <p className="text-3xl font-black text-[#1D1D1F] leading-none">${totalFacturadoUSD.toFixed(2)}</p>
+              <p className="text-2xl font-black text-[#0071E3] leading-none">${totalFacturadoUSD.toFixed(2)}</p>
+              <p className="text-[11px] font-bold text-slate-500 mt-1">Bs {(totalFacturadoUSD * orden.tasaBCV).toLocaleString('es-VE', {minimumFractionDigits: 2})}</p>
             </div>
-            <div className="w-px h-12 bg-slate-200"></div>
             <div>
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Deuda Restante</p>
-              <p className="text-3xl font-black text-orange-500 leading-none">${Math.max(0, totalFacturadoUSD - pagosPreviosUSD).toFixed(2)}</p>
+              <p className="text-2xl font-black text-orange-500 leading-none">${Math.max(0, totalFacturadoUSD - pagosPreviosUSD).toFixed(2)}</p>
+              <p className="text-[11px] font-bold text-slate-500 mt-1">Bs {(Math.max(0, totalFacturadoUSD - pagosPreviosUSD) * orden.tasaBCV).toLocaleString('es-VE', {minimumFractionDigits: 2})}</p>
             </div>
           </div>
 
@@ -173,7 +233,6 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
               </div>
             </div>
           )}
-
 
           <div className="flex justify-between items-center mb-5 flex-wrap gap-3">
             <div className="flex items-center gap-3 flex-wrap">
@@ -245,8 +304,8 @@ export default function ModalProcesarPago({ orden, onClose, onSuccess }: ModalPr
                     type="button" 
                     onClick={() => {
                       const mName = metodosBD.find(m => m.id === pago.metodoId)?.nombre || "";
-                      if (["PAGO_MOVIL", "PUNTO_VENTA", "EFECTIVO_BS"].includes(mName)) return; // Force BS
-                      if (["EFECTIVO_USD", "ZELLE", "BINANCE"].includes(mName)) return; // Force USD
+                      if (["PAGO_MOVIL", "PUNTO_VENTA", "EFECTIVO_BS"].includes(mName)) return;
+                      if (["EFECTIVO_USD", "ZELLE", "BINANCE"].includes(mName)) return;
                       actualizarPago(idx, "moneda", pago.moneda === "USD" ? "BS" : "USD");
                     }} 
                     className={`px-3 font-bold text-[13px] transition-colors border-r border-slate-200 w-12 flex items-center justify-center shrink-0 ${pago.moneda === "USD" ? 'bg-[#0071E3]/10 text-[#0071E3]' : 'bg-orange-100 text-orange-600'}`}>

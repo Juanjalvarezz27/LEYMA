@@ -125,7 +125,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }) : [];
 
     const sumaPagosUSD = pagosData.reduce((acc: number, p: any) => acc + p.montoUSD, 0);
-    const esPagoCompleto = sumaPagosUSD >= (Number(body.totalUSD) - 0.02);
+    const esPagoCompleto = sumaPagosUSD >= (Number(body.totalUSD) - 0.05);
 
     let nuevoEstadoId: number | undefined;
     if (esPagoCompleto) {
@@ -135,6 +135,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       const estado = await prisma.estadoOrden.findUnique({ where: { nombre: body.estado } });
       if (estado) nuevoEstadoId = estado.id;
     }
+
+    const descGralNum = Number(body.descuentoGeneral) || 0;
 
     // Uso de Transacción: Borramos los detalles viejos y metemos los nuevos
     const ordenActualizada = await prisma.$transaction(async (tx) => {
@@ -149,8 +151,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         data: {
           ...(nuevoEstadoId ? { estadoId: nuevoEstadoId } : {}),
           subtotalUSD: Number(Number(body.subtotalUSD).toFixed(2)),
-          descuentoGeneral: body.descuentoGeneral || 0,
-          tipoDescuentoId: body.descuentoGeneral > 0 ? getIdDescuento(body.tipoDescuentoGral) : null,
+          descuentoGeneral: descGralNum,
+          tipoDescuentoId: descGralNum > 0 ? getIdDescuento(body.tipoDescuentoGral || "PORCENTAJE") : null,
           totalUSD: Number(Number(body.totalUSD).toFixed(2)),
           totalBS: Number(Number(body.totalBS).toFixed(2)),
           tasaBCV: body.tasaBCV,

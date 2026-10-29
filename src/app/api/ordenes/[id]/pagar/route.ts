@@ -13,7 +13,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 
     const resolvedParams = await params;
-    const ordenId = parseId(resolvedParams.id); // <-- CORREGIDO
+    const ordenId = parseId(resolvedParams.id);
 
     if (!ordenId) {
       return NextResponse.json({ error: "ID de orden inválido" }, { status: 400 });
@@ -32,15 +32,38 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       where: { id: ordenId as any },
       select: {
         id: true,
+        subtotalUSD: true,
+        descuentoGeneral: true,
+        tipoDescuentoId: true,
         totalUSD: true,
+        tasaBCV: true,
         pagos: { select: { montoUSD: true } }
       }
     });
 
     if (!ordenActual) return NextResponse.json({ error: "Orden no encontrada" }, { status: 404 });
 
+    const tasa = Number(body.tasaBCV || ordenActual.tasaBCV);
+    const subtotalUSD = Number(ordenActual.subtotalUSD);
+    let nuevoTotalUSD = Number(ordenActual.totalUSD);
+    let nuevoDescuentoGeneral = ordenActual.descuentoGeneral;
+    let nuevoTipoDescuentoId = ordenActual.tipoDescuentoId;
+
+    if (body.descuentoGeneral !== undefined && body.descuentoGeneral !== null) {
+      const tiposDescuento = await prisma.tipoDescuento.findMany();
+      const getIdDescuento = (nombreStr: string) => tiposDescuento.find(t => t.nombre === nombreStr)?.id || null;
+      nuevoDescuentoGeneral = Number(body.descuentoGeneral) || 0;
+      nuevoTipoDescuentoId = nuevoDescuentoGeneral > 0 ? getIdDescuento(body.tipoDescuentoGral || "PORCENTAJE") : null;
+      
+      const tipoNombre = body.tipoDescuentoGral || "PORCENTAJE";
+      const montoDesc = tipoNombre === "PORCENTAJE" 
+        ? (subtotalUSD * (nuevoDescuentoGeneral / 100))
+        : nuevoDescuentoGeneral;
+      nuevoTotalUSD = Number(Math.max(0, subtotalUSD - montoDesc).toFixed(2));
+    }
+
     const pagosPreviosUSD = ordenActual.pagos.reduce((acc: number, p: any) => acc + Number(p.montoUSD), 0);
-    const totalDeudaUSD = Number(ordenActual.totalUSD);
+    const totalDeudaUSD = nuevoTotalUSD;
 
     const pagosData: any[] = [];
     let deudaPendienteUSD = Math.max(0, totalDeudaUSD - pagosPreviosUSD);
@@ -48,13 +71,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     for (const p of body.pagos) {
       if (deudaPendienteUSD <= 0) break;
 
-      let montoEnUSD = p.moneda === "USD" ? p.monto : (p.monto / body.tasaBCV);
+      let montoEnUSD = p.moneda === "USD" ? p.monto : (p.monto / tasa);
       
       if (montoEnUSD > deudaPendienteUSD) {
         montoEnUSD = deudaPendienteUSD;
       }
       
-      let montoEnBS = p.moneda === "BS" ? (montoEnUSD * body.tasaBCV) : (montoEnUSD * body.tasaBCV);
+      let montoEnBS = p.moneda === "BS" ? (montoEnUSD * tasa) : (montoEnUSD * tasa);
       if (p.moneda === "BS" && montoEnUSD < deudaPendienteUSD) {
          montoEnBS = p.monto;
       }
@@ -73,6 +96,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       where: { id: ordenId as any },
       data: {
         estadoId: estadoCerrada.id,
+        ...(body.descuentoGeneral !== undefined && body.descuentoGeneral !== null ? {
+          descuentoGeneral: nuevoDescuentoGeneral,
+          tipoDescuentoId: nuevoTipoDescuentoId,
+          totalUSD: nuevoTotalUSD,
+          totalBS: Number((nuevoTotalUSD * tasa).toFixed(2)),
+          tasaBCV: tasa
+        } : {}),
         pagos: {
           create: pagosData
         }

@@ -11,6 +11,11 @@ interface ResumenPagoProps {
   tasaBCV: number;
   onFinalizar: (datos: any) => void;
   guardandoOrden?: boolean;
+  descuentoGeneral: number;
+  setDescuentoGeneral: (valor: number) => void;
+  tipoDescGral: "PORCENTAJE" | "MONTO";
+  setTipoDescGral: (tipo: "PORCENTAJE" | "MONTO") => void;
+  pagosIniciales?: any[];
 }
 
 export default function ResumenPago({
@@ -19,18 +24,32 @@ export default function ResumenPago({
   serviciosSeleccionados = [],
   tasaBCV,
   onFinalizar,
-  guardandoOrden = false
+  guardandoOrden = false,
+  descuentoGeneral,
+  setDescuentoGeneral,
+  tipoDescGral,
+  setTipoDescGral,
+  pagosIniciales = []
 }: ResumenPagoProps) {
   const [metodosBD, setMetodosBD] = useState<any[]>([]);
-  const [descuentoGeneral, setDescuentoGeneral] = useState(0);
-  const [tipoDescGral, setTipoDescGral] = useState<"PORCENTAJE" | "MONTO">("PORCENTAJE");
-
   const [pagos, setPagos] = useState([{ metodoId: "", monto: 0, moneda: "USD", referencia: "" }]);
   const [dropdownAbierto, setDropdownAbierto] = useState<number | null>(null);
 
   useEffect(() => {
     fetch("/api/metodos-pago").then(res => res.json()).then(setMetodosBD);
   }, []);
+
+  // Cargar pagos previos cuando se edita una orden con pagos
+  useEffect(() => {
+    if (pagosIniciales && pagosIniciales.length > 0) {
+      setPagos(pagosIniciales.map(p => ({
+        metodoId: p.metodoId || p.metodo?.id || "",
+        monto: p.montoUSD || p.monto || 0,
+        moneda: p.moneda || "USD",
+        referencia: p.referencia || ""
+      })));
+    }
+  }, [pagosIniciales]);
 
   const formatMetodoPago = (str: string) => {
     const map: Record<string, string> = {
@@ -55,7 +74,7 @@ export default function ResumenPago({
         if (tipo === "PORCENTAJE" && valor > 100) valor = 100;
 
         const desc = tipo === "PORCENTAJE" ? (p.precioUSD * (valor / 100)) : valor;
-        return { ...p, descInd: valor, tipoDescInd: tipo, precioFinal: p.precioUSD - desc };
+        return { ...p, descInd: valor, tipoDescInd: tipo, precioFinal: Math.max(0, p.precioUSD - desc) };
       }
       return p;
     }));
@@ -65,16 +84,27 @@ export default function ResumenPago({
   const subtotalServicios = Number(serviciosSeleccionados.reduce((acc, s) => acc + (s.precioUSD * (s.cantidad || 1)), 0).toFixed(2));
   const subtotalUSD = Number((subtotalPruebas + subtotalServicios).toFixed(2));
 
+  const montoDescGral = tipoDescGral === "PORCENTAJE" ? Number((subtotalUSD * (descuentoGeneral / 100)).toFixed(2)) : descuentoGeneral;
+  const totalFinalUSD = Number((Math.max(0, subtotalUSD - montoDescGral)).toFixed(2));
+  const totalFinalBS = Number((totalFinalUSD * tasaBCV).toFixed(2));
+
   const handleDescuentoGeneral = (valorStr: string) => {
     let valor = parseFloat(valorStr) || 0;
     if (tipoDescGral === "MONTO" && valor > subtotalUSD) valor = subtotalUSD;
     if (tipoDescGral === "PORCENTAJE" && valor > 100) valor = 100;
     setDescuentoGeneral(valor);
-  };
 
-  const montoDescGral = tipoDescGral === "PORCENTAJE" ? Number((subtotalUSD * (descuentoGeneral / 100)).toFixed(2)) : descuentoGeneral;
-  const totalFinalUSD = Number((Math.max(0, subtotalUSD - montoDescGral)).toFixed(2));
-  const totalFinalBS = Number((totalFinalUSD * tasaBCV).toFixed(2));
+    // Auto-ajustar pago si hay un solo pago ingresado que cubría el total anterior
+    if (pagos.length === 1 && pagos[0].monto > 0) {
+      const nuevoDesc = tipoDescGral === "PORCENTAJE" ? (subtotalUSD * (valor / 100)) : valor;
+      const nuevoTotal = Math.max(0, subtotalUSD - nuevoDesc);
+      const monedaActual = pagos[0].moneda;
+      setPagos([{
+        ...pagos[0],
+        monto: monedaActual === "USD" ? Number(nuevoTotal.toFixed(2)) : Number((nuevoTotal * tasaBCV).toFixed(2))
+      }]);
+    }
+  };
 
   const agregarPago = () => setPagos([...pagos, { metodoId: "", monto: 0, moneda: "USD", referencia: "" }]);
 
@@ -118,6 +148,24 @@ export default function ResumenPago({
 
   const restanteUSD = Math.max(0, totalFinalUSD - totalPagadoUSD);
   const restanteBS = restanteUSD * tasaBCV;
+
+  // Ajusta pagos antes de enviar para evitar errores de redondeo en el servidor
+  const normalizarPagosParaEnvio = () => {
+    return pagos.map((p, idx) => {
+      // Si la suma supera el total por centavos de conversión, recortar el último
+      const sumaHastaAquiUSD = pagos.slice(0, idx).reduce((acc, prev) => {
+        return acc + (prev.moneda === "USD" ? (prev.monto || 0) : ((prev.monto || 0) / tasaBCV));
+      }, 0);
+      const restanteMax = Math.max(0, totalFinalUSD - sumaHastaAquiUSD);
+      const montoUSD = p.moneda === "USD" ? (p.monto || 0) : ((p.monto || 0) / tasaBCV);
+      
+      if (montoUSD > restanteMax + 0.01) {
+        const montoAjustado = p.moneda === "USD" ? restanteMax : (restanteMax * tasaBCV);
+        return { ...p, monto: parseFloat(montoAjustado.toFixed(2)) };
+      }
+      return p;
+    });
+  };
 
   return (
     <section className="bg-white rounded-[24px] border border-slate-200/80 shadow-sm p-6 lg:p-8 mb-10 animate-in fade-in duration-500 flex flex-col gap-6 lg:gap-8 relative">
@@ -313,8 +361,8 @@ export default function ResumenPago({
                   type="button"
                   onClick={() => {
                     const mName = metodosBD.find(m => m.id === pago.metodoId)?.nombre || "";
-                    if (["PAGO_MOVIL", "PUNTO_VENTA", "EFECTIVO_BS"].includes(mName)) return; // Force BS
-                    if (["EFECTIVO_USD", "ZELLE", "BINANCE"].includes(mName)) return; // Force USD
+                    if (["PAGO_MOVIL", "PUNTO_VENTA", "EFECTIVO_BS"].includes(mName)) return;
+                    if (["EFECTIVO_USD", "ZELLE", "BINANCE"].includes(mName)) return;
                     actualizarPago(idx, "moneda", pago.moneda === "USD" ? "BS" : "USD");
                   }}
                   className={`px-3 font-black text-xs transition-colors border-r border-slate-200 w-12 flex items-center justify-center shrink-0
@@ -351,7 +399,7 @@ export default function ResumenPago({
         </div>
       </div>
 
-      {/* FOOTER NEGRO - TAMAÑOS AJUSTADOS PARA NO DESBORDAR */}
+      {/* FOOTER OSCURO - RESUMEN ECONÓMICO */}
       <div className="bg-[#1D1D1F] rounded-[24px] p-6 lg:p-8 text-white shadow-xl">
         <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
 
@@ -360,11 +408,23 @@ export default function ResumenPago({
               <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Desc. General</span>
               <div className="flex bg-white/20 p-1 rounded-lg w-fit">
                 <button
-                  onClick={() => { setTipoDescGral("PORCENTAJE"); setDescuentoGeneral(0); }}
+                  type="button"
+                  onClick={() => {
+                    if (tipoDescGral !== "PORCENTAJE") {
+                      setTipoDescGral("PORCENTAJE");
+                      if (descuentoGeneral > 100) setDescuentoGeneral(100);
+                    }
+                  }}
                   className={`px-4 py-1.5 rounded-md text-xs font-black transition-colors ${tipoDescGral === "PORCENTAJE" ? 'bg-white text-black' : 'text-white/60 hover:text-white'}`}
                 >%</button>
                 <button
-                  onClick={() => { setTipoDescGral("MONTO"); setDescuentoGeneral(0); }}
+                  type="button"
+                  onClick={() => {
+                    if (tipoDescGral !== "MONTO") {
+                      setTipoDescGral("MONTO");
+                      if (descuentoGeneral > subtotalUSD) setDescuentoGeneral(subtotalUSD);
+                    }
+                  }}
                   className={`px-4 py-1.5 rounded-md text-xs font-black transition-colors ${tipoDescGral === "MONTO" ? 'bg-white text-black' : 'text-white/60 hover:text-white'}`}
                 >$</button>
               </div>
@@ -397,7 +457,20 @@ export default function ResumenPago({
           {/* BOTONES */}
           <div className="flex flex-col sm:flex-row lg:flex-col gap-3 w-full lg:w-auto shrink-0 pl-0 lg:pl-6 mt-3 lg:mt-0">
             <button
-              onClick={() => onFinalizar({ subtotalUSD, totalFinalUSD, totalFinalBS, pagos, descuentoGeneral, tipoDescGral, estado: "BORRADOR", restanteUSD })}
+              type="button"
+              onClick={() => {
+                const pagosAjustados = normalizarPagosParaEnvio();
+                onFinalizar({
+                  subtotalUSD,
+                  totalFinalUSD,
+                  totalFinalBS,
+                  pagos: pagosAjustados,
+                  descuentoGeneral,
+                  tipoDescGral,
+                  estado: "BORRADOR",
+                  restanteUSD
+                });
+              }}
               disabled={guardandoOrden || restanteBS <= 0.01}
               title={restanteBS <= 0.01 ? "No puede guardar como borrador una orden pagada en su totalidad" : ""}
               className="w-full sm:w-1/2 lg:w-56 py-3 bg-white/20 hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
@@ -405,6 +478,7 @@ export default function ResumenPago({
               <Save size={18} strokeWidth={2.5} /> {guardandoOrden ? "Procesando..." : "Guardar Borrador"}
             </button>
             <button
+              type="button"
               onClick={() => {
                 if (totalFinalUSD > 0) {
                   if (pagos.length === 0) {
@@ -416,7 +490,17 @@ export default function ResumenPago({
                     return;
                   }
                 }
-                onFinalizar({ subtotalUSD, totalFinalUSD, totalFinalBS, pagos, descuentoGeneral, tipoDescGral, estado: "CERRADA", restanteUSD });
+                const pagosAjustados = normalizarPagosParaEnvio();
+                onFinalizar({
+                  subtotalUSD,
+                  totalFinalUSD,
+                  totalFinalBS,
+                  pagos: pagosAjustados,
+                  descuentoGeneral,
+                  tipoDescGral,
+                  estado: "CERRADA",
+                  restanteUSD
+                });
               }}
               disabled={guardandoOrden}
               className="w-full sm:w-1/2 lg:w-56 py-3 bg-[#0071E3] hover:bg-[#0077ED] disabled:opacity-50 disabled:cursor-not-allowed text-white font-black rounded-xl shadow-[0_0_25px_rgba(0,113,227,0.3)] transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
